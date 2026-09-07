@@ -640,7 +640,10 @@ impl RefactorRule for CollapsibleIfRule {
 /// Generate a concrete suggestion for loop guards by inverting nested if
 /// conditions and using continue. Uses the region tree to collect guards,
 /// similar to how C007 uses `collect_if_chain`. Returns `None` when the body
-/// holds no guardable chain - callers fall back to `help` text then.
+/// holds no guardable chain, or when statements follow the chain inside the
+/// loop: re-emitted below the guards they would run only when every guard
+/// passes, so no faithful replacement exists - callers fall back to `help`
+/// text then.
 fn generate_loop_guard_suggestion(
     region: &ComplexityRegion,
     source: &str,
@@ -706,6 +709,13 @@ fn generate_loop_guard_suggestion(
     let innermost_start = span_idx(innermost.line_start)?;
     let innermost_end = span_idx(innermost.line_end + 1).unwrap_or(lines.len());
     let chain_start = span_idx(guards[0].0.line_start)?;
+
+    if lines[innermost_end..]
+        .iter()
+        .any(|line| !line.trim_start().is_empty())
+    {
+        return None;
+    }
 
     for i in 0..guards.len().saturating_sub(1) {
         let range_start = span_idx(guards[i].0.line_start + 1).unwrap_or(lines.len());

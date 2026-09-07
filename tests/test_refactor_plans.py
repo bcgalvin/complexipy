@@ -811,16 +811,32 @@ def test_loop_guard_leading_suggestion_is_faithful_and_measured() -> None:
     )
 
 
-def test_loop_guard_trailing_suggestion_is_faithful_and_measured() -> None:
+def test_loop_guard_trailing_statement_emits_help_only() -> None:
+    """A statement after the chain would run only when every guard passes."""
     func = first_func(load_source("loop_guard_trailing.py"))
     plan = next(p for p in func.refactor_plans if p.kind == "loop_guards")
 
-    assert plan.suggestion is not None
-    assert plan.suggestion.spliceable
-    assert plan.reduction_is_measured
-    assert plan.estimated_complexity_after == splice_and_measure(
-        load_source("loop_guard_trailing.py"), plan
-    )
+    assert plan.suggestion is None
+    assert plan.help is not None
+    assert not plan.reduction_is_measured
+
+
+def test_loop_guard_trailing_break_emits_help_only() -> None:
+    """A `break` lifted to loop level would leave the rest of the body unreachable."""
+    func = first_func(load_source("loop_guard_trailing_break.py"))
+    plan = next(p for p in func.refactor_plans if p.kind == "loop_guards")
+
+    assert plan.suggestion is None
+    assert plan.help is not None
+
+
+def test_loop_guard_statement_after_inner_member_emits_help_only() -> None:
+    """A statement after the inner `if` keeps its indent and the splice would not parse."""
+    func = first_func(load_source("loop_guard_trailing_inside_outer.py"))
+    plan = next(p for p in func.refactor_plans if p.kind == "loop_guards")
+
+    assert plan.suggestion is None
+    assert plan.help is not None
 
 
 def test_loop_guard_multiline_header_suggestion_is_faithful_and_measured() -> (

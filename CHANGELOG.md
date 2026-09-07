@@ -5,6 +5,15 @@ release section links to its GitHub release notes for the full details.
 
 ## Unreleased
 
+### Fixed
+
+- The C002 loop-guards rule no longer emits a machine suggestion when
+  statements follow the guarded chain inside the loop body. Re-emitted below
+  the inserted `continue` guards, those statements stopped running on every
+  iteration, and when they sat inside an outer chain member they kept an
+  indentation the replacement could not parse. Such loops now carry help text
+  instead, matching the C007 preceding-statement guard.
+
 ## [8.0.0] - 2026-09-03
 
 !!! note "Migration"

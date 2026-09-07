@@ -616,16 +616,40 @@ fn collapsible_if_suggestion_refuses_multiline_string_body() {
 }
 
 #[test]
-fn loop_guard_suggestion_keeps_trailing_statements_at_loop_indent() {
+fn loop_guard_suggestion_refuses_trailing_statements() {
     let source = "for x in y:\n    if a:\n        pass\n    total += 1\n";
     let region = loop_region(vec![if_stmt(2, 3, 1)], 4);
 
-    let suggestion =
-        generate_loop_guard_suggestion(&region, source, &LineIndex::new(source)).unwrap();
-    assert_eq!(
-        suggestion.replacement,
-        "for x in y:\n    if not (a):\n        continue\n    pass\n    total += 1"
+    // Below the guard, `total += 1` would run only when `a` holds.
+    assert!(generate_loop_guard_suggestion(&region, source, &LineIndex::new(source)).is_none());
+}
+
+#[test]
+fn loop_guard_suggestion_refuses_a_trailing_statement_after_a_lifted_break() {
+    let source = "for x in y:\n    if a:\n        break\n    total += 1\n";
+    let region = loop_region(vec![if_stmt(2, 3, 1)], 4);
+
+    // The lifted `break` would leave `total += 1` unreachable.
+    assert!(generate_loop_guard_suggestion(&region, source, &LineIndex::new(source)).is_none());
+}
+
+#[test]
+fn loop_guard_suggestion_refuses_a_statement_after_an_inner_member() {
+    let source = "for x in y:\n    if a:\n        if b:\n            pass\n        tail()\n";
+    let region = loop_region(
+        vec![ComplexityRegion {
+            kind: RegionKind::If,
+            line_start: 2,
+            line_end: 5,
+            nesting: 1,
+            children: vec![if_stmt(3, 4, 2)],
+            ..Default::default()
+        }],
+        5,
     );
+
+    // `tail()` keeps its indentation under the dedented body and cannot parse.
+    assert!(generate_loop_guard_suggestion(&region, source, &LineIndex::new(source)).is_none());
 }
 
 #[test]

@@ -77,6 +77,8 @@ Usa guardas `continue` al inicio de los bucles para reducir el anidamiento.
 
 Esta regla se activa cuando un bucle contiene sentencias `if` anidadas que podrían convertirse en guardas `continue` anticipadas.
 
+Solo se produce un reemplazo aplicable por máquina cuando no hay nada después de la cadena anidada dentro del cuerpo del bucle. Las sentencias posteriores solo se ejecutarían cuando todas las guardas pasen, así que esos bucles llevan texto de ayuda en su lugar.
+
 #### Ejemplo
 
 **Antes:**

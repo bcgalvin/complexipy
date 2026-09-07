@@ -6,6 +6,16 @@ GitHub con todos los detalles.
 
 ## Sin publicar
 
+### Corregido
+
+- La regla C002 de guardas de bucles ya no emite una sugerencia aplicable por
+  maquina cuando hay sentencias despues de la cadena de `if` dentro del cuerpo
+  del bucle. Reemitidas debajo de las guardas `continue`, esas sentencias
+  dejaban de ejecutarse en cada iteracion, y cuando estaban dentro de un `if`
+  externo conservaban una indentacion que el reemplazo no podia analizar. Esos
+  bucles ahora llevan texto de ayuda, igual que la guarda de sentencias previas
+  de C007.
+
 ## [8.0.0] - 2026-09-03
 
 !!! note "Migration"

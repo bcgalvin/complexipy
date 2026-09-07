@@ -77,6 +77,8 @@ Use continue guards at the top of loops to reduce nesting.
 
 This rule triggers when a loop contains nested `if` statements that could be converted to early `continue` guards.
 
+A machine-applicable replacement is produced only when nothing follows the nested chain inside the loop body. Statements after it would run only when every guard passes, so such loops carry help text instead.
+
 #### Example
 
 **Before:**
