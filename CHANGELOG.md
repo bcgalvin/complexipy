@@ -7,6 +7,9 @@ release section links to its GitHub release notes for the full details.
 
 ### Fixed
 
+- Python stub documentation now describes the public file wrapper's
+  CWD-relative or basename paths and the inclusion of module-level
+  complexity in file and code totals, even without a `<module>` record.
 - The C002 loop-guards rule no longer emits a machine suggestion when
   statements follow the guarded chain inside the loop body. Re-emitted below
   the inserted `continue` guards, those statements stopped running on every

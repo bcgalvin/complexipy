@@ -320,8 +320,11 @@ class FileComplexity:
     - Medium: Some functions have complexity 10-15
     - High: Multiple functions have complexity > 15
 
-    The file complexity is the sum of all function complexities, helping
-    identify files that may be doing too much or need to be split up.
+    The file total includes both reported function scores and module-level
+    statement complexity. With check_script=False, module-level complexity
+    contributes to the total without a separate function record. With
+    check_script=True, it appears as a '<module>' record in functions, so
+    the total equals the sum of the reported records.
 
     Example:
         >>> file_analysis = FileComplexity(
@@ -337,10 +340,13 @@ class FileComplexity:
 
     path: str
     """
-    The absolute file path to the analyzed Python file.
+    The analyzed file's path relative to the analysis base path.
 
-    This is the complete path as resolved by the system, useful for
-    identifying the exact location of the file in the filesystem.
+    The public complexipy.file_complexity wrapper resolves the input and
+    current working directory. For a file beneath that directory, path is
+    relative to it; otherwise path is the file's basename. The native
+    binding accepts an explicit base_path and retains file_path when it
+    cannot strip that prefix. This field is not always an absolute path.
     """
 
     file_name: str
@@ -356,7 +362,8 @@ class FileComplexity:
 
     This includes all top-level functions and methods found in the file.
     Nested functions are analyzed as part of their containing function.
-    The list is ordered by appearance in the source code.
+    The list is ordered by appearance in the source code. When check_script
+    is True, a '<module>' record for module-level statements is appended.
 
     Example:
         >>> # Find the most complex function
@@ -372,9 +379,10 @@ class FileComplexity:
     """
     The total cognitive complexity of the entire file.
 
-    This is calculated as the sum of complexity scores from all functions
-    in the file. It provides a high-level metric for the overall complexity
-    of the module and can help identify files that need refactoring.
+    This includes reported function scores and module-level statement
+    complexity regardless of check_script. With check_script=False, the
+    total can exceed the sum of functions. With check_script=True, functions
+    includes the '<module>' record and its sum equals this total.
     """
 
     def __init__(
@@ -419,7 +427,8 @@ class CodeComplexity:
 
     This includes all function definitions found in the provided code string,
     analyzed in the same way as file-based analysis. Functions are ordered
-    by their appearance in the code.
+    by their appearance in the code. When check_script is True, a '<module>'
+    record for module-level statements is appended.
 
     Example:
         >>> for func in analysis.functions:
@@ -430,10 +439,12 @@ class CodeComplexity:
 
     complexity: int
     """
-    The total cognitive complexity of all functions in the code string.
+    The total cognitive complexity of the code string.
 
-    This is the sum of complexity scores from all functions found in the
-    provided code. It gives an overall measure of how complex the code is.
+    This includes reported function scores and module-level statement
+    complexity regardless of check_script. With check_script=False, the
+    total can exceed the sum of functions. With check_script=True, functions
+    includes the '<module>' record and its sum equals this total.
     """
 
     def __init__(
