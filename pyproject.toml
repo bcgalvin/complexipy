@@ -53,13 +53,14 @@ complexipy = "complexipy.cli:main"
 
 [project.urls]
 Homepage = "https://github.com/rohaquinlop/complexipy"
-Documentation = "https://rohaquinlop.github.io/complexipy/"
+Documentation = "https://complexipy.com/"
 Repository = "https://github.com/rohaquinlop/complexipy"
 
 [tool.maturin]
 manifest-path = "crates/complexipy-python/Cargo.toml"
 module-name = "complexipy._complexipy"
 bindings = "pyo3"
+include = ["LICENSE"]
 
 [tool.complexipy]
 paths = ["crates", "complexipy"]

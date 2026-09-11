@@ -96,11 +96,11 @@ Before writing the release notes, make sure `## Unreleased` in
 - Removed flags, keys, and API breaks go under `### Removed`; a major
   release with breaking changes gets a `!!! note "Migration"` callout
   linking to the migration guide
-  (`https://rohaquinlop.github.io/complexipy/migration/`).
+  (`https://complexipy.com/migration/`).
 - Mirror every entry in `docs/es/changelog.md` under `## Sin publicar`
   (`### Añadido`, `### Cambiado`, `### Corregido`, `### Eliminado`); the ES
   migration link points to
-  `https://rohaquinlop.github.io/complexipy/es/migracion/`.
+  `https://complexipy.com/es/migracion/`.
 
 If a change is missing from `## Unreleased`, add it before drafting the
 notes. The release notes are drafted from this section, and at publish time
@@ -206,13 +206,36 @@ into a dated release section:
    `## Sin publicar` to empty.
 5. If this is a major release with breaking changes, add a
    `!!! note "Migration"` callout at the top of the new section linking to
-   the migration guide (`https://rohaquinlop.github.io/complexipy/migration/`;
-   Spanish: `https://rohaquinlop.github.io/complexipy/es/migracion/`).
+   the migration guide (`https://complexipy.com/migration/`;
+   Spanish: `https://complexipy.com/es/migracion/`).
 
 Never edit `docs/changelog.md` - it embeds the root file via the
 pymdownx.snippets include (`--8<-- "CHANGELOG.md"`).
 
-### 8. Create the tag (if requested)
+### 8. Verify the build before tagging
+
+Before creating the tag, verify the package builds correctly and version
+numbers are consistent - this catches issues before they reach PyPI/npm.
+
+- **Version consistency**: confirm the version in `pyproject.toml` matches
+  `Cargo.toml` (and any other version file - docs, `__init__.py`, etc.) and
+  matches the version being released. A mismatch means a bump was missed.
+
+- **Sdist contents**: build the sdist and confirm required files (LICENSE,
+  README) are actually included - a packaging config regression (e.g.
+  `[tool.maturin] include` losing an entry) silently drops them without
+  failing the build:
+
+    ```bash
+    uv run maturin sdist -o /tmp/complexipy-sdist-check
+    tar -tzf /tmp/complexipy-sdist-check/*.tar.gz | grep -iE 'license|readme'
+    ```
+
+  If either is missing, fix `pyproject.toml`'s `[tool.maturin] include` (or
+  the project's equivalent packaging config) before continuing - do not tag
+  a release with a known-broken sdist.
+
+### 9. Create the tag (if requested)
 
 If the user asks to publish or create the release:
 
@@ -228,7 +251,7 @@ git push origin <version>
 Verify the tag points to the latest main commit - never to a detached or
 stale commit.
 
-### 9. Create the GitHub Release
+### 10. Create the GitHub Release
 
 Draft the release body from the `## [<version>] - <date>` section that just
 moved out of `## Unreleased`: keep the changelog's bullets, and add the
@@ -248,7 +271,7 @@ After creation, set the release title to match the version:
 gh release edit <version> --title "<version>"
 ```
 
-### 10. Verify
+### 11. Verify
 
 Confirm with:
 
@@ -259,6 +282,26 @@ gh release view <version> --json name,tagName,url --jq '{name, tagName, url}'
 Confirm the changelog is finalized: `## [<version>] - <date>` exists in
 `CHANGELOG.md` and `docs/es/changelog.md`, `## Unreleased` is empty, and
 `docs/changelog.md` is still just the include stub.
+
+**Verify the rendered body.** GitHub renders every newline in a release body
+as a hard line break, same as issues and PRs - a hard-wrapped body (e.g.
+from a `RELEASE_NOTES_<version>.md` file wrapped at 80 columns) renders as
+broken, line-per-line text. Fetch the rendered HTML and confirm there are
+zero `<br>` tags outside code blocks:
+
+```bash
+gh api graphql -f query='query { repository(owner:"<owner>", name:"<repo>") { release(tagName:"<version>") { descriptionHTML } } }' \
+  --jq '.data.repository.release.descriptionHTML' | grep -c "<br"
+```
+
+Expect `0`. If nonzero, the body was wrapped somewhere before publishing -
+fix and re-edit with `gh release edit <version> --notes-file -`, then
+re-verify.
+
+Once verified, delete `RELEASE_NOTES_<version>.md` - it was a drafting
+scratch file to let the user review before publishing, not something to
+leave in the repo where a later broad `git add` could sweep it into a
+commit.
 
 ## Edge Cases
 
