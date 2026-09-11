@@ -81,8 +81,8 @@ are meaningless.
 ### Test
 
 ```bash
-uv run pytest               # Python suite (testpaths = tests/)
-cargo test --workspace      # Rust tests across all four crates
+uv run pytest
+cargo test --workspace --locked
 ```
 
 Single test:
@@ -91,26 +91,45 @@ Single test:
 uv run pytest tests/main.py::TestFiles::test_match
 uv run pytest tests/test_refactor_plans.py::test_match_dispatcher_creates_dispatcher_plan
 uv run pytest -k refactor
-cargo test -p complexipy-core rules::registry
+cargo test -p complexipy-core --locked rules::registry
 ```
 
 ### Lint, Format & Type Check
 
 ```bash
 uv run ruff check .
-uv run ruff format .
+uv run ruff format --check .
 uv run ty check .
+cargo clippy --workspace --all-targets --locked -- -D warnings
+cargo fmt --all --check
 ```
+
+Use `uv run ruff check --fix .` for safe lint fixes, including import sorting,
+then `uv run ruff format .` for Python formatting. Review the resulting diff.
+Ruff enables
+`E4`, `E7`, `E9`, `F`, `I`, and `B`, including ordinary tests. The semantic
+fixture trees `tests/src/**` and `tests/fixtures/**` are excluded from linting
+and formatting; `force-exclude` also protects explicitly supplied fixture paths.
+Excluded explicit paths are skipped, so a successful command does not mean those
+files were checked.
+
+All four crates inherit workspace Clippy warnings for `exit`, `dbg_macro`,
+`todo`, and `unimplemented`. CI promotes warnings to errors with `-D warnings`;
+the full Clippy restriction group is not enabled.
 
 ### Cross-target compile checks
 
-CI builds wheels for both features but only type-checks and tests the Python one;
-break the wasm target and *release* breaks, not CI.
+PR CI checks these configurations in separate Cargo invocations so workspace
+feature unification cannot hide missing feature gates. The CLI check exercises
+core's default `runner` feature set without `python`. These are compilation
+checks, not runtime coverage for every target. Install the WASM target first
+with `rustup target add wasm32-unknown-unknown`.
 
 ```bash
-cargo check -p complexipy-core
-cargo check -p complexipy-core --no-default-features
-cargo check -p complexipy-wasm --target wasm32-unknown-unknown
+cargo check -p complexipy-cli --locked
+cargo check -p complexipy-core --no-default-features --locked
+cargo check -p complexipy-core --no-default-features --features python --locked
+cargo check -p complexipy-wasm --target wasm32-unknown-unknown --locked
 ```
 
 ### Run
@@ -275,7 +294,7 @@ reverse. Adding a dependency means adding it to the crate that uses it.
 - Pre-commit hooks: complexipy (self-dogfooding, `max-complexity-allowed = 15` from
   `[tool.complexipy]`), mdformat, yamlfix. Pass explicitly quoted paths to
   `pre-commit run --files`; unquoted globs yield a bogus "no files to check".
-- Ruff for linting and formatting (line-length 80, indent-width 4; `tests/**` excluded from lint).
+- Ruff for linting and formatting (line-length 80, indent-width 4; ordinary tests included, `tests/src/**` and `tests/fixtures/**` excluded).
 
 ## Key Files
 
@@ -299,6 +318,7 @@ reverse. Adding a dependency means adding it to the crate that uses it.
 ## Conventions
 
 - **Package manager:** Always use `uv` - `uv run pytest`, `uv run ruff`, `uv run complexipy`
+- **Cargo lockfile:** Regenerate and review `Cargo.lock` after dependency or workspace-version changes, and include required lockfile updates with the change. The Rust CI job uses `--locked` and rejects lockfile drift.
 - **Commits:** Only commit when explicitly asked. Never auto-commit. Stage explicit paths - never `git add -A` or `git add .`
 - **PR titles:** Must follow Conventional Commits (enforced by CI).
 - **GitHub CLI:** When available, use `gh` to retrieve context before making changes - check linked issues for requirements (`gh issue view <number>`), review open PRs for related work (`gh pr list`, `gh pr view <number>`), inspect CI status (`gh run list`, `gh run view <id>`), and search the repo (`gh search issues`, `gh search prs`). Always check the relevant issue or PR before implementing to understand the full scope and any prior discussion. If `gh` is not installed, skip these checks and work from the code and local context only.

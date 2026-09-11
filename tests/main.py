@@ -1,8 +1,6 @@
 from pathlib import Path
 from typing import List, Tuple
 
-import pytest
-
 from complexipy import (
     code_complexity,
     collect_removable_ignored_locations,

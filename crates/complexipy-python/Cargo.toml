@@ -9,6 +9,9 @@ documentation.workspace = true
 repository.workspace = true
 publish = false
 
+[lints]
+workspace = true
+
 [lib]
 name = "complexipy"
 crate-type = ["cdylib", "rlib"]

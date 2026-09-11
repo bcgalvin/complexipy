@@ -11,6 +11,12 @@ homepage = "https://github.com/rohaquinlop/complexipy"
 documentation = "https://rohaquinlop.github.io/complexipy/"
 repository = "https://github.com/rohaquinlop/complexipy"
 
+[workspace.lints.clippy]
+exit = "warn"
+dbg_macro = "warn"
+todo = "warn"
+unimplemented = "warn"
+
 [workspace.dependencies]
 ruff_python_parser = { git = "https://github.com/astral-sh/ruff.git", tag = "0.12.9", package = "ruff_python_parser" }
 ruff_python_ast = { git = "https://github.com/astral-sh/ruff.git", tag = "0.12.9", package = "ruff_python_ast" }

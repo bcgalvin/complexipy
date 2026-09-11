@@ -76,9 +76,11 @@ cache-keys = [{file = "pyproject.toml"}, {file = "Cargo.toml"}, {file = "**/*.rs
 [tool.ruff]
 line-length = 80
 indent-width = 4
+force-exclude = true
 
 [tool.ruff.lint]
-exclude = ["tests/**"]
+select = ["E4", "E7", "E9", "F", "I", "B"]
+exclude = ["tests/src/**", "tests/fixtures/**"]
 
 [tool.ruff.format]
 exclude = ["tests/fixtures/**", "tests/src/**"]
