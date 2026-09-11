@@ -117,6 +117,19 @@ All four crates inherit workspace Clippy warnings for `exit`, `dbg_macro`,
 `todo`, and `unimplemented`. CI promotes warnings to errors with `-D warnings`;
 the full Clippy restriction group is not enabled.
 
+ty treats `possibly-unresolved-reference`, `possibly-missing-attribute`,
+`unused-ignore-comment`, and `redundant-cast` as errors. Every remaining warning
+also causes failure, including unknown configured rules. Warning-driven failure
+does not enable disabled rules; retain the explicit rule list. Tests remain excluded
+from the root ty check; severity policy does not verify native/stub parity.
+The analysis Python version is inferred from `requires-python`.
+
+The CI lint job installs only dependencies with
+`uv sync --group dev --no-install-project --frozen`, then runs Ruff and ty with
+`uv run --no-sync` to avoid installing the extension. Its final metadata check
+asserts complexipy was not installed. Preserve no-sync on every lint-job command.
+Re-run rule, warning, and Python-target controls when upgrading ty.
+
 ### Cross-target compile checks
 
 PR CI checks these configurations in separate Cargo invocations so workspace

@@ -100,6 +100,15 @@ sequence_style = "keep_style"
 [tool.ty.src]
 exclude = ["tests"]
 
+[tool.ty.rules]
+possibly-unresolved-reference = "error"
+possibly-missing-attribute = "error"
+unused-ignore-comment = "error"
+redundant-cast = "error"
+
+[tool.ty.terminal]
+error-on-warning = true
+
 [dependency-groups]
 dev = [
     "maturin>=1.8.3",

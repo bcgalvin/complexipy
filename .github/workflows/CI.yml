@@ -29,11 +29,23 @@ jobs:
       - name: Install dev dependencies
         run: uv sync --group dev --no-install-project --frozen
       - name: Run ruff check
-        run: uv run ruff check .
+        run: uv run --no-sync ruff check .
       - name: Run ruff format
-        run: uv run ruff format --check .
+        run: uv run --no-sync ruff format --check .
       - name: Run ty
-        run: uv run ty check .
+        run: uv run --no-sync ty check .
+      - name: Verify lint environment remains dependency-only
+        run: |
+          uv run --no-sync python - <<'PY'
+          from importlib.metadata import PackageNotFoundError, distribution
+
+          try:
+              distribution("complexipy")
+          except PackageNotFoundError:
+              pass
+          else:
+              raise SystemExit("The lint job must not install complexipy")
+          PY
 
   quick-tests:
     name: Quick Tests

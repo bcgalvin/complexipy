@@ -63,6 +63,25 @@ All four Rust crates inherit workspace warnings for Clippy's `exit`,
 `dbg_macro`, `todo`, and `unimplemented` lints. CI treats warnings as errors;
 this is a focused policy, not the full restriction group.
 
+ty checks possibly unresolved references, possibly missing attributes, unused
+ignore comments, and redundant casts as errors. Any remaining warning also
+fails the check. Tests remain excluded from root typechecking, and passing this
+check does not prove that native bindings match their stubs.
+
+For the dependency-only CI lint environment, use:
+
+```bash
+uv sync --group dev --no-install-project --frozen
+uv run --no-sync ruff check .
+uv run --no-sync ruff format --check .
+uv run --no-sync ty check .
+```
+
+Keep `--no-sync` on every `uv run` in the lint job: ordinary `uv run` installs
+the project again. CI checks distribution metadata afterward to ensure the extension was
+not installed. Re-run the rule and warning controls when upgrading ty; the
+analysis Python version remains inferred from `requires-python`.
+
 ## Cross-target Compile Checks
 
 Install the target with `rustup target add wasm32-unknown-unknown`, then run:
