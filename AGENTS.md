@@ -12,7 +12,7 @@ put anything tool-agnostic here, not there. See [Keeping This File Current](#kee
 - **Framework:** clap (CLI args), owo-colors/syntect/comfy-table (terminal output)
 - **Package Manager:** uv (Python), Cargo (Rust)
 - **Build:** maturin (Rust → Python extension)
-- **Docs:** MkDocs Material (EN + ES)
+- **Docs:** plain markdown in `docs/`, read from the repository
 
 The analysis engine is Rust; the CLI and public Python API are thin wrappers over a
 PyO3 extension module (`complexipy._complexipy`). Scoring follows G. Ann Campbell's
@@ -53,7 +53,7 @@ complexipy/
 │   ├── contract/                 # Installed-wheel stub/runtime contract harness
 │   └── test_*.py                 # Utility module tests
 │
-└── docs/                         # MkDocs content (EN + es/)
+└── docs/                         # Local markdown reference (no site)
 ```
 
 ## Commands
@@ -185,7 +185,7 @@ types. The `py_diff` types defined directly in `crates/complexipy-python/src/lib
 `collect_removable_ignored_locations`, `compute_diff`, `has_regressions`, and the
 `DiffEntry` / `DiffStatus` types. Those exports, their signatures, and the
 `DiffStatus` values are a compatibility promise - internal refactors must keep them
-stable, and new exports belong in `__init__.py` + `__all__` with docs in `docs/` (EN + ES).
+stable, and new exports belong in `__init__.py` + `__all__` and on `docs/python-api.md`.
 
 ### Rust core
 
@@ -227,8 +227,7 @@ plans per function.
 registry reads it via `effectiveness_by_rule_id()`, so there is no `match rule_id`
 anywhere. Adding a rule is therefore: write the struct + `impl RefactorRule` in
 `crates/complexipy-core/src/rules/complexity.rs`, set its `effectiveness` tier, register it in
-`RuleRegistry::register_defaults()`, and document it in **both**
-`docs/refactoring-rules.md` and `docs/es/refactoring-rules.md`.
+`RuleRegistry::register_defaults()`, and document it in `docs/rules.md`.
 
 Guiding principle for rule output: never emit a suggestion the tool cannot stand
 behind. If a heuristic isn't confident, emit `help` text rather than a wrong

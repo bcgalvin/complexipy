@@ -118,7 +118,6 @@ error-on-warning = true
 [dependency-groups]
 dev = [
     "maturin>=1.8.3",
-    "mkdocs-material>=9.6.12",
     "pre-commit>=3.5.0",
     "pytest>=8.3.5",
     "ruff>=0.9.0",

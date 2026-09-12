@@ -348,7 +348,14 @@ code in files D already opens.
 - **`RuleMetadata` derives `Serialize, Deserialize`** with no evident consumer, in
   a file D edits anyway.
 
-### Fold into workstream C
+### Done in workstream C
+
+**`--help` contained no descriptive text.** Fixed: `args.rs` now carries an
+`about`, a `long_about` that states the config-discovery rule, and a `help =` on
+every option. `docs/cli.md` covers what a flag list cannot - config precedence,
+output-path rules, exit codes, inline ignores, and where the tool writes.
+
+Original entry follows.
 
 **`--help` contains no descriptive text.** `crates/complexipy-cli/src/args.rs` has
 no `about`/`long_about` and no `help =` on any of the 21 options; since `AGENTS.md`
@@ -357,6 +364,13 @@ offloaded all explanation to the docs site. C is where that site disappears, so 
 is where `--help` has to become the discovery surface - otherwise there is a window
 with no user-facing documentation at all. Confirm the absence first with
 `rg -n 'help\s*=|about|///' crates/complexipy-cli/src/args.rs`.
+
+**Statements in a class body that are not functions are scored nowhere.**
+`cognitive_complexity.rs` iterates a `ClassDef` body matching only
+`Stmt::FunctionDef`, and the module-level accumulator never sees a `ClassDef`, so
+an `if` at class scope contributes to no function total and no module total.
+`class A:` containing `if x: pass` scores 0, while the same `if` at module level
+scores 1. Found during the C rewrite; not investigated further.
 
 ### Defer past the realignment
 

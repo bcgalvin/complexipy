@@ -208,37 +208,37 @@ Verify: nothing to build. Confirm
 
 Write, before deleting the source material:
 
-- [ ] Scoring contract. **Do not transcribe `understanding-scores.md`** - it
+- [x] Scoring contract. **Do not transcribe `understanding-scores.md`** - it
   contradicts `tests/main.py::TestPaperConformance`, which `AGENTS.md` designates
   as the real contract. Its `:150` scores `with` as "+1 (context manager treated
   as if)" and nests beneath it, while `test_with_does_not_nest` pins `with` at +0
   with no nesting; its `:84` scores `match` as "+0" while
   `test_match_top_level_structural_increment` pins it at +1. Re-derive the page
   from the conformance tests.
-- [ ] Rule catalog (from `refactoring-rules.md`). Drop its `doc_url` JSON sample
+- [x] Rule catalog (from `refactoring-rules.md`). Drop its `doc_url` JSON sample
   and the `print(f"  Docs: {plan.doc_url}")` example; decision 11 removes the
   field.
-- [ ] Public Python API surface (from `api-reference.md`). Its `RefactorPlan` tree
+- [x] Public Python API surface (from `api-reference.md`). Its `RefactorPlan` tree
   lists `doc_url: str` and `references: List[str]`; D removes both. The page also
   omits three public fields that must be added: `reduction_is_measured` on
   `RefactorPlan`, `spliceable` on `CodeSuggestion`, and
   `additional_refactor_plans` on `FunctionComplexity`.
-- [ ] Diff and snapshot semantics (from `usage-guide.md`). Its DiffStatus section
+- [x] Diff and snapshot semantics (from `usage-guide.md`). Its DiffStatus section
   is the only written statement that `DiffStatus` is not an `enum.Enum`, has
   no `.name`/`.value`, and formats as `DiffStatus.REGRESSED`. Commit `d690c9f`,
   the branch point, exists to correct exactly that.
 
 Delete:
 
-- [ ] Everything under `docs/` except `docs/realignment/`: `about.md`,
+- [x] Everything under `docs/` except `docs/realignment/`: `about.md`,
   `api-reference.md`, `benchmarks.md`, `changelog.md`, `CNAME`,
   `comparison-with-ruff.md`, `es/` (11 files, ~3411 lines), `img/`,
   `index.md`, `migration.md`, `refactoring-rules.md`,
   `understanding-scores.md`, `usage-guide.md`
-- [ ] `mkdocs.yml`, `mkdocs.es.yml`
-- [ ] `mkdocs-material` from the `dev` dependency group
-- [ ] Regenerate `uv.lock`
-- [ ] `.gitignore`: `site-es/`, `docs/_build/`
+- [x] `mkdocs.yml`, `mkdocs.es.yml`
+- [x] `mkdocs-material` from the `dev` dependency group
+- [x] Regenerate `uv.lock`
+- [x] `.gitignore`: `site-es/`, `docs/_build/`
 
 Retained prose carries MkDocs-only syntax (`!!! note` admonitions, `=== "tab"`
 content tabs, `--8<--` snippet directives) that renders as literal text outside
@@ -297,6 +297,10 @@ Emission:
 
 Typing and tests:
 
+- [ ] The pages C wrote already describe the post-D surface - `docs/python-api.md`
+  and `docs/rules.md` omit `doc_url` and `references` deliberately. Confirm rather
+  than re-edit them. If this workstream also retires the `gitlab`/`sarif` formats,
+  `docs/cli.md` does need an edit.
 - [ ] `complexipy/_complexipy.pyi:206,228` for `doc_url` and the `references`
   declaration plus its `__init__` parameter
 - [ ] While the stub is open: `RuleCategory` (`:13`) and `Applicability` (`:22`)
@@ -386,14 +390,18 @@ any residual URL neither D nor E enumerated.
     the PR-title and `gh` conventions bullets. Do not treat that as licence to
     skip E's sweep.
 
-    Cite section names, never line numbers - A and B between them shifted this
-    file by roughly thirty lines. E's regex is also largely spent: `wasm`, `web/`,
+    C additionally corrected the Tech Stack docs line, the `docs/` tree entry,
+    the new-exports instruction, and the rule-authoring doc target. E's regex is
+    now down to two live terms, `pre-commit` and `3\.8`.
+
+    Cite section names, never line numbers - A, B and C between them shifted this
+    file substantially. E's regex is also largely spent: `wasm`, `web/`,
     `vscode`, `\.github`, `benchmark`, and `pull request` no longer match.
 
-    Still dead and outstanding: the Tech Stack lines "Python 3.8+" and "MkDocs
-    Material (EN + ES)"; the pre-commit hooks bullet under Code Style; the
-    rule-authoring instruction to document in both `docs/refactoring-rules.md`
-    and `docs/es/refactoring-rules.md`; the three-place FFI rule under "The FFI
+    Still dead and outstanding: the Tech Stack line "Python 3.8+"; the
+    pre-commit hooks bullet under Code Style; the `doc_url` mention in the
+    Refactor-rules paragraph, which D falsifies; the three-place FFI rule under
+    "The FFI
     contract", stated without the type-versus-field qualifier D corrects; the
     git-URL claims on the `runner.rs` line of the Project Structure tree and the
     `runner.rs` bullet under "Rust core"; and the "Contributors on Windows need

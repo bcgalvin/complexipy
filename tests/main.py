@@ -469,6 +469,51 @@ class TestPaperConformance:
     def test_bare_expression_boolean_sequence(self):
         assert self._c("def f(a, b):\n    foo(a and b)\n") == 1
 
+    def test_if_else_increments_and_nests(self):
+        # `else` takes its own structural increment and its body sits one
+        # nesting level deeper, unlike a loop `else`.
+        assert self._c("def f(x):\n    if x:\n        pass\n    else:\n        pass\n") == 2
+        code = (
+            "def f(x, y):\n"
+            "    if x:\n"
+            "        pass\n"
+            "    else:\n"
+            "        if y:\n"
+            "            pass\n"
+        )
+        assert self._c(code) == 4
+
+    def test_elif_is_a_sibling_clause_not_a_nested_if(self):
+        # Python's AST spells `elif` as orelse=[If], the same shape as the
+        # nested case above, but the scorer charges it as a sibling clause.
+        code = "def f(x, y):\n    if x:\n        pass\n    elif y:\n        pass\n"
+        assert self._c(code) == 2
+
+    def test_raise_does_not_increment(self):
+        assert self._c("def f(x):\n    raise ValueError(x)\n") == 0
+
+    def test_break_and_continue_do_not_increment(self):
+        # The paper charges a jump to a label; Python has none.
+        assert self._c("def f(xs):\n    for i in xs:\n        break\n") == 1
+        assert self._c("def f(xs):\n    for i in xs:\n        continue\n") == 1
+
+    def test_boolean_runs_are_counted_per_operator_sequence(self):
+        assert self._c("def f(a, b):\n    if a and b:\n        pass\n") == 2
+        assert self._c("def f(a, b, c):\n    if a and b and c:\n        pass\n") == 2
+        assert self._c("def f(a, b, c):\n    if a and b or c:\n        pass\n") == 3
+
+    def test_with_is_transparent_inside_a_loop(self):
+        # `with` neither increments nor nests, so the inner `if` is charged at
+        # the loop's nesting level only.
+        code = (
+            "def f(xs, y):\n"
+            "    for i in xs:\n"
+            "        with open(i):\n"
+            "            if y:\n"
+            "                pass\n"
+        )
+        assert self._c(code) == 3
+
     def test_loop_else_is_not_nested(self):
         code = "def f(xs, x):\n    for i in xs:\n        pass\n    else:\n        if x:\n            pass\n"
         assert self._c(code) == 2

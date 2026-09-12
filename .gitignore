@@ -62,9 +62,6 @@ coverage.xml
 
 .DS_Store
 
-# Sphinx documentation
-docs/_build/
-
 # PyCharm
 .idea/
 
@@ -84,6 +81,3 @@ docs/_build/
 
 # Pyright LSP
 pyrightconfig.json
-
-# ES doc
-site-es/
