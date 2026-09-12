@@ -21,7 +21,7 @@ markdown files read from the repository.
 conventions. Ongoing maintenance records:
 
 - [Design issues and bugs](maintenance/design-issues-and-bugs.md) - the full
-  catalog, including open and deferred issues.
+  catalog, including parent-consumer priorities and open/deferred issues.
 - [Removed tooling](maintenance/follow-up-tooling.md) - what was removed and
   what a future replacement would need; not a commitment to rebuild it.
 - [git-cliff research](maintenance/changelog-git-cliff.md) - research evidence

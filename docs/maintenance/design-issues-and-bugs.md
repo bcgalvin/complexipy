@@ -13,7 +13,7 @@ Every entry names where the evidence is: source by path and enclosing symbol
 (function, test, struct field, constant), markdown by section heading, never by
 line number. This file outlives the realignment, and a line reference goes stale
 silently while a symbol reference fails loudly. Status values: **fixed** (with
-the commit), **open**, **deferred** (with why).
+the commit or named change), **open**, **deferred** (with why).
 
 [`follow-up-tooling.md`](follow-up-tooling.md) records removed capabilities and
 possible replacements, not an implementation checklist. The completed tracker
@@ -21,9 +21,85 @@ and original `docs/realignment/explore-results.md` evidence trail remain in Git
 history at `e1a17fb`. Historical workstream labels below identify that work;
 they are not assignments to still-running workstreams.
 
+## Parent-consumer priorities
+
+The parent is a local consumer, not a distribution target. The usage below was
+checked at parent commit `00b228a`. Its `docs/providers.md` (Supported surfaces
+and qualification) excludes Complexipy from the main runner. Current use is
+through direct exploration in
+`.agents/skills/complexipy-explore/SKILL.md` and the native-record consumer in
+`scripts/complexipy_analysis/reduced_record.py` (`main`, `plan_native`). Parent
+paths in this section are relative to `recsys-code-quality`, not this fork.
+
+The parent pins the 8.1.0 release and its current wheel; its serializer no longer
+reads `doc_url` or `references`. A source change alone neither updates that wheel
+nor installs it in a provider environment. On a requested refresh, check the
+exact wheel contract and the real native-plan serializer together. Synthetic
+parent tests do not establish native API compatibility on their own.
+
+Use this order when choosing follow-up work, not as authorization to implement
+all of it:
+
+1. **Protect current file/plan consumption.** Preserve exact scoring and line
+   attribution, complete native plan fields and explicit analysis failures.
+   Address expression-walker omissions with deliberate scorer-contract changes;
+   keep help-only plans distinct from applicable replacements. The parent owns
+   source review and semantic judgments, not this analyzer.
+1. **Make external-CWD surveys reliable.** Prioritize collector path resolution
+   and suppression parity, and analysis-walk / exclusion coverage. A caller
+   running a survey needs to distinguish a filtered or failed population from
+   a complete inventory. Include the empty-path config and quiet/ignore-complexity
+   defects when working on CLI population or gates.
+1. **Before trusting native comparisons, make failures explicit.** Cover path
+   pairing, missing refs, reference parse failures, staged scope and matching
+   analysis flags; decide whether a public path base is needed for them. An
+   empty comparison or all-`NEW` is not proof of a valid comparison. This is a
+   prerequisite for reliable use of the optional diff surface, not a claim that
+   the parent runner uses it today.
+1. **Add controls only for demonstrated friction.** Explicit config selection
+   or an independent snapshot path may help a requested workflow. Do not turn
+   that into automatic target-config discovery: caller-selected scope and
+   read-only inputs are current parent requirements. Standalone-CLI snapshot
+   parity, benchmarks and extra output formats are not current adoption gates.
+
+Related issues below retain the source anchors and unresolved design choices.
+No CI, wheel archive, general release framework or parent-runner integration is
+scheduled by this list. The removed-tooling inventory is not a competing roadmap.
+
 ## Bugs
 
 ### Fixed
+
+The enum/subclass and test fixes immediately below landed with the local build
+and verification contract change.
+
+- **Enum construction and subclassing were over-promised by the stub.**
+  `RuleCategory()`, `Applicability()` and `DiffStatus()` passed ty but raised
+  `TypeError`. All twelve exported native types reject subclassing, not only
+  the previously probed `LineComplexity`. The three enum stubs now have the
+  required `Never` construction guard, and all twelve types are `@final`.
+  `construct_enums.py` and `subclass_native.py` in `tests/contract/cases/`
+  check rejected calls and bases; `valid_usage.py` checks typed members.
+  `RUNTIME_CHECKS` verifies these limits against the installed native types
+  and compares every enum's member names against the installed stub.
+  The new negative cases failed against the unchanged parent 8.1.0 wheel,
+  demonstrating the gap without changing that artifact. Static checks are
+  stricter for code that already failed at runtime; native behavior and the
+  public export list are unchanged.
+
+- **Two tests could pass without checking their claimed behavior.**
+  `crates/complexipy-cli/src/run/tests.rs` `version_flag_handled_by_clap` now
+  requires `DisplayVersion`, exit code 0, stdout and the current Cargo package
+  version text instead of accepting any clap error. In
+  `tests/test_refactor_plans.py`, the renamed
+  `test_flatten_condition_produces_nonempty_help` requires a C001 plan before
+  asserting help-only output with nonempty help. The former
+  `test_code_generation_produces_nonempty_snippets` skipped its assertions when
+  no C001 plan existed, which was already the case: its fixture emitted C007
+  instead. Its replacement, `flatten_condition_help.py`, has a fourth nested
+  condition and intervening statements to meet C001's guards without a
+  collapsible-if chain.
+  This changes a rule fixture, not the scorer or the `tests/src/` corpus.
 
 - **Generated changelog ended with a blank line at EOF.** The first G
   regeneration failed `git diff --check`. Root `cliff.toml` now normalizes only
@@ -76,9 +152,9 @@ they are not assignments to still-running workstreams.
 - **Four consumer-visible removals needed a machine-readable record.** Dropping
   `doc_url` and `references` changes the `--output-format json` schema and the
   Python `RefactorPlan`, and removes SARIF `helpUri`/`informationUri` and the
-  console `References:` block. `CHANGELOG.md` is hand-maintained until G
-  regenerates it, so the record is a `BREAKING CHANGE:` footer on D's commit -
-  which is what git-cliff reads - rather than an entry G would discard.
+  console `References:` block. The removals were recorded in D's
+  `BREAKING CHANGE:` footer, which git-cliff now includes in the generated
+  `CHANGELOG.md`.
 
 - **`tests/main.py` was committed unformatted in `2020084`.** `ruff format --check` was omitted from that workstream's final gate, so the conformance
   tests added there shipped with over-long lines. Formatting corrected in D. The
@@ -185,9 +261,10 @@ Recorded by `refactor(fork)!: align identity and Python 3.14 contracts`.
   Whether the binding should map to those types is a design choice; the
   docstrings are wrong either way. Two more stub claims in the same family: the
   collectors' `invocation_path` is documented as "working directory for
-  resolving relative paths" and is never read (see Dead code), and the
-  `additional_refactor_plans` docstring names only the cap where `registry.rs`
-  `analyze` also counts plans whose measured reduction fell below one.
+  resolving relative paths" and is never read (see the collectors' invocation-path
+  bug below), and the `additional_refactor_plans` docstring names only the cap
+  where `registry.rs` `analyze` also counts plans whose measured reduction fell
+  below one.
   **Fixed in E**: corrected these docstrings and updated the matching caveats in
   `docs/python-api.md` and `docs/rules.md`. Runtime behavior is unchanged.
 
@@ -223,15 +300,6 @@ Recorded by `chore(tooling): remove the pre-commit stack`.
 
 ### Open
 
-- **Enum construction and subclassing remain over-promised by the stub.**
-  E's review found that `RuleCategory()`, `Applicability()` and `DiffStatus()`
-  pass ty but raise `TypeError` at runtime. The stub also permits a subclass of
-  `LineComplexity`, which the native type rejects. Verified with a temporary
-  consumer snippet and native calls on CPython 3.14.3/ty 0.0.28; not pinned by
-  a committed case. E's constructor work covers the eight result structs, not
-  enum construction or subclassability. A follow-up should model these limits
-  and add negative typing/runtime cases rather than infer them from `@property`.
-
 - **Statements in a class body that are not functions are scored nowhere.**
   `cognitive_complexity.rs` iterates a `ClassDef` body matching only
   `Stmt::FunctionDef`, and the module accumulator never sees a `ClassDef`.
@@ -258,22 +326,38 @@ Recorded by `chore(tooling): remove the pre-commit stack`.
   starting with `/`, so absolute out-of-tree targets are safe - but relative
   targets like `../repos/foo` and Windows-style absolutes are exposed.
 
-- **Two tests that cannot fail the way they claim to.**
-  `crates/complexipy-cli/src/run/tests.rs` `version_flag_handled_by_clap`
-  asserts only `result.is_err()`, satisfied by a parse failure as readily as a
-  version display. `tests/test_refactor_plans.py`
-  `test_code_generation_produces_nonempty_snippets` wraps its whole body in
-  `if flatten_plan:`, so it passes with zero assertions if C001 stops firing; the
-  neighbouring test shows the right guard.
-
 - **Dead code.** `crates/complexipy-cli/src/output.rs`
   `effective_sort_for_display` has no callers; `utils/snapshot.rs`
   `SnapshotEvaluation.snapshot_result` is computed and tested but never read by
   `run.rs`; `RuleMetadata` derives `Serialize, Deserialize` with no consumer;
-  `runner.rs` binds both collectors' `invocation_path` as `_invocation_path`
-  and `utils/ignored.rs` `handle_report_ignored` takes `_no_ignore`, so the
-  Python collectors and `run.rs` pass values that nothing reads.
-  Behavior-neutral cleanups with no owning workstream.
+  `utils/ignored.rs` `handle_report_ignored` takes `_no_ignore`. The collectors'
+  ignored `invocation_path` is a separate consumer-visible issue below, not a
+  behavior-neutral cleanup. Removing an unused public parameter would itself
+  change the API contract.
+
+- **Ignored-location collectors ignore their invocation path.** In
+  `crates/complexipy-core/src/runner.rs`,
+  `collect_all_ignored_locations_shared` and
+  `collect_removable_ignored_locations_shared` accept `_invocation_path` but
+  `collect_locations` resolves input paths through the process CWD instead.
+  From the parent's external working directory, passing target-relative paths
+  plus the target root as `invocation_path` does not analyze those target paths.
+  Absolute input paths are the current workaround; inspect the returned
+  `failed_paths`. Choosing consistent resolution and output-path semantics
+  needs public API and collector regression tests, not just deleting a parameter.
+
+- **Library diff failures are indistinguishable from valid results.**
+  `crates/complexipy-core/src/diff.rs` `compute_diff` emits all current functions
+  as `NEW` if `file_content_at_ref` fails, but drops a file entirely when
+  `analyse_content_to_map` cannot parse its reference content. `run_git` hides
+  stderr and returns `None` for timeouts or spawn failures; a nonzero Git exit
+  becomes a failed result that `file_content_at_ref` also collapses to `None`.
+  Callers receive no failed-path list or error explaining either outcome.
+  A genuinely new file or a file with no functions can also yield those shapes,
+  so result-shape checks alone cannot establish success. Resolve the error
+  contract explicitly and test missing refs, unreadable reference content and
+  parse failures before treating this as a trustworthy parent comparison route.
+  This is separate from the CLI exit-code hole below.
 
 - **The ratchet gate fails open.** With `--diff`, or a bare `--staged` (which
   `resolve_diff_flags` turns into `--diff HEAD`), `run.rs` sets `enforce_diff`
@@ -322,6 +406,16 @@ Recorded by `chore(tooling): remove the pre-commit stack`.
   (`signature_has_marker` stops at the first line containing any colon).
   `docs/cli.md` documents the reachable behavior; the working placements are
   pinned by `test_ignore_marker_placements_that_suppress`, the gaps are not.
+
+- **Staged comparisons use repository-wide scope.** `run.rs` `run_at` calls
+  `compute_staged_diff` with only the reference and invocation path, not the
+  configured analysis paths or exclusions. In `diff.rs`, `staged_python_files`
+  selects staged `*.py` paths across the repository. A narrow analysis request
+  can therefore compare files outside its intended population. The parent's
+  exploration skill requires caller-selected scope; native staged comparison
+  is not safe for an excluded-file task merely because CLI analysis paths are
+  narrow. Decide how comparison scope is passed and test a staged file outside
+  that scope before treating this route as suitable for such tasks.
 
 - **`--diff` compares against a reference analyzed with fixed flags.**
   `analyse_content_to_map` in `diff.rs` always runs with `check_script` and
@@ -392,22 +486,42 @@ Recorded by `chore(tooling): remove the pre-commit stack`.
 
 ## Design issues
 
-### Configuration is resolved against the wrong directory
+### Public file paths lose repository identity outside CWD
+
+`complexipy/__init__.py` `file_complexity` uses CWD as the native `base_path`
+for files beneath CWD and the file's parent otherwise. From the parent's required
+external CWD, separate `a/utils.py` and `b/utils.py` therefore both report
+`utils.py`. The reduced-record helper preserves its caller's target-relative
+path separately, but that does not repair native `FileComplexity.path` when
+passing records to `compute_diff`.
+
+`diff.rs` `resolve_git_path` first tries suffixes at the reference, then a unique
+tracked basename. Missing or ambiguous identity can become an all-`NEW` result
+or pair a record with a different same-named file. Explicit `invocation_path`
+alone cannot restore the lost identity. Native `_complexipy.file_complexity`
+already accepts `base_path`; pass the absolute file path and the absolute
+repository root as `base_path`, then check the resulting repository-relative
+`FileComplexity.path`. This is a private-API workaround. A supported public
+path-base option is the smaller candidate fix, preserving existing defaults
+and adding external-CWD / duplicate-basename regression coverage. It would not
+fix silent diff failures.
+
+### Explicit configuration selection is unavailable
 
 Config discovery (`get_complexipy_toml_config` in
-`crates/complexipy-cli/src/utils/toml.rs`) joins three
-candidate filenames onto the invocation path, first hit wins, no merge, no
-upward search, and never consults the analyzed target. A target's own
-`[tool.complexipy]` thresholds are silently ignored whenever the tool runs from
-outside it - which is exactly the parent project's mandated pattern of running
-providers from an external working directory with output redirected. The
-parent therefore cannot honour a target's own configuration without copying it.
+`crates/complexipy-cli/src/utils/toml.rs`) joins three candidate filenames onto
+the invocation path, first hit wins, no merge, no upward search, and never
+consults the analyzed target. This matches the parent's caller-controlled
+external-CWD route; it is not itself proof that discovery uses the wrong root.
+If a task explicitly selects a target's config, there is no `--config` path:
+use equivalent CLI settings or place config in the external invocation directory.
 
-Resolution is a design choice, not a patch: target-root lookup, upward search,
-an explicit `--config` flag, or a documented "config is always the caller's"
-stance. Each changes what existing invocations mean.
+An explicit config option could remove that friction without silently adopting
+ambient target settings. Automatic target-root lookup or upward search would
+change existing invocations and requires a separate decision. Neither is a
+current parent requirement.
 
-### The tool writes into the tree it analyzes
+### Write locations and invocation-directory state
 
 Three write locations, one of them not redirectable:
 
@@ -421,9 +535,14 @@ Three write locations, one of them not redirectable:
   silently updates it).
 - `--output`, which is redirectable and was the subject of the fixed bug above.
 
-The parent treats analyzed targets as read-only inputs. The cache's self-hiding
-is the sharpest tension: it is designed to be invisible, and invisibility is
-precisely what a target-safety snapshot cannot tolerate.
+These are invocation-directory writes, not unavoidable writes into every
+analyzed target. The parent runs from an external CWD and redirects cache and
+output there. `--snapshot-create=false --snapshot-ignore=true` prevents snapshot
+creation and watermark rewrite, but `evaluate_snapshot` still loads any existing
+snapshot. A separate snapshot path would be useful only for a workflow that needs
+independent snapshot state. Do not run inside a target to obtain Git context and
+then assume it remains read-only. The cache's self-hiding also means Git status
+alone cannot detect every write; parent checkout observations cover more.
 
 ### Serialized shape depends on a Cargo feature
 
@@ -502,30 +621,42 @@ deliberately *not* installed, and asserted that through `importlib.metadata`,
 so ty always read the stub. The standing gate's `uv run ty check .` runs with
 the editable project installed, so ty reads the native module. The contract
 harness (`tests/contract/check_stub_contract.py`) checks stub/runtime parity from
-a neutral directory. After E it has eight diagnostic cases, including positive
-getter types and negative assignment/construction for all eight result types,
-plus separate runtime checks. These are selected promises, not exhaustive API
-coverage. H's `verify` skill distinguishes these checks. No CI rebuild is
-planned under the single-machine mandate; a separate root-lint environment
-remains an unadopted option, not a prerequisite for the existing wheel harness.
+a neutral directory. It has ten diagnostic cases, including positive getter
+and enum-member types, negative assignment/construction for all eight result
+types, construction rejection for three enums and subclass rejection for all
+twelve native types, plus separate runtime checks. These are selected promises,
+not exhaustive API coverage. H's `verify` skill distinguishes these checks.
+No CI rebuild is planned under the single-machine mandate; a separate root-lint
+environment remains an unadopted option, not a prerequisite for the existing
+wheel harness.
 
-### The parser is a network-fetched git dependency on a mutable tag
+### The parser is a network-fetched git dependency
 
-`ruff_python_parser` and `ruff_python_ast` are declared as
-`{ git = "https://github.com/astral-sh/ruff.git", tag = "0.12.9" }`.
-`Cargo.lock` pins the resolved revision, so `--locked` builds are
-reproducible, but a fresh clone cannot build offline and `cargo update` follows
-a tag that can be re-pointed. For a fork whose premise is local source builds,
-this is the largest reproducibility exposure in the tree.
+**Fixed in the local build and verification contract change:** both
+`ruff_python_parser` and `ruff_python_ast` now declare revision
+`ef422460de726c5b896c09c364d02a4db24bcaf0` explicitly in `Cargo.toml`, replacing
+the mutable `0.12.9` tag. This is the same revision already resolved in
+`Cargo.lock`; the five Ruff package source identifiers changed, not their code
+or versions. Deliberate lockfile regeneration can no longer follow a moved tag.
 
-### Build tooling has two floors and a partial cache key
+An uncached checkout still needs the Git source fetched. That is acceptable
+for this machine's local builds; vendoring or offline bootstrap machinery is
+not required. A future parser upgrade must review scoring changes explicitly.
 
-PEP 517 requires `maturin>=1.9.4,<2.0`; the `dev` group declares `>=1.8.3`.
-`maturin develop` and the contract harness use the dev-group binary, `uv sync`
-uses the PEP 517 one - two floors on two paths, and the lower one predates
-CPython 3.14. Separately, `[tool.uv] cache-keys` lists Rust sources and
-manifests but no Python source; under an editable install that is probably
-harmless, but the omission is anomalous and the fix is free.
+### Build tooling constraints and cache inputs
+
+**Fixed in the local build and verification contract change:** PEP 517 and the
+`dev` group now both require `maturin>=1.9.4,<2.0`; `uv.lock` retains maturin
+1.14.0. Previously the dev floor was `>=1.8.3`, allowing different tooling
+through `maturin develop` and PEP 517. No dependency version was upgraded.
+
+`[tool.uv] cache-keys` now includes `complexipy/**/*.py`,
+`complexipy/**/*.pyi` and `complexipy/py.typed` alongside manifests and Rust
+sources. The [uv cache documentation](https://docs.astral.sh/uv/concepts/cache/#dynamic-metadata)
+specifies file globs for rebuild/reinstall invalidation. Previously packaged
+Python/stub-only edits were missing from this explicit key. This configuration
+does not replace rebuilding the extension after Rust edits or checking the
+exact installed wheel; it is not an exhaustive cache-behavior test suite.
 
 ### Test coverage has structural holes
 
@@ -565,9 +696,9 @@ first time upstream is pulled.
 ### Output formats without consumers
 
 `gitlab` and `sarif` existed for GitLab Code Quality and GitHub code scanning.
-B removed the last CI, and `recsys-code-quality` does not invoke either - it
-documents them in `docs/tools/complexipy.md` but consumes the Python API and
-JSON.
+B removed the last CI. Neither is integrated into the parent runner; the
+parent's `docs/tools/complexipy.md` (Current interactive capability map) selects
+direct Python and CLI JSON/CSV surfaces, not these formats.
 
 **Decided in D: both stay.** Every other removal in this realignment has been
 upstream-project machinery - CI, the docs site, the editor extension,

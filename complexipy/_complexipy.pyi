@@ -1,13 +1,16 @@
 """Python bindings for cognitive complexity analysis."""
 
-from typing import Final, Never, Self
+from typing import Final, Never, Self, final
 
+@final
 class RuleCategory:
     """PyO3 enum with class members, no name/value attributes or iteration."""
 
+    def __new__(cls, _token: Never, /) -> Self: ...
     Complexity: Final[RuleCategory]
     Readability: Final[RuleCategory]
 
+@final
 class Applicability:
     """PyO3 enum describing a rule's ceiling or a suggestion's applicability.
 
@@ -16,10 +19,12 @@ class Applicability:
     attributes and the class is not iterable.
     """
 
+    def __new__(cls, _token: Never, /) -> Self: ...
     MachineApplicable: Final[Applicability]
     MaybeIncorrect: Final[Applicability]
     Informational: Final[Applicability]
 
+@final
 class DiffStatus:
     """PyO3 enum, not enum.Enum or str; has no name/value or iteration.
 
@@ -27,12 +32,14 @@ class DiffStatus:
     Compare members directly rather than comparing to unqualified strings.
     """
 
+    def __new__(cls, _token: Never, /) -> Self: ...
     REGRESSED: Final[DiffStatus]
     IMPROVED: Final[DiffStatus]
     UNCHANGED: Final[DiffStatus]
     NEW: Final[DiffStatus]
     REMOVED: Final[DiffStatus]
 
+@final
 class DiffEntry:
     """Constructible comparison result with read-only attributes."""
 
@@ -54,6 +61,7 @@ class DiffEntry:
     @property
     def status(self) -> DiffStatus: ...
 
+@final
 class CodeSuggestion:
     """Replacement returned by analysis; cannot be constructed directly."""
 
@@ -69,6 +77,7 @@ class CodeSuggestion:
         """Whether the replacement is a source splice eligible for measurement."""
         ...
 
+@final
 class LineComplexity:
     """One line's score contribution, returned by analysis, not constructed.
 
@@ -84,6 +93,7 @@ class LineComplexity:
     @property
     def complexity(self) -> int: ...
 
+@final
 class RefactorPlan:
     """Ranked refactoring plan returned by analysis, not constructed directly."""
 
@@ -127,6 +137,7 @@ class RefactorPlan:
     @property
     def help(self) -> str | None: ...
 
+@final
 class FunctionComplexity:
     """Function result returned by analysis; cannot be constructed directly."""
 
@@ -161,6 +172,7 @@ class FunctionComplexity:
         """
         ...
 
+@final
 class FileComplexity:
     """File result returned by analysis; cannot be constructed directly."""
 
@@ -185,6 +197,7 @@ class FileComplexity:
         """Function totals plus module-level complexity, regardless of script mode."""
         ...
 
+@final
 class CodeComplexity:
     """Source-string result returned by analysis, not constructed directly."""
 
@@ -196,6 +209,7 @@ class CodeComplexity:
         """Function totals plus module-level complexity, regardless of script mode."""
         ...
 
+@final
 class IgnoredLocation:
     """Reported marker returned by a collector, not constructed directly."""
 
@@ -207,6 +221,7 @@ class IgnoredLocation:
     @property
     def comment(self) -> str: ...
 
+@final
 class RemovableIgnore:
     """Marker returned by the removable-ignore collector, not constructed directly."""
 

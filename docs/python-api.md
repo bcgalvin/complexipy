@@ -108,10 +108,12 @@ named `Class::method`; script mode adds a `<module>` entry.
 `DiffStatus` are PyO3 simple enums: the MRO is `(cls, object)`, `.name` and
 `.value` raise `AttributeError`, and the class is not iterable. Compare members
 directly; to recover a name, build a mapping with `dir()`. The stub declares them
-as plain classes with typed members. One typing gap remains: it permits
-zero-argument enum construction even though the runtime rejects it. It also
-permits subclassing `LineComplexity`, which the runtime rejects. Do not rely on
-those operations; the result-constructor checks below do not cover them.
+as final classes with typed members and the same required `Never` construction
+guard used for result structs. Direct enum construction raises `TypeError`.
+`construct_enums.py` pins rejection of empty and one-argument calls statically;
+the installed-wheel runtime checks also reject integer and member arguments.
+`valid_usage.py` checks typed reads of every enum member. The runtime checks
+also compare each enum's member names against the installed stub.
 
 `Applicability` on a plan is the **rule's declared ceiling**, not what that plan
 achieved. A rule declaring `MachineApplicable` can still emit help text with no
@@ -126,6 +128,11 @@ with `TypeError`. The stub uses a required `Never` parameter to reject direct
 construction statically; it is not a token callers can obtain or pass at runtime.
 `DiffEntry` is the exception and has a real constructor.
 
+All twelve exported native types, including `DiffEntry` and the three enums,
+reject subclassing. Their stub declarations are `@final`; `subclass_native.py`
+pins each rejection in ty, and the installed-wheel runtime checks attempt to
+subclass every exported native type.
+
 Result attributes are read-only and the stub exposes them as getter-only
 properties. List-valued getters return fresh Python lists; mutating one does
 not alter the result. The installed-wheel runtime checks verify this behavior.
@@ -135,7 +142,8 @@ checks getter types, `assign_results.py` checks rejected assignments, and
 `construct_results.py` checks rejected construction. `RUNTIME_CHECKS` compares
 native getter names and value types to the installed stub, checks assignment
 rejection and list-copy behavior, and checks that constructors reject empty,
-correctly typed positional and field-keyword calls. `assign_readonly.py` separately covers `DiffEntry`.
+correctly typed positional and field-keyword calls. `assign_readonly.py`
+separately covers `DiffEntry`.
 
 `additional_refactor_plans` includes cap drops and post-measurement drops, not all
 candidate plans - see [Refactor rules](rules.md#how-plans-are-selected).

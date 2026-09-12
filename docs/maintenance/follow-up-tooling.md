@@ -48,8 +48,9 @@ complexipy tests/src --exclude "exclude_dir/**" --ignore-complexity
 complexipy tests/src --exclude "**/test_exclude*.py" --ignore-complexity
 ```
 
-Self-dogfooding is only exercised here and is worth carrying. The two exclusion
-invocations are not: both pass `--ignore-complexity`, and `ExitReport::success()`
+Self-dogfooding was exercised by that job; H's manual `verify` skill now
+carries a built-CLI smoke invocation. The two exclusion invocations are not worth
+carrying: both pass `--ignore-complexity`, and `ExitReport::success()`
 resolves to `all_pass || ignore_complexity`, so their exit code was 0 whether or
 not the glob matched anything. Reproducing them faithfully would reproduce a check
 that cannot fail on the thing it appears to test. Exclusion in the analysis path
@@ -146,18 +147,18 @@ matrix and published them:
   `ghp-import -n -p -f site`
 
 What this fork actually needs is one local wheel for one interpreter, which the
-`vendor-build` skill covers:
-
-```bash
-CARGO_TARGET_DIR=<scratch>/cargo-target uvx --from 'maturin>=1.9.4,<2' maturin build \
-  --release --locked --interpreter <project>/.venv/bin/python --out <project>/wheelhouse
-```
+`vendor-build` skill covers. Use its direct commands rather than maintaining a
+second recipe here. The parent requires build environments and generated output
+outside input checkouts, including during exact-wheel contract checks, without
+an editable project install. The skill carries the commands and the validated
+artifact-adoption step. The parent's wheelhouse records the current artifact,
+not a historical comparison archive.
 
 Everything else - the matrix, the sdist, PyPI, the downstream dispatch - is gone
 and is not coming back while distribution stays source-consumed.
 
-`pr-title.yml` ran `amannn/action-semantic-pull-request` pinned by SHA. It returns
-only if pull requests do. **Decide**, with the CI rebuild.
+`pr-title.yml` ran `amannn/action-semantic-pull-request` pinned by SHA. **Drop**
+under the current no-PR, no-CI mandate.
 
 ## Documentation publishing
 
@@ -186,8 +187,9 @@ language.
 
 ## Benchmarks
 
-**Disposition: Replace with our own tooling.** The existing harness is upstream's
-and measures an upstream question.
+**Disposition: Decide, only for a demonstrated local performance question.**
+The removed harness measured an upstream question. The parent currently needs
+correct direct analysis, not a benchmark framework or retained wheel archive.
 
 `benchmarks/benchmark-cli.sh`, `benchmarks/generate_scaling_fixture.py`, and the
 generated `benchmarks/results.md` are removed, along with the
@@ -217,7 +219,8 @@ What must change:
 - The baseline was `complexipy==7.0.1` installed from PyPI - upstream's artifact,
   answering "did porting the CLI to Rust help?". This fork's question is
   regression against its own prior build, so the baseline should come from a
-  pinned wheel in `wheelhouse/`.
+  deliberately selected prior local build kept in external scratch for that
+  comparison. The parent's wheelhouse holds only its current artifact.
 - Requires `git`, `hyperfine`, `uv`, and network access to clone three
   repositories, and is macOS-only (`/usr/bin/time -l`).
 - The committed `results.md` is stale regardless: generated from upstream commit
@@ -344,8 +347,12 @@ file records removed capabilities only.
    commit-msg hook; unknown subjects are retained and the changelog is reviewed
    manually. Do not restore no-default-features or vacuous exclusion checks
    merely because they appeared in deleted automation.
-1. **Benchmarks** - own tooling, baselined against a pinned `wheelhouse/` wheel,
-   keeping the parity gate and the scaling guard.
+1. **Benchmarks, conditional.** If a local performance regression needs
+   investigation, compare selected builds outside the input checkouts and check
+   semantic parity before timing. No harness or wheel archive is scheduled.
 1. **Rule documentation links** - only if a downstream consumer asks for them.
 
-Pre-existing defects are sequenced in `design-issues-and-bugs.md`.
+Current consumer-facing priorities are in
+[`design-issues-and-bugs.md`](design-issues-and-bugs.md#parent-consumer-priorities).
+They take precedence over reconstructing removed tooling; Complexipy is consumed
+through direct exploration and a Python serializer, not the parent's main runner.

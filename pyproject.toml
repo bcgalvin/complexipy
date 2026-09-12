@@ -32,6 +32,9 @@ cache-keys = [
     {file = "Cargo.lock"},
     {file = "crates/*/Cargo.toml"},
     {file = "**/*.rs"},
+    {file = "complexipy/**/*.py"},
+    {file = "complexipy/**/*.pyi"},
+    {file = "complexipy/py.typed"},
 ]
 
 [tool.ruff]
@@ -60,7 +63,7 @@ error-on-warning = true
 
 [dependency-groups]
 dev = [
-    "maturin>=1.8.3",
+    "maturin>=1.9.4,<2.0",
     "pytest>=8.3.5",
     "ruff>=0.9.0",
     "ty>=0.0.1a1",

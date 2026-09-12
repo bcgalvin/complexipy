@@ -29,16 +29,24 @@ blindly to every edit.
   `crates/complexipy-core/tests/lib_surface.rs` when changing public Rust
   re-exports. They have their own contract, not a copy of Python's `__all__`.
 
-Keep constructor promises honest: the eight native result structs have no
-Python constructors; the stub's required `Never` argument to `__new__` is only
-a typing guard. `DiffEntry` has a real constructor. Do not document the guard
-as a runtime API.
+Keep constructor promises honest: the eight native result structs and three
+simple enums have no Python constructors; the stub's required `Never` argument
+to `__new__` is only a typing guard. `DiffEntry` has a real constructor. All
+exported native types reject subclassing and have `@final` stub declarations.
+Do not document the construction guard as a runtime API; check native behavior
+before changing either construction or subclassability.
 
 Add or update consumer cases in `tests/contract/cases/` and their expectations
 in `tests/contract/check_stub_contract.py`, plus the relevant runtime checks.
 New case files need an `EXPECTED_DIAGNOSTICS` entry to run. New native result
 types also need an instance in `cases/result_usage.py`'s `objects` tuple, which
-feeds the runtime getter/read-only/constructor sweep.
+feeds the runtime getter/read-only/constructor sweep. Every new exported native
+type needs a subclass attempt in `cases/subclass_native.py`, an updated
+`EXPECTED_DIAGNOSTICS` line range and an updated runtime type count. New enums
+also need calls in `cases/construct_enums.py`, matching diagnostics, and a
+runtime constructor check. New enum members need typed reads in
+`cases/valid_usage.py`; the runtime check compares all member names with the
+installed stub.
 Prove both valid use and rejected use for the changed promise; keep intentional
 type errors Ruff-clean. The root ty check does not establish stub/native parity.
 Run `verify`, rebuilding before pytest after Rust changes. Report compatibility

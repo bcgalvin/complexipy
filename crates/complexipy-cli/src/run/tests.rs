@@ -163,7 +163,12 @@ fn plain_flag_accepted() {
 
 #[test]
 fn version_flag_handled_by_clap() {
-    let result = CliArgs::try_parse_from(["complexipy", "--version"]);
-
-    assert!(result.is_err());
+    let error = CliArgs::try_parse_from(["complexipy", "--version"]).unwrap_err();
+    assert_eq!(error.kind(), clap::error::ErrorKind::DisplayVersion);
+    assert_eq!(error.exit_code(), 0);
+    assert!(!error.use_stderr());
+    assert_eq!(
+        error.to_string(),
+        format!("complexipy {}\n", env!("CARGO_PKG_VERSION"))
+    );
 }

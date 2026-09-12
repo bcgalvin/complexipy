@@ -85,6 +85,10 @@ complexipy/
 ## Commands
 
 Verification is manual: no repository-managed Git hooks or CI run the gates below.
+For a parent wheel refresh, use `vendor-build`: the parent requires an external
+build environment and Cargo output, without an editable project install in the
+provider checkout. That artifact-build route is separate from the development
+commands below.
 The `verify` skill sequences these checks and adds a built-CLI smoke invocation.
 For documentation/skill-only changes, the build and test gate does not apply:
 check the instructions, references, Markdown structure, ASCII punctuation and
@@ -228,9 +232,12 @@ shared types. `DiffEntry` and `DiffStatus` are defined in `py_diff` in
 The eight result structs in `classes.rs` have getters but no Python constructors.
 Their stub properties are read-only; a required `Never` argument to `__new__`
 rejects direct construction statically, including zero-argument calls. It is a
-typing-only guard, not a runtime token API. `DiffEntry` has a real constructor.
-Keep these promises covered by the installed-wheel contract's positive getter,
-negative assignment/construction, and runtime checks.
+typing-only guard, not a runtime token API. The three simple enums use the same
+guard because they also reject direct construction. `DiffEntry` has a real
+constructor. All twelve exported native types reject subclassing; their stub
+classes are `@final`. Keep these promises covered by the installed-wheel
+contract's positive getter/member, negative assignment/construction/subclass,
+and runtime checks.
 
 Function changes must also keep the binding, stub, wrapper and public exports in
 sync. Use explicit `#[pyo3(signature = ...)]` for defaulted arguments and test
@@ -379,6 +386,13 @@ dependency means adding it to the crate that uses it.
 ## Conventions
 
 - **Package manager:** Always use `uv` - `uv run pytest`, `uv run ruff`, `uv run complexipy`
+- **Build inputs:** Keep the dev-group maturin constraint aligned with
+  `[build-system].requires`. uv's explicit cache keys cover manifests, Rust
+  sources and the packaged Python sources, stubs and `py.typed` marker; keep
+  that list aligned when adding packaged inputs.
+- **Parser dependencies:** Keep both Ruff crates on the same explicit Git
+  revision. A parser upgrade is a deliberate scoring-contract change, not a
+  side effect of refreshing a mutable tag.
 - **Cargo lockfile:** Regenerate and review `Cargo.lock` after dependency or workspace-version changes, and include required lockfile updates with the change. Every Cargo command here that resolves dependencies passes `--locked`, so drift fails rather than silently resolving. `maturin develop` does not, so a manifest edit followed by a rebuild can regenerate the lockfile without warning.
 - **Commits:** Only commit when explicitly asked. Never auto-commit. Stage explicit paths - never `git add -A` or `git add .`
 - **Commit subjects:** Must follow Conventional Commits. There is no automatic

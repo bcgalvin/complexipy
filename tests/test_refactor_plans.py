@@ -334,15 +334,16 @@ def test_rule_metadata_reaches_the_plan() -> None:
         assert not hasattr(plan, "references")
 
 
-def test_code_generation_produces_nonempty_snippets() -> None:
-    func = first_func(load_source("code_generation_flatten.py"))
+def test_flatten_condition_produces_nonempty_help() -> None:
+    func = first_func(load_source("flatten_condition_help.py"))
     flatten_plan = next(
         (p for p in func.refactor_plans if p.kind == "flatten_condition"), None
     )
-    if flatten_plan:
-        assert flatten_plan.suggestion is None
-        assert flatten_plan.help is not None
-        assert len(flatten_plan.help) > 0
+    assert flatten_plan is not None
+    assert flatten_plan.rule_id == "C001"
+    assert flatten_plan.suggestion is None
+    assert flatten_plan.help is not None
+    assert len(flatten_plan.help) > 0
 
 
 def test_loop_guard_only_converts_outermost_if() -> None:
