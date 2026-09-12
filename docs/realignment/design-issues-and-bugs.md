@@ -9,8 +9,11 @@ work. Two kinds of entry:
   scheduled. Recorded with enough context to find and evaluate later without
   rediscovering it.
 
-Every entry names where the evidence is. Status values: **fixed** (with the
-commit), **assigned** (to a workstream), **open**, **deferred** (with why).
+Every entry names where the evidence is: source by path and enclosing symbol
+(function, test, struct field, constant), markdown by section heading, never by
+line number. This file outlives the realignment, and a line reference goes stale
+silently while a symbol reference fails loudly. Status values: **fixed** (with
+the commit), **assigned** (to a workstream), **open**, **deferred** (with why).
 
 `follow-up-tooling.md` records *removed capabilities* and what a replacement
 needs; `explore-results.md` is the evidence trail of the analysis sweep. This
@@ -50,8 +53,8 @@ file is the one that stays actionable after `docs/realignment/` is deleted.
 
 - **The stub documented a removed feature.** Two collector docstrings described
   `paths` as accepting Git repository URLs, removed in 8.0.0. Fixed in D; the
-  matching `AGENTS.md` claims are E's, and `cache.rs::looks_like_remote` is still
-  open below.
+  matching `AGENTS.md` claims are E's, and `cache.rs` `looks_like_remote` is
+  assigned to E below.
 
 - **Four consumer-visible removals needed a machine-readable record.** Dropping
   `doc_url` and `references` changes the `--output-format json` schema and the
@@ -64,17 +67,39 @@ file is the one that stays actionable after `docs/realignment/` is deleted.
   tests added there shipped with over-long lines. Formatting corrected in D. The
   gate is only worth running in full.
 
+- **`test_rule_metadata_has_doc_url` was slated for deletion with its fixture.**
+  The tracker called for removing the test and the fixture only it loads,
+  `tests/fixtures/refactor_plans/metadata_validation.py`. The test asserted more
+  than `doc_url` - it guards that `RuleMetadata` identity fields reach the plan
+  at all, a real historical regression. **Resolved in `39e1bd5`**: renamed
+  `test_rule_metadata_reaches_the_plan`, its `doc_url` assertions replaced with
+  absence assertions, the fixture still in use.
+
+- **SARIF `informationUri` had no test.** Only `helpUri` was asserted, so
+  removing either key was silent. **Fixed in `39e1bd5`**, which removed both and
+  made `sarif/tests.rs` assert their absence. The pattern - an emitted key
+  nothing checks - is worth remembering.
+
 ### Assigned to a workstream
 
 - **Eight phantom constructors in the stub.** `classes.rs` has zero
-  `#[pymethods]` and zero `#[new]`, so only `DiffEntry` is constructible, but the
-  stub declares `__init__` for eight types with runtime-impossible Example
-  blocks. Every attribute is also declared writable when all are read-only
-  (`get_all` generates getters only). **D**.
+  `#[pymethods]` and zero `#[new]` - the only `#[new]` in the tree is
+  `DiffEntry`'s in `crates/complexipy-python/src/lib.rs` - so only `DiffEntry` is
+  constructible, but the stub declares `__init__` for `CodeSuggestion`,
+  `LineComplexity`, `RefactorPlan`, `FunctionComplexity`, `FileComplexity`,
+  `CodeComplexity`, `IgnoredLocation`, and `RemovableIgnore`, with
+  runtime-impossible Example blocks. Every attribute is also declared writable
+  when all are read-only (`get_all` generates getters only; `DiffEntry` is the
+  one type using `@property`). Was assigned to D; D landed without touching it,
+  and `docs/python-api.md` ("Enums, and what the stub still gets wrong") now
+  documents the gap for consumers. **E**, which opens the stub for the
+  typing-alias sweep below.
 
-- **Git-URL residue in code and AGENTS.md.** `cache.rs:130-142`
-  `looks_like_remote` normalizes cache keys for github/gitlab URLs that nothing
-  can produce; `AGENTS.md` credits `runner.rs` with git-URL walking twice.
+- **Git-URL residue in code and AGENTS.md.**
+  `crates/complexipy-cli/src/utils/cache.rs` `looks_like_remote`, called from
+  `normalize_target`, passes github/gitlab URL targets through as cache keys when
+  nothing can produce one; `AGENTS.md` credits `runner.rs` with git-URL walking
+  twice (the Project Structure tree and the "Rust core" bullet).
   **E**, which opens AGENTS.md for the identity sweep. D left the dead function
   alone because removing it is a behavior-neutral cleanup with no bearing on the
   field removal, and bundling it would have widened a diff that already touched
@@ -82,17 +107,32 @@ file is the one that stays actionable after `docs/realignment/` is deleted.
 
 - **Native docstrings omit two parameters.** The `code_complexity` and
   `file_complexity` docstrings in the stub document only `code` / `file_path`
-  and `base_path`, not `check_script` or `no_ignore`. **Open** - D corrected the
-  git-URL half of these docstrings but not the parameter lists.
+  and `base_path`, not `check_script` or `no_ignore`. D corrected the collector
+  docstrings' git-URL claim but not these parameter lists. **E**, with the stub
+  entries above and below.
 
-- **Dead code.** `crates/complexipy-cli/src/output.rs:158`
-  `effective_sort_for_display` has no callers; `utils/snapshot.rs`
-  `SnapshotEvaluation.snapshot_result` is computed and tested but never read by
-  `run.rs`; `RuleMetadata` derives `Serialize, Deserialize` with no consumer.
-  **Open**, same reasoning as the git-URL residue.
+- **Python-3.8 idioms the raised floor makes obsolete.**
+  `from __future__ import annotations` in `complexipy/__init__.py`,
+  `complexipy/cli.py`, `tests/test_refactor_plans.py`, and
+  `tests/contract/check_stub_contract.py`; `typing.List`, `Optional`, and
+  `Tuple` imported in `complexipy/_complexipy.pyi` (32 subscripted uses) and
+  `List`/`Tuple` in `tests/main.py` (6). Harmless today - nothing introspects
+  `__annotations__` - but wrong for a `>=3.14` stub that consumers' type
+  checkers read. Flagged by the explore sweep and absent from E's checklist
+  until now. **E**.
 
-- **`crates/complexipy-core/src/lib.rs:16-17`** claims its re-export block
-  "mirrors `complexipy/__init__.py`'s `__all__`". It also exports
+- **Commit-log inputs the changelog regeneration has not planned for.** 18 of
+  the 23 commits in `030e207..HEAD` end in a `Claude-Session:` trailer;
+  `.claude/settings.json` blanks the attribution footers, not this one. Five
+  commits have no body at all: `fa174cc`, `c613bdb`, `f6d4a14`, the merge
+  `9926391`, and `5999826`. git-cliff's handling of trailers and empty bodies is
+  not established, and the `BREAKING CHANGE:` footer on `39e1bd5` - the only
+  machine-readable record of D's schema changes - must survive whatever strips
+  the trailer. **G**.
+
+- **The doc comment on `crates/complexipy-core/src/lib.rs`'s `classes`
+  re-export block** claims it "mirrors `complexipy/__init__.py`'s `__all__`". It
+  also exports
   `compute_staged_diff` and `run_analysis_shared`, and its `DiffEntry` /
   `DiffStatus` are different types from the `py_diff` ones Python sees. **E**.
 
@@ -112,9 +152,10 @@ file is the one that stays actionable after `docs/realignment/` is deleted.
   open rather than fixed.
 
 - **`-s file_name` sorts by function name in the console, by path in CSV.**
-  `output/rows.rs:65` sorts `f.name`; `export_tests.rs` proves the CSV path
-  sorts by file path. Two implementations of one flag value. Console side
-  unverified beyond the source read.
+  `output/rows.rs` `sort_functions` sorts `function.name` for `Sort::FileName`;
+  `export_tests.rs` `csv_file_name_sorts_by_path_keeping_function_order` proves
+  the CSV path sorts by file path. Two implementations of one flag value.
+  Console side unverified beyond the source read.
 
 - **Duplicate file headers in console output.** Grouping is by consecutive
   same-path entries, so any sort that interleaves paths repeats a header.
@@ -128,27 +169,36 @@ file is the one that stays actionable after `docs/realignment/` is deleted.
   targets like `../repos/foo` and Windows-style absolutes are exposed.
 
 - **Two tests that cannot fail the way they claim to.**
-  `crates/complexipy-cli/src/run/tests.rs:149-153` `version_flag_handled_by_clap`
+  `crates/complexipy-cli/src/run/tests.rs` `version_flag_handled_by_clap`
   asserts only `result.is_err()`, satisfied by a parse failure as readily as a
-  version display. `tests/test_refactor_plans.py:320-327` wraps its whole body in
+  version display. `tests/test_refactor_plans.py`
+  `test_code_generation_produces_nonempty_snippets` wraps its whole body in
   `if flatten_plan:`, so it passes with zero assertions if C001 stops firing; the
   neighbouring test shows the right guard.
 
-- **SARIF `informationUri` has no test.** Only `helpUri` is asserted. D removes
-  both, so this closes itself, but the pattern - an emitted key nothing checks -
-  is worth remembering.
+- **Dead code.** `crates/complexipy-cli/src/output.rs`
+  `effective_sort_for_display` has no callers; `utils/snapshot.rs`
+  `SnapshotEvaluation.snapshot_result` is computed and tested but never read by
+  `run.rs`; `RuleMetadata` derives `Serialize, Deserialize` with no consumer.
+  Behavior-neutral cleanups with no owning workstream.
 
-- **~~Deleting `test_rule_metadata_has_doc_url` orphans a fixture.~~** Resolved
-  differently in D: the test asserted more than `doc_url` - it guards that
-  `RuleMetadata` identity fields reach the plan at all, a real historical
-  regression. It was renamed `test_rule_metadata_reaches_the_plan`, its
-  `doc_url` assertions replaced with absence assertions, and the fixture stays
-  in use. The tracker had called for deleting both.
+- **Plain `//` comments in Rust against the no-comments rule.** `AGENTS.md`
+  (Code Style, Anti-Patterns) bans comments in code, and nothing enforces it. 35
+  lines across five files carry them: `rules/complexity.rs` (9, production code,
+  two blocks in `generate_loop_guard_suggestion`), `rules/complexity/tests.rs`
+  (19), `rules/registry/tests.rs` (3, above the `checked == 7` assertion in
+  `every_registered_rule_produces_a_plan_consistent_with_its_own_metadata`,
+  reading "if a 9th rule is added" while seven are registered), `api/tests.rs`
+  (2), and `output/render/tests.rs` (2). Doc comments (`///`) are not counted.
+  Recorded because H's `add-refactor-rule` skill cites that registry test as one
+  of its hardcoded gates and must not teach the pattern; removing the comments
+  is a code change outside H.
 
 ### Deferred
 
-- **`--color` is completely inert.** `output/render.rs:16,24,40` computes
-  `color_enabled` and nothing reads it but two tests, which give false confidence
+- **`--color` is completely inert.** `output/render.rs` `handle_console_settings`
+  computes `ConsoleSettings.color_enabled` and nothing reads it but two tests,
+  which give false confidence
   that the flag works. Every renderer calls owo-colors unconditionally;
   `Color::Auto` hardcodes true with no `is_terminal()` check even though the same
   file uses `is_terminal()` for width; `NO_COLOR` and `CLICOLOR` are ignored.
@@ -163,7 +213,8 @@ file is the one that stays actionable after `docs/realignment/` is deleted.
 
 ### Configuration is resolved against the wrong directory
 
-Config discovery (`crates/complexipy-cli/src/utils/toml.rs:7-16`) joins three
+Config discovery (`get_complexipy_toml_config` in
+`crates/complexipy-cli/src/utils/toml.rs`) joins three
 candidate filenames onto the invocation path, first hit wins, no merge, no
 upward search, and never consults the analyzed target. A target's own
 `[tool.complexipy]` thresholds are silently ignored whenever the tool runs from

@@ -19,6 +19,13 @@ Corrections this sweep makes to tracker instructions have been absorbed into
 `README.md` rather than left here. What remains in this file is the evidence
 trail, the pre-existing-defect inventory, and the watch items.
 
+Line references in this file were taken at `d690c9f`, the revision the sweep ran
+against, and are deliberately not updated as the tree moves: this is an evidence
+trail, and its citations are read against that revision. The other three
+documents cite symbols and sections instead; the policy is recorded in
+`README.md`. Where execution has since changed a fact stated here, an execution
+note says so in place.
+
 ## Findings that change the plan
 
 ### 1. Removing `doc_url` breaks the consuming repository
@@ -26,6 +33,7 @@ trail, the pre-existing-defect inventory, and the watch items.
 `recsys-code-quality/scripts/complexipy_analysis/reduced_record.py:51` reads
 `plan.doc_url`, and `:50` reads `plan.references`. The parent's
 `tests/test_complexipy_analysis_helpers.py:26` loads the same helper. **(verified)**
+(Execution note: still unfixed at `39e1bd5`; the helper reads both attributes.)
 
 `doc_url` alone is enough to raise `AttributeError` the first time that helper runs
 against an 8.1.0 wheel; `references` compounds it if finding 4 is adopted, which it
@@ -98,6 +106,7 @@ only its provenance is wrong.
 `crates/complexipy-core/src/rules/types.rs:52` is the sole writer and sets
 `references: vec![]`; no rule in `complexity.rs` overrides it. The only non-empty
 value anywhere is the CLI test fixture at `output/refactor/tests.rs:49`. **(verified)**
+(Execution note: removed together with `doc_url` in `39e1bd5`.)
 
 Once `doc_url` leaves `output_plan_references`, its guard
 (`if doc_url.is_empty() && references.is_empty()`) can never be false in a real
@@ -168,7 +177,8 @@ semantic that `refactoring-rules.md` spends a section on.
   constructors for `CodeSuggestion` (:102), `LineComplexity` (:141), `RefactorPlan`
   (:209), `FunctionComplexity` (:313), `FileComplexity` (:403), `CodeComplexity`
   (:465), `IgnoredLocation` (:495), and `RemovableIgnore` (:532). Each stub
-  docstring "Example" block is type-checkable and runtime-impossible.
+  docstring "Example" block is type-checkable and runtime-impossible. (Execution
+  note: D did not touch these; the catalog reassigns them to E.)
 - **Every class attribute is declared writable; all are read-only.** `get_all`
   generates getters only. `DiffEntry` is the only class modelling this correctly
   with `@property`, and `assign_readonly.py` is the only case that catches it.
@@ -177,13 +187,15 @@ semantic that `refactoring-rules.md` spends a section on.
   MRO is `(class, object)`, `.value` and `.name` raise `AttributeError`, and
   `list(...)` raises `TypeError`. The consuming repo already carries a `variants()`
   workaround with the comment "PyO3 simple enums have no enum.Enum name/value
-  readout." The stub is wrong and the consumer knows it.
+  readout." The stub is wrong and the consumer knows it. (Execution note: fixed
+  in `39e1bd5`; all three are plain classes with `Final` members.)
 - **The stub documents a removed feature.** `_complexipy.pyi:717` and `:755` both
   read "paths: List of file paths, directory paths, or Git repository URLs."
   **(verified)** Git-URL analysis was removed in 8.0.0 per `CHANGELOG.md`. This
   ships inside the wheel and is what the consumer's type checker reads. The same
   file's native `code_complexity`/`file_complexity` docstrings omit `check_script`
-  and `no_ignore` from their `Args:` blocks.
+  and `no_ignore` from their `Args:` blocks. (Execution note: the git-URL wording
+  was fixed in `39e1bd5`; the `Args:` omissions were not and are assigned to E.)
 - **The contract-harness gap is twelve members, not three.** The four case files
   reach `DiffEntry`, `DiffStatus`, `code_complexity`, `compute_diff`,
   `has_regressions`, and `CodeComplexity` transitively. Of eighteen `__all__`
@@ -191,7 +203,9 @@ semantic that `refactoring-rules.md` spends a section on.
   `collect_all_ignored_locations`, `collect_removable_ignored_locations`,
   `Applicability`, `CodeSuggestion`, `FileComplexity`, `FunctionComplexity`,
   `IgnoredLocation`, `LineComplexity`, `RefactorPlan`, `RemovableIgnore`, and
-  `RuleCategory`.
+  `RuleCategory`. (Execution note: `phantom_plan_fields.py`, added in `39e1bd5`,
+  reaches `RefactorPlan` and proves field presence and absence on it; eleven
+  remain unproven.)
 - **The new contract case cannot follow the `phantom_import` pattern.** That case
   proves a *module-level* name is absent via `unresolved-import`. Proving a *field*
   is absent needs `unresolved-attribute` on a plan value, and since there is no
@@ -203,11 +217,14 @@ semantic that `refactoring-rules.md` spends a section on.
 - **Deleting `test_rule_metadata_has_doc_url` orphans its fixture.**
   `tests/fixtures/refactor_plans/metadata_validation.py` is loaded by that test
   alone. It sits outside `tests/src`, so the corpus total is unaffected and it is a
-  clean delete.
+  clean delete. (Execution note: not deleted. `39e1bd5` renamed the test
+  `test_rule_metadata_reaches_the_plan` and kept the fixture, because the test
+  also guards that metadata identity fields reach the plan; see the catalog.)
 - **SARIF `informationUri` has no test coverage at all.** Only `helpUri` is
   asserted. Removing it is silent either way. Note that
   `sarif_file_created_and_valid` does assert `doc["$schema"].is_string()`, so the
-  `SCHEMA` watch item below is test-guarded.
+  `SCHEMA` watch item below is test-guarded. (Execution note: since `39e1bd5`
+  `sarif/tests.rs` asserts both `helpUri` and `informationUri` are absent.)
 
 ### Workstream E - Python floor and stale invariants
 
@@ -227,7 +244,10 @@ semantic that `refactoring-rules.md` spends a section on.
   does not appear there, and the "PR titles" convention bullet, because it does not
   say "pull request". The lesson is that a keyword sweep cannot find claims whose
   wrongness has no keyword; E needs a read-through of the structural-invariant
-  sections.
+  sections. (Execution note: at `39e1bd5` the three-place sentence still stands
+  under "The FFI contract"; the "(EN + ES)" line was replaced by C and the "PR
+  titles" bullet by B's "Commit subjects" bullet, so one of the three remains for
+  E.)
 - **`crates/complexipy-core/src/lib.rs:16-17`** claims its re-export block "mirrors
   `complexipy/__init__.py`'s `__all__`". The genuine extras are two -
   `compute_staged_diff` and `run_analysis_shared`; `code_complexity` and
@@ -407,7 +427,8 @@ them invisible to `git status`.
   would at least fail a test.
 - **`gitlab` and `sarif` output formats lost their only plausible consumers** when
   B removed CI. No longer a watch item: it is now a decision in D, which opens
-  `sarif.rs` regardless.
+  `sarif.rs` regardless. (Execution note: decided in `39e1bd5` - both stay; the
+  reasoning is in the catalog.)
 - **uv's `**/*.rs` cache key has no gitignore awareness**, so it nominally includes
   generated `.rs` under `target/`. Whether uv filters that internally was not
   established.
@@ -418,3 +439,6 @@ them invisible to `git status`.
   symlink and `AGENTS.md` forbids replacing it with copies, but whether it is
   tracked was not established by the completeness lane. One
   `ls -la .claude/ && git ls-files .claude/` settles whether a fresh clone gets it.
+  (Execution note: settled. `git ls-files -s .claude/skills` reports mode
+  `120000`, so the symlink itself is tracked and a fresh clone gets it.
+  **(verified)**)

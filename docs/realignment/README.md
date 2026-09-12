@@ -25,6 +25,16 @@ Directories containing binaries (`vscode/complexipy/img/`) and files without a
 terminal newline make those totals approximate. Rows marked **(external)** rest on
 evidence outside this repository and are not verifiable from a checkout alone.
 
+Citations. Markdown files are cited by section heading and source files by path
+plus enclosing symbol (function, test, struct field, constant), never by line
+number: A through D moved lines in every file this tracker names, and a line
+reference goes stale silently while a symbol reference fails loudly. Completed
+checklist items keep the citations they were executed against - the commit that
+closed them is their record. `explore-results.md` reads against `d690c9f` and
+carries execution notes where the tree has since moved;
+`design-issues-and-bugs.md` uses symbols throughout because it outlives this
+directory.
+
 ## Position
 
 - Hard fork of `rohaquinlop/complexipy`. No upstream contribution is intended.
@@ -39,7 +49,8 @@ evidence outside this repository and are not verifiable from a checkout alone.
 
 ## Baseline facts
 
-Observed 2026-09-12.
+Observed 2026-09-12 at the branch point `d690c9f`. Rows that describe later state
+say so.
 
 | Fact | Value |
 | -- | -- |
@@ -51,12 +62,13 @@ Observed 2026-09-12.
 | Consumed artifact | `complexipy-8.0.0+rcq.2` wheel recorded in `../../wheelhouse/README.md` **(external)** |
 | Inherited tags | 39 upstream tags, `0.2.0` through `8.0.0`, present in this checkout. No `8.0.1` tag, though `030e207` is contained |
 | Remotes | Exactly one: `origin = https://github.com/bcgalvin/complexipy.git`, the fork. **There is no upstream remote**, which G and H both once assumed |
-| Remote branches | `origin` has only `main`, still at `030e207` - the eleven local commits have never been pushed. Local remote-tracking refs were stale; B pruned 36 of them |
+| Remote branches | `origin` has only `main`, still at `030e207`. Nothing past it has ever been pushed: eleven commits at the branch point, 23 at `39e1bd5`. Local remote-tracking refs were stale; B pruned 36 of them |
 | Remote tags | `git ls-remote --tags origin` returns zero. The 39 inherited tags are local to this checkout |
 | Local branches | `rcq` (at `9926391`) and `followup-batch-1` (at `d690c9f`) are both contained in `main` |
+| Parent gitlink | `recsys-code-quality` pins `repos/complexipy` at `c613bdb` (`8.0.0+rcq.2`), seven commits before the branch point and nineteen before `39e1bd5`. Its `.gitmodules` entry has no `branch =` key |
 | GitHub Actions | 0 workflow runs have ever executed on this fork **(external)** |
 | Repo settings | Issues disabled, no Pages site, `main` unprotected. Wiki was enabled and unused and `homepageUrl` was `complexipy.com`; B disabled the Wiki and cleared the homepage **(external)** |
-| Tracked YAML | Was eight. B removed five; `mkdocs.yml` and `mkdocs.es.yml` go in C, leaving `.pre-commit-config.yaml`, which F then removes |
+| Tracked YAML | Was eight. B removed five and C two, leaving `.pre-commit-config.yaml`, which F removes |
 | Refactor rules | Seven: C001, C002, C003, C004, C005, C007, C011. The ID space is non-contiguous |
 
 ## Decisions
@@ -331,10 +343,12 @@ Typing and tests:
 - [x] `crates/complexipy-cli/src/utils/sarif/tests.rs`: `:55` (struct literal),
   `:181` (shipped URL literal), `:250` (`assert_eq!(plan_rule["helpUri"], ...)`,
   which fails once the key goes absent)
-- [x] `tests/test_refactor_plans.py:292-317` (`test_rule_metadata_has_doc_url`
-  goes entirely), and with it the now-orphaned fixture
-  `tests/fixtures/refactor_plans/metadata_validation.py`, which that test alone
-  loads. It sits outside `tests/src`, so the corpus total is unaffected.
+- [x] `tests/test_refactor_plans.py` `test_rule_metadata_has_doc_url`. Planned as
+  a deletion together with the fixture only it loads,
+  `tests/fixtures/refactor_plans/metadata_validation.py`; done differently,
+  because the test also guards that `RuleMetadata` identity fields reach the plan
+  at all. It is now `test_rule_metadata_reaches_the_plan`, its `doc_url`
+  assertions are absence assertions, and the fixture stays in use.
 - [x] Add a `tests/contract/cases/` case proving `doc_url` is gone. The harness
   currently covers `DiffEntry`, `DiffStatus`, `code_complexity`, and phantom
   helpers only; nothing exercises `RefactorPlan`. `phantom_import.py` is the
@@ -376,10 +390,10 @@ any residual URL neither D nor E enumerated.
   PyPI-discovery `keywords` list, classifiers (currently stopping at 3.12),
   and `requires-python` raised from `>=3.8` to `>=3.14`
 
-- [ ] Regenerate `uv.lock`. It pins `requires-python = ">=3.8"` at line 3 and
-  carries three resolution markers (`<3.9`, `==3.9.*`, `>=3.10`) with
-  version-split `pre-commit` and `pytest` entries, plus `mkdocs-material` in
-  the dev group from C.
+- [ ] Regenerate `uv.lock`. Its header pins `requires-python = ">=3.8"` and
+  three resolution markers (`>=3.10`, `==3.9.*`, `<3.9`), under which
+  `pre-commit` and `pytest` each resolve to three marker-split entries. C
+  already removed `mkdocs-material` from it.
 
 - [ ] `Cargo.toml`: authors, homepage, documentation, repository
 
@@ -415,14 +429,36 @@ any residual URL neither D nor E enumerated.
     symlink support" note, which decision 3 abolishes.
 
 - [ ] `AGENTS.md` claims the regex cannot find, because their wrongness has no
-  keyword. `:211` states the three-place FFI rule with no type-versus-field
-  qualifier - the exact rule D corrects. `:36` and `:236` credit `runner.rs` with
-  git-URL walking, removed in 8.0.0. The "docs in `docs/` (EN + ES)" line does not
-  contain the literal `docs/es`, and the "PR titles" bullet does not say "pull
-  request". Read the structural-invariant sections rather than trusting the sweep.
+  keyword. "The FFI contract" states the three-place rule with no type-versus-field
+  qualifier - the exact rule D corrects. The `runner.rs` line of the Project
+  Structure tree and the `runner.rs` bullet under "Rust core" credit it with
+  git-URL walking, removed in 8.0.0. Two earlier examples of the same class are
+  already gone: C replaced the "docs in `docs/` (EN + ES)" Tech Stack line, and B
+  replaced the "PR titles" bullet with "Commit subjects" under Conventions. Read
+  the structural-invariant sections rather than trusting the sweep.
 
 - [ ] `CLAUDE.md`: anything that assumes the removed workflow. Leave its skill
   list to H, which is what changes it - editing it here means writing it twice.
+
+- [ ] Python-3.8 idioms the raised floor makes obsolete, flagged by the explore
+  sweep and missing from this list until now: `from __future__ import annotations` in `complexipy/__init__.py`, `complexipy/cli.py`,
+  `tests/test_refactor_plans.py`, and `tests/contract/check_stub_contract.py`;
+  `typing.List`, `Optional`, and `Tuple` imported in `complexipy/_complexipy.pyi`
+  (32 subscripted uses) and `List`/`Tuple` in `tests/main.py` (6). Under a 3.14
+  floor these are builtin generics and unions. `Final` stays.
+
+- [ ] While the stub is open for that sweep, the stub defects the catalog had
+  assigned to D and D did not touch: `__init__` declarations on eight types that
+  have no constructor (`CodeSuggestion`, `LineComplexity`, `RefactorPlan`,
+  `FunctionComplexity`, `FileComplexity`, `CodeComplexity`, `IgnoredLocation`,
+  `RemovableIgnore` - only `DiffEntry` has a `#[new]`), their runtime-impossible
+  `Example` blocks, attributes declared writable on types whose `get_all`
+  generates getters only (`DiffEntry` alone uses `@property`), and the
+  `code_complexity` / `file_complexity` docstrings that omit `check_script` and
+  `no_ignore`. `docs/python-api.md` ("Enums, and what the stub still gets wrong")
+  already tells consumers the constructors do not exist; the stub should stop
+  contradicting it. Each fix wants a `tests/contract/cases/` case:
+  `assign_readonly.py` covers `DiffEntry` only.
 
 Raising the Python floor is not metadata-only. `AGENTS.md` records that ty infers
 its analysis version from `requires-python`, `[tool.ruff]` sets no
@@ -494,9 +530,10 @@ intervention.
   `--no-tags` belongs at add time - `git fetch` auto-follows tags reachable from
   fetched history and would re-import all 39 on the first fetch.
 - [ ] Truncate `CHANGELOG.md` at and below `## [8.0.1]`, then regenerate
-  `030e207..HEAD` with git-cliff. **Not** `87ad610..HEAD`, which resolves to
-  19 commits including all nine inherited upstream ones and excludes
-  `87ad610` itself.
+  `030e207..HEAD` with git-cliff. **Not** `87ad610..HEAD`, which excludes
+  `87ad610` itself and includes the nine inherited upstream commits the merge
+  `9926391` brought in: 19 commits at the branch point, 31 at `39e1bd5`, against
+  23 for the correct range.
 - [ ] Decide what happens to the two hand-written `## Unreleased` entries. They
   describe `fa174cc` (stub path and module-total documentation) and `87ad610`
   (C002 loop-guard refusal). Regenerating duplicates those two - and picks up
@@ -506,9 +543,17 @@ intervention.
   becomes false with no release target.
 - [ ] Record both `--output-format json` schema changes from D as breaking
   entries: `doc_url` and `references` each leave the refactor-plan objects.
-- [ ] Confirm git-cliff's merge-commit handling. One of the 11 commits is the
-  merge `9926391`; git-cliff commonly filters merges, so the regenerated body
-  may carry ten entries from a correct range.
+- [ ] Confirm git-cliff's merge-commit handling. One of the 23 commits in
+  `030e207..HEAD` is the merge `9926391`; git-cliff commonly filters merges, so
+  the regenerated body may carry 22 entries from a correct range.
+- [ ] Decide how the regeneration treats two commit-log inputs nothing has
+  planned for. 18 of the 23 commits end in a `Claude-Session:` trailer
+  (`.claude/settings.json` blanks the attribution footers, not this one), and
+  five have no body at all: `fa174cc`, `c613bdb`, `f6d4a14`, the merge
+  `9926391`, and `5999826`. Whether git-cliff renders the trailer, strips it, or
+  ignores bodies entirely is not established; whatever handles it must keep the
+  `BREAKING CHANGE:` footer on `39e1bd5`, which is the only machine-readable
+  record of D's schema changes.
 - [ ] Retire the `release-notes` skill, which hand-maintains `CHANGELOG.md` plus
   the Spanish mirror and publishes through `gh release create`.
 - [ ] Bump to `8.1.0` in the workspace `Cargo.toml`. `pyproject.toml` has no
@@ -519,12 +564,29 @@ intervention.
   workspace-version change.
 - [ ] Tag `8.1.0`.
 - [ ] Bump the parent's submodule gitlink for `repos/complexipy`. This belongs
-  here rather than in deferred work: until it lands, the parent pins a tree whose
-  recorded version is `8.0.1` while the working tree says `8.1.0`.
+  here rather than in deferred work: the parent pins `c613bdb`, whose
+  `Cargo.toml` says `8.0.0+rcq.2` - the scheme decision 5 abandons - and which
+  predates the branch point by seven commits. Until the bump lands, a parent
+  `git submodule update` checks out that tree.
 - [ ] Delete `rcq` and `followup-batch-1` after the work lands on `main`.
 - [ ] Delete `docs/realignment/`, after rehoming what outlives it: any unfinished
   `follow-up-tooling.md` entries, and `design-issues-and-bugs.md` in full, which
-  is not realignment work and has no other home.
+  is not realignment work and has no other home. The destination is undecided;
+  see below.
+
+**Blocked on two decisions this tracker has so far left implicit.** Neither is
+made here.
+
+1. git-cliff exists nowhere in the tree: no `cliff.toml`, no entry in
+   `pyproject.toml`, `uv.lock`, or `Cargo.toml`, no skill or command that invokes
+   it. A `git-cliff` binary on the developer's `PATH` (`~/.local/bin/git-cliff`)
+   is an environment fact, not a repository one, and its version is unrecorded.
+   The changelog, the `release` skill, and the trailer item above all wait on how
+   it is pinned and configured.
+1. `design-issues-and-bugs.md` has no destination. It is the one document here
+   that must survive this directory, and nothing names where it goes - a
+   top-level file, a `docs/` page, or the parent repository. Until that is
+   chosen, the last item above cannot be executed.
 
 Do not build a vendored wheel mid-realignment. Without the `+rcq.N` segment it
 would report `8.0.1`, which is indistinguishable from upstream's release while
@@ -563,7 +625,7 @@ Proposed. `verify` is written first:
 | `verify` | The standing gate above, plus one invocation of the built CLI, and a note that the gate's `uv run ty check .` runs with the editable project installed - so ty reads the native module, not the stub. That is the configuration the deleted CI lint job existed to avoid, and after B it is the only one available locally; `tests/contract/check_stub_contract.py` is what still checks stub/runtime parity, and only for its four cases - nothing in the gate exercises the binary, and `.pi/hook-scripts/py-complexipy.sh` and CI's `complexipy complexipy --failed` were the only things that did. `maturin develop` before pytest is the one hard ordering constraint and the most-repeated trap in `AGENTS.md`; the contract harness builds its own wheel into a fresh venv and is independent of it. |
 | `vendor-build` | Wheel into `../../wheelhouse/` with `CARGO_TARGET_DIR` outside the checkout, stub and runtime parity check, provenance table. Currently prose in another repository. |
 | `release` | Bump the workspace `Cargo.toml` (the only literal), regenerate `Cargo.lock`, regenerate the changelog with git-cliff, rebuild, tag. It must not reintroduce a publish step. Carry over the removed `release-notes` skill's version-consistency check. |
-| `add-refactor-rule` | The rule lockstep: struct and `impl` in `complexity.rs`, `register_defaults()`, effectiveness tier, docs entry, fixture test - plus the three hardcoded gates in `rules/registry/tests.rs` that `AGENTS.md` omits: a new arm in `fixture_for()` (which panics on an unknown id), the literal `assert_eq!(checked, 7, ...)`, and the expected-tier table in `effectiveness_matches_documented_tiers`. Its comment says "if a 9th rule is added" while seven are registered; correct that while writing the skill. |
+| `add-refactor-rule` | The rule lockstep: struct and `impl` in `complexity.rs`, `register_defaults()`, effectiveness tier, docs entry, fixture test - plus the three hardcoded gates in `rules/registry/tests.rs` that `AGENTS.md` omits: a new arm in `fixture_for()` (which panics on an unknown id), the literal `assert_eq!(checked, 7, ...)`, and the expected-tier table in `effectiveness_matches_documented_tiers`. The count assertion sits under a plain `//` comment reading "if a 9th rule is added" while seven are registered - one of the code comments the catalog records against the no-comments rule. The skill must not teach that pattern; correcting the comment itself is a code change outside H. |
 | `ffi-change` | For a new type: `classes.rs`, the `#[pymodule]` export list, `_complexipy.pyi`, `complexipy/__init__.py` plus `__all__`, the `lib.rs` stable re-export block, and `crates/complexipy-core/tests/lib_surface.rs`. For a field: `classes.rs` plus the stub, and every Rust struct-literal site. `py_diff` types (`DiffEntry`, `DiffStatus`) live in `complexipy-python/src/lib.rs`; a field change there locksteps with the stub only, but a new type still needs `add_class`. Every variant adds a `tests/contract/cases/` case. |
 | `sync-upstream` | Evaluating an upstream release as deliberate maintenance. Upstream is **not** currently a remote - the skill must add it or fetch by URL, and `--no-tags` belongs at add time or all 39 inherited tags come back. |
 
@@ -584,8 +646,9 @@ Scope for rebuilt tooling lives in [`follow-up-tooling.md`](follow-up-tooling.md
 - **Outer-repository catch-up.** `wheelhouse/README.md` and
   `docs/tools/complexipy.md` sections 9.6 and 9.7 are updated after the first
   meaningful version bump, not during this work. Note this is not documentation
-  alone: `scripts/complexipy_analysis/reduced_record.py` reads `plan.doc_url` at
-  `:51` and `plan.references` at `:50`, so it raises `AttributeError` against an
+  alone: `scripts/complexipy_analysis/reduced_record.py` reads `plan.references`
+  and `plan.doc_url` while building its reduced record - still true at `39e1bd5`,
+  checked against the parent checkout - so it raises `AttributeError` against an
   8.1.0 wheel until it is fixed. The gitlink bump is *not* deferred; see G.
 - **git-cliff tooling choice.** Pinning and invocation are researched when the
   changelog work is scheduled. The direction is settled; the mechanism is not.
@@ -595,8 +658,9 @@ Scope for rebuilt tooling lives in [`follow-up-tooling.md`](follow-up-tooling.md
 This checkout is a git submodule of `recsys-code-quality`, pinned by SHA with no
 `branch =` key in the parent's `.gitmodules`. Any `git submodule update --init` in
 the parent - including as part of an ordinary pull - checks this submodule out at
-the recorded pre-realignment SHA. Commits on `fork-realignment` and `main` survive;
-an in-progress working tree does not necessarily. The parent already reports
+the recorded SHA, `c613bdb`, seven commits before the branch point. Commits on
+`fork-realignment` and `main` survive; an in-progress working tree does not
+necessarily. The parent already reports
 ` M repos/complexipy`, so its dirty state cannot signal anything about this work.
 
 ## Invariants that survive the realignment
@@ -606,8 +670,10 @@ an in-progress working tree does not necessarily. The parent already reports
   not numbers to adjust for a green run.
 - Scoring produces regions; regions produce refactor plans. Rules never re-parse
   source **to find structure** - they consume regions. The qualifier is
-  load-bearing: `complexity.rs` calls `parse_expression` at lines 305, 601, and
-  1055, and the registry re-parses spliced source to measure reductions.
+  load-bearing: `complexity.rs` calls `parse_expression` in
+  `equality_dispatch_subject`, `find_nested_try`, and `collect_free_names`, and
+  `registry.rs` `measure_reduction` re-parses spliced source with `parse_module`
+  to measure reductions.
 - `uv run maturin develop` before pytest after any `crates/**/*.rs` change.
 - The public Python API in `complexipy/__init__.py` and its `__all__`.
 - The typing lockstep in the `ffi-change` row above, which differs for types and

@@ -208,30 +208,38 @@ What must change:
   `1699696` with `/Users/rhafid/...` paths and tables labelled 8.0.0 against a
   declared 8.0.1.
 
-## Rule documentation links
+## Rule documentation links and `references`
 
 **Disposition: Drop, revisit only if a consumer asks.**
 
 `RefactorPlan.doc_url` is removed from the model, the stub, and every construction
-site, and the SARIF `informationUri`/`helpUri` constants go with it. Three
-consumer-visible surfaces lose content:
+site, and the SARIF `informationUri`/`helpUri` constants go with it.
+`RefactorPlan.references` went in the same commit (`39e1bd5`): `rules/types.rs`
+`new_plan()` was its only writer and set `vec![]`, no rule overrode it, and the
+consumer read it alongside `doc_url`. Three consumer-visible surfaces lose
+content:
 
 - `--suggest-refactors` printed the URL under a `References:` heading, underlined
-  and blue (`output_plan_references` in `crates/complexipy-cli/src/output/refactor.rs`).
-  The `references` vector stays; no rule currently populates it, so the block
-  disappears entirely.
+  and blue. With both inputs gone the block was unreachable, so
+  `output_plan_references` was deleted from
+  `crates/complexipy-cli/src/output/refactor.rs` rather than left to guard two
+  permanently empty values.
 - SARIF: `informationUri` on the tool component, `helpUri` on the complexity rule
   descriptor, and `helpUri` per refactor-plan rule. All three are optional in SARIF
   2.1.0, so omitting them is schema-valid.
-- `--output-format json`: `doc_url` was serialized as part of each refactor plan,
-  so this is a schema change for anything parsing that output.
+- `--output-format json`: `doc_url` and `references` were serialized as part of
+  each refactor plan, so this is a schema change for anything parsing that
+  output, recorded as the `BREAKING CHANGE:` footer on `39e1bd5`.
 
 `rule_id` still ships everywhere, so a consumer that wants documentation can map
 the id to a local page itself. If a link is ever wanted back, reintroducing it
 means a field on `RuleMetadata` and `RefactorPlan`, a stub entry, every struct
-literal in the Rust tests, and relaxing the `starts_with("https://")` assertion in
-`crates/complexipy-core/src/rules/registry/tests.rs` if the value is a repository
-path rather than a URL.
+literal in the Rust tests, and inverting
+`tests/contract/cases/phantom_plan_fields.py`, which currently proves the
+attribute is absent at both the ty and runtime levels. The
+`starts_with("https://")` assertion that
+`crates/complexipy-core/src/rules/registry/tests.rs` carried was deleted with the
+field; a repository-path value would need no such check.
 
 ## Browser and editor surfaces
 
