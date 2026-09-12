@@ -39,18 +39,32 @@ file is the one that stays actionable after `docs/realignment/` is deleted.
   21 options, and no doc comments to fall back on because comments are banned.
   **Fixed in `2020084`**.
 
+- **`RefactorPlan.references` was permanently empty** and `doc_url` pointed at a
+  site this fork does not own. Both removed in D, along with the SARIF
+  `informationUri`/`helpUri` constants and the console `References:` renderer.
+
+- **Three stub enums claimed to be `enum.Enum`.** `RuleCategory`,
+  `Applicability` and `DiffStatus` are PyO3 simple enums with no `.name`, no
+  `.value` and no iteration. The stub now declares them as plain classes with
+  typed members, and says so. Fixed in D.
+
+- **The stub documented a removed feature.** Two collector docstrings described
+  `paths` as accepting Git repository URLs, removed in 8.0.0. Fixed in D; the
+  matching `AGENTS.md` claims are E's, and `cache.rs::looks_like_remote` is still
+  open below.
+
+- **Four consumer-visible removals needed a machine-readable record.** Dropping
+  `doc_url` and `references` changes the `--output-format json` schema and the
+  Python `RefactorPlan`, and removes SARIF `helpUri`/`informationUri` and the
+  console `References:` block. `CHANGELOG.md` is hand-maintained until G
+  regenerates it, so the record is a `BREAKING CHANGE:` footer on D's commit -
+  which is what git-cliff reads - rather than an entry G would discard.
+
+- **`tests/main.py` was committed unformatted in `2020084`.** `ruff format --check` was omitted from that workstream's final gate, so the conformance
+  tests added there shipped with over-long lines. Formatting corrected in D. The
+  gate is only worth running in full.
+
 ### Assigned to a workstream
-
-- **`RefactorPlan.references` is permanently empty.** `rules/types.rs:52` is the
-  sole writer (`vec![]`), no rule overrides it, and it ships through the FFI
-  contract and the JSON export regardless. Its only rendering path,
-  `output_plan_references`, becomes unreachable once `doc_url` goes. **D**.
-
-- **Three enums lie in the stub.** `RuleCategory` (`:13`), `Applicability`
-  (`:22`) and `DiffStatus` (`:34`) in `complexipy/_complexipy.pyi` are declared
-  `(Enum)` with string values. At runtime they are PyO3 simple enums: no
-  `.name`, no `.value`, no iteration. The consuming repo already carries a
-  `variants()` workaround. **D**.
 
 - **Eight phantom constructors in the stub.** `classes.rs` has zero
   `#[pymethods]` and zero `#[new]`, so only `DiffEntry` is constructible, but the
@@ -58,21 +72,24 @@ file is the one that stays actionable after `docs/realignment/` is deleted.
   blocks. Every attribute is also declared writable when all are read-only
   (`get_all` generates getters only). **D**.
 
-- **The stub documents a removed feature.** `_complexipy.pyi:717` and `:755`
-  describe `paths` as accepting Git repository URLs; git-URL analysis was
-  removed in 8.0.0. `AGENTS.md` repeats the claim twice. `cache.rs:130-142`
+- **Git-URL residue in code and AGENTS.md.** `cache.rs:130-142`
   `looks_like_remote` normalizes cache keys for github/gitlab URLs that nothing
-  can produce. **D** for the stub and dead code, **E** for AGENTS.md.
+  can produce; `AGENTS.md` credits `runner.rs` with git-URL walking twice.
+  **E**, which opens AGENTS.md for the identity sweep. D left the dead function
+  alone because removing it is a behavior-neutral cleanup with no bearing on the
+  field removal, and bundling it would have widened a diff that already touched
+  thirteen files.
 
 - **Native docstrings omit two parameters.** The `code_complexity` and
   `file_complexity` docstrings in the stub document only `code` / `file_path`
-  and `base_path`, not `check_script` or `no_ignore`. **D**.
+  and `base_path`, not `check_script` or `no_ignore`. **Open** - D corrected the
+  git-URL half of these docstrings but not the parameter lists.
 
 - **Dead code.** `crates/complexipy-cli/src/output.rs:158`
   `effective_sort_for_display` has no callers; `utils/snapshot.rs`
   `SnapshotEvaluation.snapshot_result` is computed and tested but never read by
   `run.rs`; `RuleMetadata` derives `Serialize, Deserialize` with no consumer.
-  **D**.
+  **Open**, same reasoning as the git-URL residue.
 
 - **`crates/complexipy-core/src/lib.rs:16-17`** claims its re-export block
   "mirrors `complexipy/__init__.py`'s `__all__`". It also exports
@@ -121,10 +138,12 @@ file is the one that stays actionable after `docs/realignment/` is deleted.
   both, so this closes itself, but the pattern - an emitted key nothing checks -
   is worth remembering.
 
-- **Deleting `test_rule_metadata_has_doc_url` orphans a fixture.**
-  `tests/fixtures/refactor_plans/metadata_validation.py` is loaded by that test
-  alone. Outside `tests/src`, so the corpus total is unaffected. **D** deletes
-  both.
+- **~~Deleting `test_rule_metadata_has_doc_url` orphans a fixture.~~** Resolved
+  differently in D: the test asserted more than `doc_url` - it guards that
+  `RuleMetadata` identity fields reach the plan at all, a real historical
+  regression. It was renamed `test_rule_metadata_reaches_the_plan`, its
+  `doc_url` assertions replaced with absence assertions, and the fixture stays
+  in use. The tracker had called for deleting both.
 
 ### Deferred
 
@@ -294,5 +313,18 @@ first time upstream is pulled.
 ### Output formats without consumers
 
 `gitlab` and `sarif` existed for GitLab Code Quality and GitHub code scanning.
-B removed the last CI, so neither has a consumer unless the parent ingests
-them directly. Decision pending in D, which opens `sarif.rs` regardless.
+B removed the last CI, and `recsys-code-quality` does not invoke either - it
+documents them in `docs/tools/complexipy.md` but consumes the Python API and
+JSON.
+
+**Decided in D: both stay.** Every other removal in this realignment has been
+upstream-project machinery - CI, the docs site, the editor extension,
+contributor templates. These are product capability, and the parent's charter is
+to retain provider-native output rather than narrow it. They are stable, tested,
+and cost nothing to keep; removing them later is cheaper than re-adding them.
+
+Recorded because the reasoning is a judgment call rather than a fact, and
+because the criterion the tracker set - "keep them only if the parent ingests
+them directly" - pointed the other way. If the maintenance cost ever becomes
+real, this is the entry to revisit. Note also that SARIF has a known defect: it
+emits a literal `uriBaseId` of `"%SRCROOT%"` with no `originalUriBaseIds` block.

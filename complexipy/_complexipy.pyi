@@ -7,46 +7,67 @@ understand and maintain, focusing on control flow structures that make code
 harder to reason about.
 """
 
-from enum import Enum
-from typing import List, Optional, Tuple
+from typing import Final, List, Optional, Tuple
 
-class RuleCategory(Enum):
-    """Category of a refactoring rule."""
+class RuleCategory:
+    """Category of a refactoring rule.
 
-    Complexity = "Complexity"
+    A PyO3 simple enum, not an ``enum.Enum``. Members are class attributes and
+    compare by identity; there is no ``.name``, no ``.value``, and the class is
+    not iterable.
+    """
+
+    Complexity: Final[RuleCategory]
     """Rules that reduce cognitive complexity."""
 
-    Readability = "Readability"
+    Readability: Final[RuleCategory]
     """Rules that improve code readability."""
 
-class Applicability(Enum):
-    """Applicability level for refactoring suggestions."""
+class Applicability:
+    """Applicability level for refactoring suggestions.
 
-    MachineApplicable = "MachineApplicable"
+    A PyO3 simple enum, not an ``enum.Enum``. Members are class attributes and
+    compare by identity; there is no ``.name``, no ``.value``, and the class is
+    not iterable.
+
+    This is the rule's declared ceiling, not what a given plan achieved. A rule
+    declaring ``MachineApplicable`` can still emit help text with no suggestion,
+    so read ``suggestion.applicability`` after checking ``suggestion is not
+    None``.
+    """
+
+    MachineApplicable: Final[Applicability]
     """Safe to apply automatically without human review."""
 
-    MaybeIncorrect = "MaybeIncorrect"
+    MaybeIncorrect: Final[Applicability]
     """May be incorrect in some cases, needs human review."""
 
-    Informational = "Informational"
+    Informational: Final[Applicability]
     """Informational only, not directly actionable."""
 
-class DiffStatus(Enum):
-    """Comparison status of a function between two analyzed versions."""
+class DiffStatus:
+    """Comparison status of a function between two analyzed versions.
 
-    REGRESSED = "REGRESSED"
+    A PyO3 simple enum, not an ``enum.Enum`` and not a ``str`` subclass.
+    Members are class attributes and compare by identity; there is no
+    ``.name``, no ``.value``, and the class is not iterable. Formatting a
+    member yields the qualified ``DiffStatus.REGRESSED``, so comparing against
+    a plain string fails even after formatting.
+    """
+
+    REGRESSED: Final[DiffStatus]
     """Complexity increased in the new version."""
 
-    IMPROVED = "IMPROVED"
+    IMPROVED: Final[DiffStatus]
     """Complexity decreased in the new version."""
 
-    UNCHANGED = "UNCHANGED"
+    UNCHANGED: Final[DiffStatus]
     """Complexity stayed the same."""
 
-    NEW = "NEW"
+    NEW: Final[DiffStatus]
     """Function only exists in the new version."""
 
-    REMOVED = "REMOVED"
+    REMOVED: Final[DiffStatus]
     """Function only exists in the old version."""
 
 class DiffEntry:
@@ -194,17 +215,11 @@ class RefactorPlan:
     explanation: str
     """Explanation of why this refactoring helps."""
 
-    references: List[str]
-    """Links to documentation and examples."""
-
     suggestion: Optional[CodeSuggestion]
     """Concrete code suggestion for machine-applicable rules."""
 
     help: Optional[str]
     """Help text with actionable guidance for informational rules."""
-
-    doc_url: str
-    """URL to the documentation page for this rule."""
 
     def __init__(
         self,
@@ -222,10 +237,8 @@ class RefactorPlan:
         applicability: Applicability,
         description: str,
         explanation: str,
-        references: List[str],
         suggestion: Optional[CodeSuggestion],
         help: Optional[str],
-        doc_url: str,
     ) -> None: ...
 
 class FunctionComplexity:
@@ -714,7 +727,7 @@ def collect_all_ignored_locations(
     This is the backend for the --report-ignored CLI flag.
 
     Args:
-        paths: List of file paths, directory paths, or Git repository URLs.
+        paths: List of file paths or directory paths.
         exclude: List of file/directory paths or globs to exclude from scanning.
         invocation_path: Working directory for resolving relative paths.
 
@@ -752,7 +765,7 @@ def collect_removable_ignored_locations(
     equal to `max_complexity_allowed`.
 
     Args:
-        paths: List of file paths, directory paths, or Git repository URLs.
+        paths: List of file paths or directory paths.
         exclude: List of file/directory paths or globs to exclude from scanning.
         max_complexity_allowed: Complexity threshold; markers suppressing
             functions at or below this value are reported as removable.

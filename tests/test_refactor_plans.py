@@ -9,6 +9,7 @@ from complexipy import (
     Applicability,
     CodeSuggestion,
     RefactorPlan,
+    RuleCategory,
     code_complexity,
 )
 
@@ -289,16 +290,15 @@ def test_rule_priority_ordering() -> None:
     assert plans[0].kind == "collapsible_if"
 
 
-def test_rule_metadata_has_doc_url() -> None:
-    """Every plan must carry the metadata a clippy-style report needs, `doc_url`
-    included.
+def test_rule_metadata_reaches_the_plan() -> None:
+    """Every plan carries the identity fields `RuleMetadata` prefills, and the
+    enum fields survive the crossing into Python as real members.
 
-    The `doc_url` assertions are the point of this test and were missing until
-    the metadata layer was wired in: the field existed on `RuleMetadata` but
-    never reached `RefactorPlan`, so Python rendered links from a hardcoded
-    duplicate map that had no entry for C007 -- C007 plans showed no
-    `References:` section at all. This fixture yields exactly one plan, C007,
-    so it guards that regression directly.
+    These reached `RefactorPlan` only once the metadata layer was wired in;
+    before that the renderer used a hardcoded duplicate map. This fixture
+    yields exactly one plan, C007, so it guards that regression directly.
+    `plan.category is not None` would not: a PyO3 simple-enum member is never
+    None, so membership is what has to be asserted.
     """
     func = first_func(load_source("metadata_validation.py"))
     # Without this the loop below is vacuous: a fixture that stops producing
@@ -306,15 +306,19 @@ def test_rule_metadata_has_doc_url() -> None:
     assert func.refactor_plans, "fixture produced no plans to validate"
     for plan in func.refactor_plans:
         assert plan.rule_id.startswith("C")
-        assert plan.category is not None
-        assert plan.applicability is not None
+        assert plan.category in (
+            RuleCategory.Complexity,
+            RuleCategory.Readability,
+        )
+        assert plan.applicability in (
+            Applicability.MachineApplicable,
+            Applicability.MaybeIncorrect,
+            Applicability.Informational,
+        )
         assert plan.description
         assert plan.explanation
-        assert plan.doc_url, f"{plan.rule_id} carries no doc_url"
-        assert plan.doc_url.startswith("https://")
-        # Ties the URL to its own rule, so a copy-pasted link from a
-        # neighbouring rule fails rather than passing a generic prefix check.
-        assert plan.rule_id.lower() in plan.doc_url
+        assert not hasattr(plan, "doc_url")
+        assert not hasattr(plan, "references")
 
 
 def test_code_generation_produces_nonempty_snippets() -> None:

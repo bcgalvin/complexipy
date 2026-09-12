@@ -123,11 +123,6 @@ fn output_single_plan(
         sections.push(output_help(help));
     }
 
-    let references = output_plan_references(&plan.doc_url, &plan.references);
-    if !references.is_empty() {
-        sections.push(references);
-    }
-
     sections.join("\n")
 }
 
@@ -159,20 +154,6 @@ pub fn get_applicability_name(applicability: &Applicability) -> &'static str {
         Applicability::MaybeIncorrect => "Needs review",
         Applicability::Informational => "Informational",
     }
-}
-
-fn output_plan_references(doc_url: &str, references: &[String]) -> String {
-    if doc_url.is_empty() && references.is_empty() {
-        return String::new();
-    }
-    let mut lines = vec![format!("\n          {}", "References:".dimmed())];
-    if !doc_url.is_empty() {
-        lines.push(format!("            {}", doc_url.underline().blue()));
-    }
-    for reference in references {
-        lines.push(format!("            {}", reference.underline().blue()));
-    }
-    lines.join("\n")
 }
 
 fn output_suggestion(

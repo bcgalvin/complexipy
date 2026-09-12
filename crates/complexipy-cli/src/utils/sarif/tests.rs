@@ -49,10 +49,8 @@ fn refactor_plan() -> RefactorPlan {
         applicability: Applicability::MachineApplicable,
         description: "Extract the method body".to_string(),
         explanation: "Reduces nesting".to_string(),
-        references: vec![],
         suggestion: None::<CodeSuggestion>,
         help: None,
-        doc_url: "https://example.com/c001".to_string(),
     }
 }
 
@@ -176,9 +174,11 @@ fn sarif_rule_defined() {
     assert_eq!(rules.len(), 1);
     assert_eq!(rules[0]["id"], "CC001");
     assert_eq!(rules[0]["name"], "CognitiveComplexity");
-    assert_eq!(
-        rules[0]["helpUri"],
-        "https://complexipy.com/understanding-scores/"
+    assert!(rules[0].get("helpUri").is_none());
+    assert!(
+        doc["runs"][0]["tool"]["driver"]
+            .get("informationUri")
+            .is_none()
     );
 }
 
@@ -247,7 +247,7 @@ fn sarif_includes_refactor_plan_rules_when_requested() {
         plan_rule["shortDescription"]["text"],
         "Extract the method body"
     );
-    assert_eq!(plan_rule["helpUri"], "https://example.com/c001");
+    assert!(plan_rule.get("helpUri").is_none());
     assert_eq!(plan_rule["properties"]["tags"][0], "complexity");
 }
 

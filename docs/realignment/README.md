@@ -273,67 +273,69 @@ literals, and each is a separate `--output-format json` schema change.
 
 Origination:
 
-- [ ] `crates/complexipy-core/src/rules/types.rs:27` (`RuleMetadata.doc_url`) and
+- [x] `crates/complexipy-core/src/rules/types.rs:27` (`RuleMetadata.doc_url`) and
   `:55` (`new_plan()` copies it)
-- [ ] Seven `doc_url` literals in `crates/complexipy-core/src/rules/complexity.rs`
+- [x] Seven `doc_url` literals in `crates/complexipy-core/src/rules/complexity.rs`
   (C001, C002, C003, C004, C005, C007, C011)
-- [ ] `crates/complexipy-core/src/classes.rs:73` (`RefactorPlan.doc_url`) and
+- [x] `crates/complexipy-core/src/classes.rs:73` (`RefactorPlan.doc_url`) and
   `:70` (`RefactorPlan.references`)
 
 Emission:
 
-- [ ] `crates/complexipy-cli/src/output/refactor.rs:126,164-170`. Removing the
+- [x] `crates/complexipy-cli/src/output/refactor.rs:126,164-170`. Removing the
   argument leaves `output_plan_references` with only `plan.references`, which
   no rule populates, so the `References:` block stops rendering. Decide whether
   the helper survives at all.
-- [ ] Decide whether the `gitlab` and `sarif` output formats survive at all. Both
-  existed for CI consumers - GitLab Code Quality and GitHub code scanning - and B
-  removed the last of those. Keep them only if `recsys-code-quality` ingests them
-  directly. D is the natural place to settle it because it opens `sarif.rs`
-  regardless.
-- [ ] `crates/complexipy-cli/src/utils/sarif.rs`: `INFO_URI` (line 12, emitted at
+- [x] `gitlab` and `sarif` output formats: **kept**. The parent documents but does
+  not invoke them; the decision and its reasoning are in
+  [`design-issues-and-bugs.md`](design-issues-and-bugs.md). `docs/cli.md`
+  therefore needs no edit.
+- [x] `crates/complexipy-cli/src/utils/sarif.rs`: `INFO_URI` (line 12, emitted at
   35 as `informationUri`), `HELP_URI` (13, emitted at 129 as `helpUri`), and
   `plan.doc_url` (167). All three keys are optional in SARIF 2.1.0
   **(external)**, so omitting them is schema-valid. Do not emit empty strings
   in their place.
-- [ ] `crates/complexipy-core/src/utils.rs` (`output_json_shared`) serializes
+- [x] `crates/complexipy-core/src/utils.rs` (`output_json_shared`) serializes
   `refactor_plans` wholesale into a hand-built `json!` map, so the
   `serde(skip)` on `FunctionComplexity.refactor_plans` does not apply and
   `doc_url` really is in the `--output-format json` schema. This is a
-  consumer-visible schema change; note it in the changelog.
+  consumer-visible schema change. It is recorded as a `BREAKING CHANGE:` footer
+  on D's commit rather than in `CHANGELOG.md`, because G truncates and
+  regenerates that file from the commit log and a hand-written entry would be
+  discarded. The footer is what git-cliff reads.
 
 Typing and tests:
 
-- [ ] The pages C wrote already describe the post-D surface - `docs/python-api.md`
+- [x] The pages C wrote already describe the post-D surface - `docs/python-api.md`
   and `docs/rules.md` omit `doc_url` and `references` deliberately. Confirm rather
   than re-edit them. If this workstream also retires the `gitlab`/`sarif` formats,
   `docs/cli.md` does need an edit.
-- [ ] `complexipy/_complexipy.pyi:206,228` for `doc_url` and the `references`
+- [x] `complexipy/_complexipy.pyi:206,228` for `doc_url` and the `references`
   declaration plus its `__init__` parameter
-- [ ] While the stub is open: `RuleCategory` (`:13`) and `Applicability` (`:22`)
+- [x] While the stub is open: `RuleCategory` (`:13`) and `Applicability` (`:22`)
   carry the same defect already recorded for `DiffStatus` (`:34`) - all three are
   declared `(Enum)` with string values against a PyO3 simple enum whose runtime has
   no `.name`, no `.value`, and no iteration. The consuming repo already carries a
   `variants()` workaround for exactly this.
-- [ ] Also in the stub: `:717` and `:755` document `paths` as accepting "Git
+- [x] Also in the stub: `:717` and `:755` document `paths` as accepting "Git
   repository URLs", a feature removed in 8.0.0. This ships inside the wheel and is
   what the consumer's type checker reads.
-- [ ] `crates/complexipy-core/src/rules/registry/tests.rs:33` (struct literal),
+- [x] `crates/complexipy-core/src/rules/registry/tests.rs:33` (struct literal),
   `:243` (`plan.doc_url == meta.doc_url`), `:251`
   (`plan.doc_url.starts_with("https://")`)
-- [ ] `crates/complexipy-core/src/utils/export_tests.rs:54` (struct literal)
-- [ ] `crates/complexipy-cli/src/utils/gitlab/tests.rs:55` (struct literal only;
+- [x] `crates/complexipy-core/src/utils/export_tests.rs:54` (struct literal)
+- [x] `crates/complexipy-cli/src/utils/gitlab/tests.rs:55` (struct literal only;
   GitLab output does not emit `doc_url`)
-- [ ] `crates/complexipy-cli/src/output/refactor/tests.rs:49` (struct literal) and
+- [x] `crates/complexipy-cli/src/output/refactor/tests.rs:49` (struct literal) and
   the `References:` assertions
-- [ ] `crates/complexipy-cli/src/utils/sarif/tests.rs`: `:55` (struct literal),
+- [x] `crates/complexipy-cli/src/utils/sarif/tests.rs`: `:55` (struct literal),
   `:181` (shipped URL literal), `:250` (`assert_eq!(plan_rule["helpUri"], ...)`,
   which fails once the key goes absent)
-- [ ] `tests/test_refactor_plans.py:292-317` (`test_rule_metadata_has_doc_url`
+- [x] `tests/test_refactor_plans.py:292-317` (`test_rule_metadata_has_doc_url`
   goes entirely), and with it the now-orphaned fixture
   `tests/fixtures/refactor_plans/metadata_validation.py`, which that test alone
   loads. It sits outside `tests/src`, so the corpus total is unaffected.
-- [ ] Add a `tests/contract/cases/` case proving `doc_url` is gone. The harness
+- [x] Add a `tests/contract/cases/` case proving `doc_url` is gone. The harness
   currently covers `DiffEntry`, `DiffStatus`, `code_complexity`, and phantom
   helpers only; nothing exercises `RefactorPlan`. `phantom_import.py` is the
   prove-absence pattern *in shape only*: it proves a module-level name is absent
@@ -406,10 +408,8 @@ any residual URL neither D nor E enumerated.
     `vscode`, `\.github`, `benchmark`, and `pull request` no longer match.
 
     Still dead and outstanding: the Tech Stack line "Python 3.8+"; the
-    pre-commit hooks bullet under Code Style; the `doc_url` mention in the
-    Refactor-rules paragraph, which D falsifies; the three-place FFI rule under
-    "The FFI
-    contract", stated without the type-versus-field qualifier D corrects; the
+    pre-commit hooks bullet under Code Style; the three-place FFI rule under
+    "The FFI contract", stated without the type-versus-field qualifier; the
     git-URL claims on the `runner.rs` line of the Project Structure tree and the
     `runner.rs` bullet under "Rust core"; and the "Contributors on Windows need
     symlink support" note, which decision 3 abolishes.

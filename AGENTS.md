@@ -212,8 +212,8 @@ stable, and new exports belong in `__init__.py` + `__all__` and on `docs/python-
 
 A rule is `RefactorRule::check(region, source, function_complexity) -> Option<RefactorPlan>`
 plus a `&'static RuleMetadata`. `RuleMetadata::new_plan()` prefills the identity fields
-so `id` / `category` / `applicability` / `description` / `doc_url` can only ever come
-from metadata; rules fill in the dynamic fields via `..metadata().new_plan()`.
+so `id` / `category` / `applicability` / `description` can only ever come from
+metadata; rules fill in the dynamic fields via `..metadata().new_plan()`.
 
 `RuleRegistry::analyze()` then, in order: collects plans over the region tree
 recursively, drops any plan with `estimated_reduction < 1` as noise, sorts by

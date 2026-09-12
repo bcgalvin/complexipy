@@ -49,10 +49,8 @@ fn refactor_plan() -> RefactorPlan {
         applicability: Applicability::MachineApplicable,
         description: "Extract the method body".to_string(),
         explanation: "Reduces nesting".to_string(),
-        references: vec![],
         suggestion: None::<CodeSuggestion>,
         help: None,
-        doc_url: "https://example.com/c001".to_string(),
     }
 }
 

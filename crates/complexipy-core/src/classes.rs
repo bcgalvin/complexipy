@@ -67,10 +67,8 @@ pub struct RefactorPlan {
     pub applicability: Applicability,
     pub description: String,
     pub explanation: String,
-    pub references: Vec<String>,
     pub suggestion: Option<CodeSuggestion>,
     pub help: Option<String>,
-    pub doc_url: String,
 }
 
 #[cfg_attr(

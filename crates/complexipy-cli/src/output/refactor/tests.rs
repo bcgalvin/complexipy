@@ -38,7 +38,6 @@ fn plan() -> RefactorPlan {
         applicability: Applicability::MachineApplicable,
         description: "Extract the body".to_string(),
         explanation: "Reduces nesting".to_string(),
-        references: vec!["https://example.com/ref".to_string()],
         suggestion: Some(CodeSuggestion {
             replacement: "return x".to_string(),
             applicability: Applicability::MachineApplicable,
@@ -46,7 +45,6 @@ fn plan() -> RefactorPlan {
             spliceable: true,
         }),
         help: None,
-        doc_url: "https://example.com/c001".to_string(),
     }
 }
 
@@ -103,9 +101,8 @@ fn single_plan_output_structure() {
     assert!(output.contains("Extract the body"));
     assert!(output.contains("Reduces nesting"));
     assert!(output.contains("Suggestion: * Safe to apply"));
-    assert!(output.contains("References:"));
-    assert!(output.contains("https://example.com/c001"));
     assert!(output.contains("... and 1 more suggestion"));
+    assert!(!output.contains("References:"));
 }
 
 #[test]

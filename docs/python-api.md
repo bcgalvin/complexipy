@@ -75,23 +75,27 @@ named `Class::method`; script mode adds a `<module>` entry.
 
 `RuleCategory`, `Applicability`, `DiffStatus` - see the note below.
 
-## Two things the type stubs get wrong
-
-Both are known and recorded; do not write consumer code that depends on the stub
-being right here.
+## Enums, and what the stub still gets wrong
 
 **The enums are not `enum.Enum`.** `RuleCategory`, `Applicability` and
-`DiffStatus` are declared in the stub as `Enum` subclasses with string values, but
-at runtime they are PyO3 simple enums: the MRO is `(cls, object)`, `.name` and
+`DiffStatus` are PyO3 simple enums: the MRO is `(cls, object)`, `.name` and
 `.value` raise `AttributeError`, and the class is not iterable. Compare members
-directly. To recover a name, build a mapping with `dir()`.
+directly; to recover a name, build a mapping with `dir()`. The stub declares them
+correctly as plain classes with typed members.
 
-**The constructors do not exist.** The stub declares `__init__` for
+`Applicability` on a plan is the **rule's declared ceiling**, not what that plan
+achieved. A rule declaring `MachineApplicable` can still emit help text with no
+suggestion, and the console renderer prints the plan's applicability in the header
+and the suggestion's in the body. Check `suggestion is not None` first, then read
+`suggestion.applicability`.
+
+**Still wrong: the constructors do not exist.** The stub declares `__init__` for
 `CodeSuggestion`, `LineComplexity`, `RefactorPlan`, `FunctionComplexity`,
 `FileComplexity`, `CodeComplexity`, `IgnoredLocation` and `RemovableIgnore`. None
 of those types has one - constructing any of them raises `TypeError`. `DiffEntry`
 is the exception and is genuinely constructible. Every attribute on every type is
-read-only, though the stub declares them writable.
+read-only, though the stub declares them writable. Do not write consumer code that
+depends on either.
 
 ## Serialization surfaces
 

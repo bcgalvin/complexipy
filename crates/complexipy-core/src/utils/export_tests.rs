@@ -48,10 +48,8 @@ fn refactor_plan() -> RefactorPlan {
         applicability: Applicability::MachineApplicable,
         description: "test plan".to_string(),
         explanation: "".to_string(),
-        references: vec![],
         suggestion: None::<CodeSuggestion>,
         help: None,
-        doc_url: "".to_string(),
     }
 }
 

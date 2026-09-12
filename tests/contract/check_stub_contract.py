@@ -30,11 +30,15 @@ EXPECTED_DIAGNOSTICS: dict[str, list[tuple[int, str]]] = {
     ],
     "bad_keyword.py": [(3, "missing-argument"), (3, "unknown-argument")],
     "phantom_import.py": [(1, "unresolved-import")],
+    "phantom_plan_fields.py": [
+        (9, "unresolved-attribute"),
+        (10, "unresolved-attribute"),
+    ],
 }
 
 RUNTIME_CHECKS = """
 import complexipy._complexipy as native
-from complexipy import DiffEntry, DiffStatus, code_complexity
+from complexipy import DiffEntry, DiffStatus, RefactorPlan, code_complexity
 
 entry = DiffEntry(
     file_path="a.py", func_name="f", old_complexity=2, new_complexity=6
@@ -60,6 +64,11 @@ for name in (
 ):
     if hasattr(native, name):
         raise SystemExit(f"native module unexpectedly exposes {name}")
+if not hasattr(RefactorPlan, "rule_id"):
+    raise SystemExit("RefactorPlan lost its rule_id accessor")
+for name in ("doc_url", "references"):
+    if hasattr(RefactorPlan, name):
+        raise SystemExit(f"RefactorPlan unexpectedly exposes {name}")
 try:
     code_complexity(source="def f():\\n    pass\\n")
 except TypeError:

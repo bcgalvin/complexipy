@@ -27,10 +27,8 @@ fn plan(rule_id: &str, line_start: u64, line_end: u64, estimated_reduction: u64)
         applicability: Applicability::Informational,
         description: String::new(),
         explanation: String::new(),
-        references: vec![],
         suggestion: None,
         help: None,
-        doc_url: String::new(),
     }
 }
 
@@ -197,7 +195,7 @@ fn fixture_for(rule_id: &str) -> (ComplexityRegion, String) {
 /// fixture that triggers it, call `check()` directly, and assert every field
 /// the plan takes from `metadata()` actually matches `metadata()` -- proving
 /// there is exactly one source of truth for id/name/category/description/
-/// applicability/doc_url instead of a second, hand-copied literal per rule.
+/// applicability instead of a second, hand-copied literal per rule.
 #[test]
 fn every_registered_rule_produces_a_plan_consistent_with_its_own_metadata() {
     let registry = RuleRegistry::new();
@@ -239,21 +237,6 @@ fn every_registered_rule_produces_a_plan_consistent_with_its_own_metadata() {
             "description mismatch for {}",
             meta.id
         );
-        assert_eq!(
-            plan.doc_url, meta.doc_url,
-            "doc_url mismatch for {}",
-            meta.id
-        );
-        // Equality above passes when *both* sides are empty, which is the bug
-        // this whole layer exists to prevent: a rule that omits `doc_url`
-        // renders no `References:` link at all, silently. Require a real URL.
-        assert!(
-            plan.doc_url.starts_with("https://"),
-            "rule {} has no usable doc_url (got {:?})",
-            meta.id,
-            plan.doc_url
-        );
-
         checked += 1;
     }
 

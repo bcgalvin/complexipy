@@ -24,7 +24,6 @@ pub struct RuleMetadata {
     /// - 2: Extraction (C003, C004, C005, C011) -- moves complexity elsewhere
     /// - 1: Default fallback
     pub effectiveness: u8,
-    pub doc_url: String,
 }
 
 impl RuleMetadata {
@@ -32,7 +31,7 @@ impl RuleMetadata {
     /// dynamic fields (title, line range, complexity numbers, explanation,
     /// suggestion, help) left at their defaults. Callers build the real plan
     /// with `..self.metadata().new_plan()` so the id/name/category/
-    /// description/applicability/doc_url can only ever come from one place.
+    /// description/applicability can only ever come from one place.
     pub fn new_plan(&self) -> RefactorPlan {
         RefactorPlan {
             kind: self.name.clone(),
@@ -49,10 +48,8 @@ impl RuleMetadata {
             applicability: self.applicability.clone(),
             description: self.description.clone(),
             explanation: String::new(),
-            references: vec![],
             suggestion: None,
             help: None,
-            doc_url: self.doc_url.clone(),
         }
     }
 }

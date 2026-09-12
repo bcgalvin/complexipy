@@ -472,7 +472,12 @@ class TestPaperConformance:
     def test_if_else_increments_and_nests(self):
         # `else` takes its own structural increment and its body sits one
         # nesting level deeper, unlike a loop `else`.
-        assert self._c("def f(x):\n    if x:\n        pass\n    else:\n        pass\n") == 2
+        assert (
+            self._c(
+                "def f(x):\n    if x:\n        pass\n    else:\n        pass\n"
+            )
+            == 2
+        )
         code = (
             "def f(x, y):\n"
             "    if x:\n"
@@ -486,7 +491,9 @@ class TestPaperConformance:
     def test_elif_is_a_sibling_clause_not_a_nested_if(self):
         # Python's AST spells `elif` as orelse=[If], the same shape as the
         # nested case above, but the scorer charges it as a sibling clause.
-        code = "def f(x, y):\n    if x:\n        pass\n    elif y:\n        pass\n"
+        code = (
+            "def f(x, y):\n    if x:\n        pass\n    elif y:\n        pass\n"
+        )
         assert self._c(code) == 2
 
     def test_raise_does_not_increment(self):
@@ -499,8 +506,14 @@ class TestPaperConformance:
 
     def test_boolean_runs_are_counted_per_operator_sequence(self):
         assert self._c("def f(a, b):\n    if a and b:\n        pass\n") == 2
-        assert self._c("def f(a, b, c):\n    if a and b and c:\n        pass\n") == 2
-        assert self._c("def f(a, b, c):\n    if a and b or c:\n        pass\n") == 3
+        assert (
+            self._c("def f(a, b, c):\n    if a and b and c:\n        pass\n")
+            == 2
+        )
+        assert (
+            self._c("def f(a, b, c):\n    if a and b or c:\n        pass\n")
+            == 3
+        )
 
     def test_with_is_transparent_inside_a_loop(self):
         # `with` neither increments nor nests, so the inner `if` is charged at

@@ -9,8 +9,6 @@ use complexipy_core::utils::ExportError;
 
 const RULE_ID: &str = "CC001";
 const SCHEMA: &str = "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json";
-const INFO_URI: &str = "https://complexipy.com/";
-const HELP_URI: &str = "https://complexipy.com/understanding-scores/";
 
 pub fn store_sarif(
     output_path: &str,
@@ -32,7 +30,6 @@ pub fn store_sarif(
                 "driver": {
                     "name": "complexipy",
                     "version": env!("CARGO_PKG_VERSION"),
-                    "informationUri": INFO_URI,
                     "rules": rules,
                 }
             },
@@ -126,7 +123,6 @@ fn complexity_rule_definition() -> Value {
         "id": RULE_ID,
         "name": "CognitiveComplexity",
         "shortDescription": {"text": "Cognitive complexity exceeds threshold"},
-        "helpUri": HELP_URI,
         "properties": {"tags": ["maintainability", "readability"]},
     })
 }
@@ -164,7 +160,6 @@ fn refactor_plan_rule_definition(plan: &RefactorPlan) -> Value {
         "id": plan.rule_id,
         "name": plan.kind,
         "shortDescription": {"text": plan.description},
-        "helpUri": plan.doc_url,
         "properties": {"tags": [rule_category_tag(&plan.category)]},
     })
 }
