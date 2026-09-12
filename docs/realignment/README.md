@@ -8,6 +8,11 @@ A six-lane explore sweep ran against this plan before execution;
 pre-existing defects it surfaced. Corrections it made to this tracker are already
 absorbed below.
 
+[`design-issues-and-bugs.md`](design-issues-and-bugs.md) catalogs everything found
+along the way that is not realignment work: small bugs, fixed in passing or
+deferred with a reason, and design tensions recorded with enough context to find
+later. Add to it as you go.
+
 Removal is the default. [`follow-up-tooling.md`](follow-up-tooling.md) records
 every capability being removed with enough mechanics to rebuild it, which is what
 makes aggressive pruning safe. Add an entry there rather than keeping something
@@ -109,10 +114,12 @@ because `release.yml` triggered on `push: tags: "*"` and G's closing version bum
 is what the `release` skill tags; with the workflow now deleted, that hazard is
 gone.
 
-Review cadence: A and B were reviewed individually before committing. C onward
-run completion to commit directly, with one thorough review once every workstream
-has landed. Each workstream still runs the standing gate before its commit, and
-still corrects what it itself falsifies rather than deferring that to E.
+Review cadence: every workstream is reviewed by the oracle before committing,
+each review in a **new chat with a self-contained briefing** - no reliance on a
+prior thread. A thorough review follows once every workstream has landed. Each
+workstream runs the standing gate before its commit, corrects what it itself
+falsifies rather than deferring that to E, and records anything it finds in
+`design-issues-and-bugs.md`.
 
 The standing gate, from `AGENTS.md`:
 
@@ -516,8 +523,8 @@ intervention.
   recorded version is `8.0.1` while the working tree says `8.1.0`.
 - [ ] Delete `rcq` and `followup-batch-1` after the work lands on `main`.
 - [ ] Delete `docs/realignment/`, after rehoming what outlives it: any unfinished
-  `follow-up-tooling.md` entries, including its pre-existing-defect inventory,
-  which is not realignment work and has no other home.
+  `follow-up-tooling.md` entries, and `design-issues-and-bugs.md` in full, which
+  is not realignment work and has no other home.
 
 Do not build a vendored wheel mid-realignment. Without the `+rcq.N` segment it
 would report `8.0.1`, which is indistinguishable from upstream's release while

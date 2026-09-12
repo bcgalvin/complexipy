@@ -296,132 +296,9 @@ Generation from the log is the fix.
 
 ## Pre-existing defects
 
-Not caused by the realignment and not removed capabilities - live bugs the explore
-sweep surfaced. Recorded here because this file is what outlives
-`docs/realignment/`. Each entry is self-contained so the set can be lifted out
-wholesale when the directory goes.
-
-Several bear directly on how `recsys-code-quality` consumes this tool; those are
-marked **consumer-facing**.
-
-### Fixed before workstream A
-
-**A relative `--output` resolved against the process CWD, and a test wrote into
-the checkout on every gate run.** Fixed.
-
-`crates/complexipy-cli/src/utils/paths.rs` took an `invocation_path` and used it
-when `--output` was omitted, but absolutized a relative `--output` with
-`std::path::absolute` against the **process CWD**, ignoring the parameter. The two
-branches disagreed about what a relative path is relative to, and
-`fs::create_dir_all` runs during path *resolution*, so merely resolving a relative
-output created a directory before any analysis.
-
-In ordinary CLI use the divergence was latent, because `run_cli` defaults
-`invocation_path` to `"."`. It surfaced through
-`crates/complexipy-cli/src/utils/paths/tests.rs`, which passes a tempdir as the
-invocation path and `"rel-out/"` as the output: the result was
-`crates/complexipy-cli/rel-out/`, untracked and un-gitignored, recreated by every
-`cargo test --workspace` - a command in the standing gate, so every workstream's
-verification recreated it inside a checkout the parent treats as a read-only
-input.
-
-Resolution: `std::path::absolute(invocation_path.join(output))`, matching the
-no-`--output` branch. An absolute `--output` is unaffected, since `Path::join`
-replaces on an absolute argument, and CLI behavior is unchanged because
-`invocation_path` is `"."` there. Verified by removing the directory and
-confirming the test no longer recreates it.
-
-### Fold into workstream D
-
-These are residue of the same removed feature D is already cleaning up, or dead
-code in files D already opens.
-
-- **`looks_like_remote`** (`crates/complexipy-cli/src/utils/cache.rs:130-142`)
-  normalizes cache keys for `github.com`/`gitlab.com` URLs. Nothing in the tree
-  clones or fetches a URL; git-URL analysis was removed in 8.0.0. Same category as
-  the stale `_complexipy.pyi` docstrings and the false `AGENTS.md` claims.
-- **`effective_sort_for_display`** (`crates/complexipy-cli/src/output.rs:158`) has
-  no callers; `handle_display` inlines the identical logic.
-- **`SnapshotEvaluation.snapshot_result`**
-  (`crates/complexipy-cli/src/utils/snapshot.rs`) is computed and unit-tested, but
-  `run.rs` reads only `should_run` and `watermark_success`.
-- **`RuleMetadata` derives `Serialize, Deserialize`** with no evident consumer, in
-  a file D edits anyway.
-
-### Done in workstream C
-
-**`--help` contained no descriptive text.** Fixed: `args.rs` now carries an
-`about`, a `long_about` that states the config-discovery rule, and a `help =` on
-every option. `docs/cli.md` covers what a flag list cannot - config precedence,
-output-path rules, exit codes, inline ignores, and where the tool writes.
-
-Original entry follows.
-
-**`--help` contains no descriptive text.** `crates/complexipy-cli/src/args.rs` has
-no `about`/`long_about` and no `help =` on any of the 21 options; since `AGENTS.md`
-bans code comments, clap has no doc comments to fall back on either. Upstream
-offloaded all explanation to the docs site. C is where that site disappears, so C
-is where `--help` has to become the discovery surface - otherwise there is a window
-with no user-facing documentation at all. Confirm the absence first with
-`rg -n 'help\s*=|about|///' crates/complexipy-cli/src/args.rs`.
-
-**Statements in a class body that are not functions are scored nowhere.**
-`cognitive_complexity.rs` iterates a `ClassDef` body matching only
-`Stmt::FunctionDef`, and the module-level accumulator never sees a `ClassDef`, so
-an `if` at class scope contributes to no function total and no module total.
-`class A:` containing `if x: pass` scores 0, while the same `if` at module level
-scores 1. Found during the C rewrite; not investigated further.
-
-### Defer past the realignment
-
-Real behavior changes. Each needs its own change, its own verification, and in two
-cases a design decision. Keeping them out of a deletion-heavy realignment keeps
-"did the realignment break this?" separable from "did my fix break this?".
-
-- **`--color` is completely inert. (consumer-facing)**
-  `crates/complexipy-cli/src/output/render.rs:16,24,40` computes `color_enabled`
-  and stores it; nothing reads it but two tests at `render/tests.rs:228,237`, which
-  give false confidence that the flag works. Every renderer calls owo-colors
-  directly, so ANSI is emitted unconditionally. `Color::Auto` hardcodes true with
-  no `is_terminal()` check - though the same file calls `is_terminal()` in
-  `terminal_width()` - and `NO_COLOR`/`CLICOLOR` are not consulted. The only clean
-  text mode is `--plain`, which discards everything but path, name, and complexity.
-  Net effect: there is no way to get clean machine-readable refactor output from
-  the console surface; a consumer must use `--output-format json`. Do not stack
-  this on D, which already changes that JSON schema twice.
-- **Config discovery is CWD-only, never target-relative. (consumer-facing)**
-  `crates/complexipy-cli/src/utils/toml.rs:7-16` joins the three candidate
-  filenames onto `invocation_path`, which `run_cli` defaults to `"."`. No upward
-  search, no target-root lookup. A target's own `[tool.complexipy]` thresholds are
-  silently ignored when the tool runs from an external working directory, which is
-  exactly the parent's mandated invocation pattern. Fixing this is a design
-  decision - upward search, target-root lookup, or an explicit flag - not a patch.
-- **The tool writes into the tree it analyzes. (consumer-facing)**
-  `.complexipy_cache/` is created in the invocation directory and ships its own
-  `.gitignore` containing `*` plus a `CACHEDIR.TAG`, so `git status --porcelain`
-  shows nothing after a run - which defeats a git-status-based before/after target
-  snapshot. `--cache-dir` redirects it, and has no help text. The snapshot path is
-  hardcoded to `<invocation>/complexipy-snapshot.json` with no override flag at
-  all. Decide whether the fix is flags, different defaults, or both.
-- **`-s file_name` sorts by function name** (`crates/complexipy-cli/src/output/rows.rs:65`).
-  The sharper framing: `complexipy-core`'s `export_tests.rs` proves the CSV path
-  sorts `file_name` by path, so console output and CSV export disagree on what the
-  same flag value means. Unverified - `rows.rs` was outside the review slice.
-- **Duplicate file headers.** Grouping is by consecutive same-path entries, so a
-  path can get two headers. Probably not specific to `--top`, since truncation runs
-  after row building. Unverified; reproduce before fixing.
-- **`--suggest-refactors` can degrade silently.** `read_source_lines` ends in
-  `.ok()`, so a failed read yields `None` and both the caret span and the
-  `Original:` snippet vanish with no warning. The mechanism is certain; the trigger
-  is not - the join is skipped when the path starts with `/`, so an out-of-tree
-  absolute target likely takes the safe branch. Real exposure is Windows-style
-  absolute paths and relative targets like `../repos/foo`.
-- **CLI output is not ASCII.** Emoji in `run.rs` and `render.rs`, box-drawing
-  U+2500, status glyphs, and the documented rule-category marks. This is *not* a
-  style-rule violation - `AGENTS.md` scopes its rule to Unicode dashes, and the
-  category marks are asserted as `\u{25b2}` in tests. It matters only because the
-  parent captures this output as text, and because `render.rs` guards one emoji
-  behind `cfg!(windows)` while leaving the status glyphs unguarded.
+Moved to [`design-issues-and-bugs.md`](design-issues-and-bugs.md), which is the
+single catalog for bugs and design issues found during the realignment. This
+file records removed capabilities only.
 
 ## Replacement priorities
 
@@ -440,5 +317,4 @@ cases a design decision. Keeping them out of a deletion-heavy realignment keeps
    keeping the parity gate and the scaling guard.
 1. **Rule documentation links** - only if a downstream consumer asks for them.
 
-The pre-existing defects above are sequenced separately: one fixed before A, four
-folded into D, one into C, and the rest deferred past the realignment.
+Pre-existing defects are sequenced in `design-issues-and-bugs.md`.

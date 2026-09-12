@@ -361,10 +361,9 @@ both builds.
 ## Pre-existing defects surfaced
 
 The sweep found roughly a dozen live bugs that are not realignment work. They are
-recorded with their evidence and sequencing in
-[`follow-up-tooling.md`](follow-up-tooling.md#pre-existing-defects), which is the
-file that outlives this directory - one was fixed before workstream A, four fold
-into D, one into C, and the rest are deferred past the realignment.
+recorded with their evidence and status in
+[`design-issues-and-bugs.md`](design-issues-and-bugs.md), the single catalog for
+bugs and design issues found during the realignment.
 
 The three that bear on how `recsys-code-quality` consumes this tool: `--color` is
 completely inert so the console surface cannot produce clean text; config discovery
