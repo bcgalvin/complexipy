@@ -27,10 +27,7 @@ pub struct CliArgs {
     )]
     pub exclude: Vec<String>,
 
-    #[arg(
-        long,
-        help = "Fail any function scoring above this. 0 disables the gate"
-    )]
+    #[arg(long, help = "Fail any function scoring above this")]
     pub max_complexity_allowed: Option<u64>,
 
     #[arg(long, num_args = 0..=1, default_missing_value = "true", require_equals = true, help = "Write current violations to complexipy-snapshot.json in the invocation directory")]
@@ -55,7 +52,7 @@ pub struct CliArgs {
     )]
     pub color: Option<Color>,
 
-    #[arg(short, long, help = "Row order: asc, desc, or name")]
+    #[arg(short, long, help = "Row order: asc, desc, or file_name")]
     pub sort: Option<Sort>,
 
     #[arg(
@@ -80,13 +77,13 @@ pub struct CliArgs {
     #[arg(
         short,
         long,
-        help = "Compare against a git reference and report regressions alongside the threshold gate"
+        help = "Compare against a git reference. The exit code then gates on regressions above the threshold instead of on the threshold itself"
     )]
     pub diff: Option<String>,
 
     #[arg(
         long,
-        help = "Compare against a git reference and gate on regressions alone, ignoring the threshold"
+        help = "Show the comparison against a git reference without changing the exit code"
     )]
     pub diff_only: Option<String>,
 
@@ -99,7 +96,7 @@ pub struct CliArgs {
     #[arg(long, conflicts_with = "quiet", num_args = 0..=1, default_missing_value = "true", require_equals = true, help = "Plain text output: path, name, and score only")]
     pub plain: Option<bool>,
 
-    #[arg(long, num_args = 0..=1, default_missing_value = "true", require_equals = true, help = "Emit refactor plans for functions above the threshold")]
+    #[arg(long, num_args = 0..=1, default_missing_value = "true", require_equals = true, help = "Emit refactor plans for every listed function")]
     pub suggest_refactors: Option<bool>,
 
     #[arg(long, num_args = 0..=1, default_missing_value = "true", require_equals = true, help = "Also score module-level code, reported as <module>")]
@@ -108,7 +105,7 @@ pub struct CliArgs {
     #[arg(long, num_args = 0..=1, default_missing_value = "true", require_equals = true, help = "Disregard every complexipy ignore comment")]
     pub no_ignore: Option<bool>,
 
-    #[arg(long, num_args = 0..=1, default_missing_value = "true", require_equals = true, help = "Report ignore comments whose function no longer needs them")]
+    #[arg(long, num_args = 0..=1, default_missing_value = "true", require_equals = true, help = "List every complexipy ignore comment; removable ones are reported on every run")]
     pub report_ignored: Option<bool>,
 }
 
