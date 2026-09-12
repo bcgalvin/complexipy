@@ -547,9 +547,24 @@ if has_regressions(entries, 15):
 
 `DiffEntry` exposes `file_path`, `func_name`, `old_complexity`, and
 `new_complexity` (either may be `None` for NEW / REMOVED functions) as
-read-only attributes, plus the `status` property. `status` is a `DiffStatus` member - a
-`str`-based enum, so it compares equal to its string value (e.g.
-`DiffStatus.REGRESSED == "REGRESSED"`).
+read-only attributes, plus the `status` property. `status` is a `DiffStatus`
+member: a Rust-backed extension type whose five members are class attributes.
+It is not a `str` subclass and not an `enum.Enum`, so compare it against
+members. Taking `e` from the loop above, with a regressed entry:
+
+```python
+>>> e.status == DiffStatus.REGRESSED
+True
+>>> e.status == "REGRESSED"
+False
+>>> f"{e.status}"
+'DiffStatus.REGRESSED'
+```
+
+There is no `.name` or `.value` accessor, and formatting a member yields the
+qualified `DiffStatus.REGRESSED` rather than `REGRESSED`, so comparing to a
+string still fails after formatting. Map members to your own strings if you
+need a plain name.
 
 ```python
 for e in entries:

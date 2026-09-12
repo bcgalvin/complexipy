@@ -548,9 +548,25 @@ if has_regressions(entries, 15):
 
 `DiffEntry` expone `file_path`, `func_name`, `old_complexity` y
 `new_complexity` (cualquiera puede ser `None` para funciones NEW / REMOVED)
-como atributos de solo lectura, más la propiedad `status`. `status` es un miembro de
-`DiffStatus` - un enum basado en `str`, por lo que compara igual a su valor
-de cadena (p. ej. `DiffStatus.REGRESSED == "REGRESSED"`).
+como atributos de solo lectura, más la propiedad `status`. `status` es un
+miembro de `DiffStatus`: un tipo de extensión implementado en Rust cuyos cinco
+miembros son atributos de clase. No es una subclase de `str` ni un
+`enum.Enum`, así que compáralo con los miembros. Tomando `e` del bucle
+anterior, con una entrada regresada:
+
+```python
+>>> e.status == DiffStatus.REGRESSED
+True
+>>> e.status == "REGRESSED"
+False
+>>> f"{e.status}"
+'DiffStatus.REGRESSED'
+```
+
+No existe un accesor `.name` ni `.value`, y formatear un miembro produce la
+forma cualificada `DiffStatus.REGRESSED` en lugar de `REGRESSED`, así que
+comparar con una cadena sigue fallando después de formatear. Si necesitas un
+nombre simple, asigna los miembros a tus propias cadenas.
 
 ```python
 for e in entries:
