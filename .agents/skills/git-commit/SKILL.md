@@ -14,7 +14,7 @@ a time, staging explicit paths or hunks only; never `git add .` or `git add -A`.
 Use `type(scope): description`, with an optional scope for broad changes.
 Choose the type from the actual change: `feat`, `fix`, `refactor`, `perf`,
 `test`, `docs`, `build`, `chore` or `revert`. Useful local scopes include `cli`,
-`python`, `rules`, `diff`, `deps`, `agents`, `skills`, `realignment` and `release`.
+`python`, `rules`, `diff`, `deps`, `agents`, `skills`, `maintenance` and `release`.
 Do not invent web, server, PR or CI scope to fit a generic template.
 
 Use an imperative subject, no trailing period, at most 72 characters, and ASCII

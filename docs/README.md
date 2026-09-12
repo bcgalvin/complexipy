@@ -18,5 +18,15 @@ markdown files read from the repository.
   configuration and manual generation.
 
 `AGENTS.md` at the repository root covers commands, architecture, and
-conventions. [`realignment/`](realignment/) tracks the in-progress fork
-realignment and is deleted when that work completes.
+conventions. Ongoing maintenance records:
+
+- [Design issues and bugs](maintenance/design-issues-and-bugs.md) - the full
+  catalog, including open and deferred issues.
+- [Removed tooling](maintenance/follow-up-tooling.md) - what was removed and
+  what a future replacement would need; not a commitment to rebuild it.
+- [git-cliff research](maintenance/changelog-git-cliff.md) - research evidence
+  and the deliberately small local solution adopted from it.
+
+The completed realignment tracker and evidence trail are retained in Git
+history at `e1a17fb:docs/realignment/`. Workstream letters A-H and numbered
+decisions in these records refer to that revision's `README.md` tracker.

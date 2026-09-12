@@ -39,6 +39,5 @@ to make a suggestion look effective.
 
 Run the focused registry and refactor-plan tests, then `verify`. Rebuild the
 extension before any Python test after Rust edits. Record a code defect found
-outside the rule change in `docs/realignment/design-issues-and-bugs.md` rather
-than expanding the task. G finalization moves that catalog to
-`docs/maintenance/design-issues-and-bugs.md`.
+outside the rule change in `docs/maintenance/design-issues-and-bugs.md` rather
+than expanding the task.

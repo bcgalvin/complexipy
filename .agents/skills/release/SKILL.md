@@ -10,8 +10,6 @@ unspecified. Before editing release files, inspect `git status` and check whethe
 the requested tag exists. Stop and ask if it exists or unrelated changes remain;
 do not stash, discard or include them. Finish and commit implementation work
 first, then begin from a clean tree so verification matches the release commit.
-While realignment is active, its tracker determines whether final cleanup and
-parent adoption are in scope; do not infer permission for them.
 
 1. Change `[workspace.package].version` in root `Cargo.toml`. The member crates
    inherit it and `pyproject.toml` declares a dynamic version through maturin;

@@ -36,7 +36,8 @@ an automated commit validator.
 
 ## Regenerating for a release
 
-For the first fork release, use `8.1.0`. Commit implementation work first.
+The first fork release is `8.1.0`; use the requested version for later releases.
+The command below illustrates 8.1.0. Commit implementation work first.
 Bump the workspace version and
 regenerate/review `Cargo.lock`, then write a candidate. Substitute an existing
 absolute scratch directory outside the checkout, using the agent's session
@@ -49,17 +50,20 @@ git-cliff --config cliff.toml --offline --no-exec --tag 8.1.0 \
 ```
 
 Check the command succeeded and read the candidate. Confirm the first fork fix,
-the merge, and both D/E breaking descriptions are present, with no session
-trailers or inherited release sections. If needed, compare against
+the merge, and the field-removal/Python-floor breaking descriptions are present,
+with no session trailers or inherited release sections. If needed, compare against
 `git log --oneline 030e207..HEAD`; `--context` provides git-cliff's parsed JSON.
 
-Replace `CHANGELOG.md` with the reviewed candidate in full. Do not also copy its
-two old handwritten Unreleased entries; their original commits already render.
+Replace `CHANGELOG.md` with the reviewed candidate in full. Do not hand-maintain
+additional entries that regeneration would overwrite; commit messages are the
+input.
 Run the standing gate and review the diff before committing the version,
 lockfile and changelog. Tag that commit separately. `--tag` labels generated
 output; it does not create a Git tag. No publishing is involved.
 
-The first regeneration is tracked in the [realignment plan](realignment/README.md);
-the old changelog and version remain unchanged during preparation. If the config
-changes later, rerun the preview and inspect the output; a bespoke verification
+The realignment's first regeneration replaces the inherited changelog rather
+than duplicating its old handwritten entries. Its completed plan is preserved
+in Git history at `e1a17fb:docs/realignment/README.md`. If the config changes,
+rerun the preview and inspect the output. At the first multi-release regeneration,
+also check the blank line between release sections. A bespoke verification
 framework is not warranted for this local workflow.

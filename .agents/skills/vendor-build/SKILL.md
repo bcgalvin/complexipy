@@ -13,10 +13,9 @@ and installed maturin; do not add a distribution or environment-management layer
 Before building, confirm the source commit and workspace version. Build a
 consumer artifact from a clean, committed tree so its recorded SHA identifies
 its contents. Do not overwrite a wheel with different source under the same
-version. Until the first post-realignment 8.1.0 release, do not build a consumer
-wheel: the interim 8.0.1 version collides with upstream. The parent's older
-`rcq` branch, upstream-remote and `+rcq.N` instructions are historical, not
-build defaults.
+version. Local releases use bare versions starting at 8.1.0, not `+rcq.N`.
+Build from the requested fork release on `main`; `origin` is the fork, not
+upstream. Historical comparison wheels are not current build defaults.
 
 Choose an absolute scratch directory outside this checkout and run:
 
@@ -48,6 +47,7 @@ SHA-256 in the parent's existing wheelhouse table when that parent edit is in
 scope. Do not create another receipt system. Installing the wheel into the
 parent provider environment and changing its gitlink are separate adoption
 steps, not implied by building it. Check consumer compatibility before adoption:
-in particular, the parent reduced-record writer must no longer read the removed
-`plan.doc_url` and `plan.references` fields. Do not change the parent as a side
-effect of this skill unless that work was requested.
+the parent's `scripts/complexipy_analysis/reduced_record.py` must not read the
+removed `plan.doc_url` and `plan.references` fields. This is required before
+adopting the first 8.1.0 wheel; keep future serializer changes aligned too. Do
+not change the parent as a side effect unless that work was requested.

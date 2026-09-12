@@ -1,6 +1,6 @@
 # Follow-up tooling
 
-Inventory of functionality the realignment removes, recorded so replacements can
+Inventory of functionality removed by the realignment, recorded so replacements can
 be scoped deliberately rather than rediscovered. Removal is the default; this file
 is the record that makes aggressive removal safe.
 
@@ -303,7 +303,8 @@ users that is correct; note it as a deliberate choice rather than an oversight.
 **Disposition: Replace with git-cliff.** G preparation uses a local 2.14.1
 version check, root `cliff.toml` and direct commands in `docs/changelog.md`.
 No installer, wrapper, artifact manifest or bespoke test framework is retained.
-The inherited changelog is replaced at G finalization, after H.
+G finalization replaces the inherited changelog for 8.1.0; later releases use
+the same direct procedure.
 
 The `release-notes` skill maintained `CHANGELOG.md` and its Spanish mirror by
 hand, moved `## Unreleased` into a dated section at release time, created the tag,

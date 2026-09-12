@@ -1,10 +1,10 @@
 # Design issues and bugs
 
-Catalog of everything the realignment turns up that is not itself realignment
-work. Two kinds of entry:
+Maintenance catalog, carried forward in full from the fork realignment.
+Two kinds of entry:
 
-- **Bugs** - small, scoped, and fixable in passing. Addressed as the workstream
-  that opens the relevant file comes around, or deferred with a stated reason.
+- **Bugs** - scoped behavior defects. Address them when the requested work
+  covers them, or defer with a stated reason.
 - **Design issues** - tension, friction, or debt that is not clearly a bug. Not
   scheduled. Recorded with enough context to find and evaluate later without
   rediscovering it.
@@ -13,23 +13,32 @@ Every entry names where the evidence is: source by path and enclosing symbol
 (function, test, struct field, constant), markdown by section heading, never by
 line number. This file outlives the realignment, and a line reference goes stale
 silently while a symbol reference fails loudly. Status values: **fixed** (with
-the commit), **assigned** (to a workstream), **open**, **deferred** (with why).
+the commit), **open**, **deferred** (with why).
 
-`follow-up-tooling.md` records *removed capabilities* and what a replacement
-needs; `explore-results.md` is the evidence trail of the analysis sweep. This
-file is the one that stays actionable after `docs/realignment/` is deleted.
+[`follow-up-tooling.md`](follow-up-tooling.md) records removed capabilities and
+possible replacements, not an implementation checklist. The completed tracker
+and original `docs/realignment/explore-results.md` evidence trail remain in Git
+history at `e1a17fb`. Historical workstream labels below identify that work;
+they are not assignments to still-running workstreams.
 
 ## Bugs
 
 ### Fixed
+
+- **Generated changelog ended with a blank line at EOF.** The first G
+  regeneration failed `git diff --check`. Root `cliff.toml` now normalizes only
+  trailing newlines to one newline through its postprocessor. Native generation
+  preserves the commit population and indented breaking descriptions while
+  passing the whitespace check; no wrapper or formatter was added.
 
 - **Changelog message handling was unspecified.** G preparation now uses
   local git-cliff 2.14.1 and root `cliff.toml`. A manual native-tool check at
   `5ec3c37` accounted for all 29 fork SHAs, including merge `9926391` and the
   five empty-body commits (`fa174cc`, `c613bdb`, `f6d4a14`, `9926391`,
   `5999826`). D/E migration descriptions survive; session trailers do not render.
-  This is a manual check, not an automated contract suite. Replacing the
-  inherited changelog remains G finalization work after H.
+  This is a manual check, not an automated contract suite. G finalization
+  replaces the inherited changelog for 8.1.0; the direct maintenance procedure
+  is in `docs/changelog.md`.
 
 - **A relative `--output` resolved against the process CWD, not the invocation
   path.** `crates/complexipy-cli/src/utils/paths.rs` honoured `invocation_path`
@@ -61,8 +70,8 @@ file is the one that stays actionable after `docs/realignment/` is deleted.
 
 - **The stub documented a removed feature.** Two collector docstrings described
   `paths` as accepting Git repository URLs, removed in 8.0.0. Fixed in D; the
-  matching `AGENTS.md` claims are E's, and `cache.rs` `looks_like_remote` is
-  assigned to E below.
+  matching `AGENTS.md` claims and `cache.rs` `looks_like_remote` were handled
+  subsequently by E, as recorded below.
 
 - **Four consumer-visible removals needed a machine-readable record.** Dropping
   `doc_url` and `references` changes the `--output-format json` schema and the
@@ -148,7 +157,6 @@ Recorded by `refactor(fork)!: align identity and Python 3.14 contracts`.
   twice (the Project Structure tree and the "Rust core" bullet).
   **Fixed in E**: removed the helper and its branch, and corrected both
   `AGENTS.md` descriptions.
-  scope.
 
 - **Native docstrings omit two parameters.** The `code_complexity` and
   `file_complexity` docstrings in the stub document only `code` / `file_path`

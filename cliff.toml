@@ -22,7 +22,7 @@ body = '''
 '''
 trim = false
 render_always = false
-postprocessors = []
+postprocessors = [{ pattern = '\n+\z', replace = "\n" }]
 
 [git]
 conventional_commits = true
