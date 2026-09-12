@@ -51,7 +51,7 @@ Observed 2026-09-12.
 | Local branches | `rcq` (at `9926391`) and `followup-batch-1` (at `d690c9f`) are both contained in `main` |
 | GitHub Actions | 0 workflow runs have ever executed on this fork **(external)** |
 | Repo settings | Issues disabled, no Pages site, `main` unprotected. Wiki was enabled and unused and `homepageUrl` was `complexipy.com`; B disabled the Wiki and cleared the homepage **(external)** |
-| Tracked YAML after `.github/` and mkdocs removal | `.pre-commit-config.yaml` only, which F then removes |
+| Tracked YAML | Was eight. B removed five; `mkdocs.yml` and `mkdocs.es.yml` go in C, leaving `.pre-commit-config.yaml`, which F then removes |
 | Refactor rules | Seven: C001, C002, C003, C004, C005, C007, C011. The ID space is non-contiguous |
 
 ## Decisions
@@ -96,15 +96,18 @@ Observed 2026-09-12.
 
 A, B, C, D, E, F, G, then H.
 
-No automation runs the gates today: `.pi/` belongs to a harness this fork does not
-use, `.pre-commit-config.yaml` carries no Rust or Python gate, and
-`.github/workflows/CI.yml` triggers on `pull_request` only, which decision 8
-abolishes. Verification during the realignment is therefore manual, using the
-standing gate below, and `verify` is the first skill written in H.
+No automation runs the gates. Before B there were three candidates and none
+qualified: `.pi/` belonged to a harness this fork does not use,
+`.pre-commit-config.yaml` carries no Rust or Python gate, and
+`.github/workflows/CI.yml` triggered on `pull_request` only, which decision 8
+abolishes. B deleted the first and third. Verification during the realignment is
+therefore manual, using the standing gate below, and `verify` is the first skill
+written in H.
 
-Deletions precede rewrites so the rewrites describe the end state. B precedes G
-because `release.yml` triggers on `push: tags: "*"` and G's closing version bump
-is what the `release` skill tags.
+Deletions precede rewrites so the rewrites describe the end state. B preceded G
+because `release.yml` triggered on `push: tags: "*"` and G's closing version bump
+is what the `release` skill tags; with the workflow now deleted, that hazard is
+gone.
 
 Review cadence: A and B were reviewed individually before committing. C onward
 run completion to commit directly, with one thorough review once every workstream
@@ -241,6 +244,12 @@ Retained prose carries MkDocs-only syntax (`!!! note` admonitions, `=== "tab"`
 content tabs, `--8<--` snippet directives) that renders as literal text outside
 MkDocs. De-MkDocs it rather than moving it verbatim.
 
+Do not diagnose the site build: it is already broken. B deleted
+`benchmarks/results.md`, which `docs/benchmarks.md` includes and `mkdocs.yml`
+resolves with `check_paths: true`, so `mkdocs build` now aborts. `mkdocs.es.yml`
+omits `check_paths` and instead emits the literal `--8<--` line. Both files are
+deleted here anyway.
+
 The audience is this repository and the downstream agents in
 `recsys-code-quality`. Installation, integrations, comparisons aimed at
 prospective users, and anything addressed to contributors do not return.
@@ -270,6 +279,11 @@ Emission:
   argument leaves `output_plan_references` with only `plan.references`, which
   no rule populates, so the `References:` block stops rendering. Decide whether
   the helper survives at all.
+- [ ] Decide whether the `gitlab` and `sarif` output formats survive at all. Both
+  existed for CI consumers - GitLab Code Quality and GitHub code scanning - and B
+  removed the last of those. Keep them only if `recsys-code-quality` ingests them
+  directly. D is the natural place to settle it because it opens `sarif.rs`
+  regardless.
 - [ ] `crates/complexipy-cli/src/utils/sarif.rs`: `INFO_URI` (line 12, emitted at
   35 as `informationUri`), `HELP_URI` (13, emitted at 129 as `helpUri`), and
   `plan.doc_url` (167). All three keys are optional in SARIF 2.1.0
@@ -421,6 +435,13 @@ than migrated. `follow-up-tooling.md` carries what each did.
 - [ ] `.mdformat.toml` (a `[plugin.mkdocs]` block, vestigial once the site is gone)
 - [ ] The nine-setting `[tool.yamlfix]` block in `pyproject.toml`
 - [ ] `pre-commit` from the `dev` dependency group, and regenerate `uv.lock`
+- [ ] While in the tooling config: `.gitignore` still carries roughly forty lines
+  of upstream Python-packaging boilerplate for tooling this project does not use -
+  `.Python`, `develop-eggs/`, `eggs/`, `parts/`, `var/`, `man/`, `.installed.cfg`,
+  `*.egg`, `pip-log.txt`, `pip-selfcheck.json`, `nosetests.xml`, `htmlcov/`,
+  `.tox/`, `coverage.xml`, `*.mo`, `*.pot`, `.mr.developer.cfg`, `.project`,
+  `.pydevproject`, `.ropeproject` - plus `libcomplexipy.dylib*`, which `target/`
+  already covers
 - [ ] No Git hook to uninstall: this checkout's hooks live in
   `.git/modules/repos/complexipy/hooks/` and contain only `.sample` files
 
@@ -524,7 +545,7 @@ Proposed. `verify` is written first:
 
 | Skill | Encodes |
 | -- | -- |
-| `verify` | The standing gate above, plus one invocation of the built CLI - nothing in the gate exercises the binary, and `.pi/hook-scripts/py-complexipy.sh` and CI's `complexipy complexipy --failed` were the only things that did. `maturin develop` before pytest is the one hard ordering constraint and the most-repeated trap in `AGENTS.md`; the contract harness builds its own wheel into a fresh venv and is independent of it. |
+| `verify` | The standing gate above, plus one invocation of the built CLI, and a note that the gate's `uv run ty check .` runs with the editable project installed - so ty reads the native module, not the stub. That is the configuration the deleted CI lint job existed to avoid, and after B it is the only one available locally; `tests/contract/check_stub_contract.py` is what still checks stub/runtime parity, and only for its four cases - nothing in the gate exercises the binary, and `.pi/hook-scripts/py-complexipy.sh` and CI's `complexipy complexipy --failed` were the only things that did. `maturin develop` before pytest is the one hard ordering constraint and the most-repeated trap in `AGENTS.md`; the contract harness builds its own wheel into a fresh venv and is independent of it. |
 | `vendor-build` | Wheel into `../../wheelhouse/` with `CARGO_TARGET_DIR` outside the checkout, stub and runtime parity check, provenance table. Currently prose in another repository. |
 | `release` | Bump the workspace `Cargo.toml` (the only literal), regenerate `Cargo.lock`, regenerate the changelog with git-cliff, rebuild, tag. It must not reintroduce a publish step. Carry over the removed `release-notes` skill's version-consistency check. |
 | `add-refactor-rule` | The rule lockstep: struct and `impl` in `complexity.rs`, `register_defaults()`, effectiveness tier, docs entry, fixture test - plus the three hardcoded gates in `rules/registry/tests.rs` that `AGENTS.md` omits: a new arm in `fixture_for()` (which panics on an unknown id), the literal `assert_eq!(checked, 7, ...)`, and the expected-tier table in `effectiveness_matches_documented_tiers`. Its comment says "if a 9th rule is added" while seven are registered; correct that while writing the skill. |

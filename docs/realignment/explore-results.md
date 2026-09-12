@@ -406,8 +406,9 @@ them invisible to `git status`.
   verification grep does not match it, but a broad "strip all URLs" pass would
   delete it. `sarif_file_created_and_valid` asserts it is a string, so a deletion
   would at least fail a test.
-- **`gitlab` and `sarif` output formats lose their only plausible consumers** once
-  there is no CI. Keep them only if the parent ingests them directly.
+- **`gitlab` and `sarif` output formats lost their only plausible consumers** when
+  B removed CI. No longer a watch item: it is now a decision in D, which opens
+  `sarif.rs` regardless.
 - **uv's `**/*.rs` cache key has no gitignore awareness**, so it nominally includes
   generated `.rs` under `target/`. Whether uv filters that internally was not
   established.
