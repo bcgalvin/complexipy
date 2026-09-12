@@ -24,8 +24,8 @@ the next candidate, then to the built-in defaults
 consequences worth internalizing:
 
 - If a `complexipy.toml` exists, a `[tool.complexipy]` block in the same
-  `pyproject.toml` is never read. This repository has both; only the former
-  applies.
+  `pyproject.toml` is never read. This repository keeps only `complexipy.toml`;
+  the loader still supports `[tool.complexipy]` for other projects.
 - Discovery is relative to the **invocation directory**, not the analyzed path.
   Running the tool from outside a target means the target's own thresholds are
   silently ignored.

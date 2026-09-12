@@ -192,6 +192,19 @@ Recorded by `refactor(fork)!: align identity and Python 3.14 contracts`.
   function traversal disagree. **Fixed in E**: describe operator runs,
   `Class::method` names and nested-function aggregation.
 
+### Fixed in workstream F
+
+Recorded by `chore(tooling): remove the pre-commit stack`.
+
+- **Two config files at the repo root, one dead.** Root `complexipy.toml`
+  shadowed `[tool.complexipy]` in `pyproject.toml`; they disagreed on `paths`,
+  `exclude`, `failed` and `quiet`. **Fixed in F**: remove the pyproject block,
+  retaining root `complexipy.toml` unchanged. Discovery remains first-hit-wins
+  with no merge (`crates/complexipy-cli/src/utils/toml.rs`
+  `get_complexipy_toml_config`). The sibling tests
+  `complexipy_toml_wins_over_every_other_candidate` and `candidates_are_not_merged`
+  pin that behavior; pyproject config support remains available to consumers.
+
 ### Assigned to a workstream
 
 - **Commit-log inputs the changelog regeneration has not planned for.** At
@@ -200,11 +213,6 @@ Recorded by `refactor(fork)!: align identity and Python 3.14 contracts`.
   and `5999826`. Recompute the inputs at G rather than treating these snapshot
   counts as current. git-cliff's trailer and empty-body handling remains
   unverified; the `BREAKING CHANGE:` footer on `39e1bd5` must survive. **G**.
-
-- **Two config files at the repo root, one dead.** Discovery is first-hit-wins
-  with no merge, so `complexipy.toml` shadows `[tool.complexipy]` in
-  `pyproject.toml` entirely. They disagree on `paths`, `exclude`, `failed` and
-  `quiet`. **F** retires one.
 
 ### Open
 

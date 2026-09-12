@@ -88,21 +88,29 @@ If edit-triggered checks are wanted again, Claude Code hooks in
 
 ### `.pre-commit-config.yaml`
 
-Removed in full, along with `.mdformat.toml`, the nine-setting `[tool.yamlfix]`
-block in `pyproject.toml`, and the `pre-commit` dev dependency.
+Removed in F, along with `.mdformat.toml`, the nine-setting `[tool.yamlfix]`
+block in `pyproject.toml`, and the `pre-commit` dev dependency. The checkout had
+no installed Git hook and no `core.hooksPath` override, so no uninstall was needed.
 
 - **complexipy** - pinned `rohaquinlop/complexipy-pre-commit` at `v6.1.0`, so the
-  self-dogfooding gate ran **upstream's** binary against fork source. Threshold
-  `max-complexity-allowed = 15` came from `[tool.complexipy]`. A replacement must
-  be a `local` hook driving the locally built extension, or it tests the wrong
-  program. **Replace.**
+  configured check used **upstream's** binary, not this fork. Both checked-in
+  analyzer configs declared `max-complexity-allowed = 15`; which one that
+  upstream version would select was not verified. F removed the shadowed
+  `[tool.complexipy]` block and kept root `complexipy.toml` unchanged. A
+  replacement must be a `local` hook driving the locally built extension, or
+  it tests the wrong program. **Replace.**
 - **mdformat** - `--compact-tables`, with `mdformat-mkdocs>=0.2.1` and an exclusion
   for `SKILL.md`. That exclusion is not optional: mdformat has no frontmatter
   support and rewrites a skill's opening `---` as a thematic break and its closing
   `---` as a setext heading, destroying the YAML that makes the skill loadable.
-  Any markdown formatter added later needs the same exclusion. **Decide.**
-- **yamlfix** - formatted YAML. After the realignment there is no YAML left in the
-  repository to format. **Drop.**
+  Any markdown formatter added later needs the same exclusion. **Decide** on a
+  replacement; F's interim policy is no repository Markdown formatter. Maintain
+  the surrounding style manually, check ASCII punctuation and `git diff --check`,
+  and do not mistake those checks for Markdown validation. This policy and the
+  frontmatter warning also live in `AGENTS.md` under "Code Style" and "Agent
+  Configuration Layout", so they survive this inventory's eventual removal.
+- **yamlfix** - formatted YAML. F removed the last tracked `.yaml`/`.yml` file;
+  skill YAML frontmatter still exists but was not a target of this hook. **Drop.**
 
 ### Never existed, worth adding
 
@@ -310,8 +318,9 @@ file records removed capabilities only.
 
 ## Replacement priorities
 
-1. **`verify` skill** - the local gate, replacing what CI and `.pi/` ran. Nothing
-   checks this repository automatically until it exists.
+1. **`verify` skill** - the local procedure replacing what CI and `.pi/` ran.
+   A skill does not schedule checks; verification remains manual until a hook
+   or CI job actually invokes the gates.
 1. **`.pre-commit-config.yaml` rebuild** - a `local` complexipy hook on the built
    extension, plus `commit-msg` Conventional Commits validation that git-cliff
    depends on.

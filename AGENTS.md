@@ -60,6 +60,8 @@ complexipy/
 
 ## Commands
 
+Verification is manual: no repository-managed Git hooks or CI run the gates below.
+
 ### Setup
 
 ```bash
@@ -151,6 +153,9 @@ cargo check -p complexipy-cli --locked
 ```
 
 ### Run
+
+Root `complexipy.toml` is the sole checked-in analyzer config. It keeps the
+self-dogfooding threshold at 15 and excludes `tests/**`.
 
 ```bash
 uv run complexipy <path>
@@ -303,9 +308,10 @@ dependency means adding it to the crate that uses it.
   messages. Use ASCII `-`.
 - Docstrings only when necessary, and only about what the function does. Never changelog or history notes.
 - Conventional Commits: `type(scope): description` (e.g., `fix(diff): resolve path for nested invocation`).
-- Pre-commit hooks: complexipy (self-dogfooding, `max-complexity-allowed = 15` from
-  `[tool.complexipy]`), mdformat, yamlfix. Pass explicitly quoted paths to
-  `pre-commit run --files`; unquoted globs yield a bogus "no files to check".
+- Markdown has no repository formatter for now. Preserve the surrounding style
+  manually, keep punctuation ASCII, and run `git diff --check`. These checks do
+  not validate Markdown structure or rendering. See the `SKILL.md` warning below
+  before introducing any formatter.
 - Ruff for linting and formatting (line-length 80, indent-width 4; ordinary tests included, `tests/src/**` and `tests/fixtures/**` excluded).
 
 ## Key Files
@@ -342,10 +348,10 @@ Each piece of agent config has exactly one real copy; the other paths point at i
 - `.agents/skills/` holds the real skill files, so any tool that reads `.agents/` sees
   plain files. `.claude/skills` is a symlink to `../.agents/skills` - **do not replace
   it with copies.** Add a new skill once, under `.agents/skills/<name>/SKILL.md`.
-- `SKILL.md` files are excluded from the mdformat hook. mdformat has no frontmatter
-  support: it rewrites the opening `---` as a thematic break and the closing `---` as a
-  setext heading, which silently destroys the YAML that makes a skill loadable. Do not
-  remove that exclusion, and do not hand-run `mdformat` over a `SKILL.md`.
+- Never run `mdformat` over `SKILL.md`: it rewrites the opening `---` as a
+  thematic break and the closing `---` as a setext heading, silently destroying
+  the YAML frontmatter that makes a skill loadable. Any future Markdown formatter
+  must exclude `(^|/)SKILL\.md$`. There is no formatter hook at present.
 
 ## Keeping This File Current
 

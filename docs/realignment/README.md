@@ -68,7 +68,7 @@ say so.
 | Parent gitlink | `recsys-code-quality` pins `repos/complexipy` at `c613bdb` (`8.0.0+rcq.2`), seven commits before the branch point and nineteen before `39e1bd5`. Its `.gitmodules` entry has no `branch =` key |
 | GitHub Actions | 0 workflow runs have ever executed on this fork **(external)** |
 | Repo settings | Issues disabled, no Pages site, `main` unprotected. Wiki was enabled and unused and `homepageUrl` was `complexipy.com`; B disabled the Wiki and cleared the homepage **(external)** |
-| Tracked YAML | Was eight. B removed five and C two, leaving `.pre-commit-config.yaml`, which F removes |
+| Tracked YAML | Was eight. B removed five, C two, and F the last (`.pre-commit-config.yaml`); no tracked `.yaml`/`.yml` files remain |
 | Refactor rules | Seven: C001, C002, C003, C004, C005, C007, C011. The ID space is non-contiguous |
 
 ## Decisions
@@ -118,11 +118,11 @@ The final version/tag and directory deletion come after H, not before it.
 
 No automation runs the gates. Before B there were three candidates and none
 qualified: `.pi/` belonged to a harness this fork does not use,
-`.pre-commit-config.yaml` carries no Rust or Python gate, and
+`.pre-commit-config.yaml` carried no Rust or Python test gate, and
 `.github/workflows/CI.yml` triggered on `pull_request` only, which decision 8
-abolishes. B deleted the first and third. Verification during the realignment is
-therefore manual, using the standing gate below, and `verify` is the first skill
-written in H.
+abolishes. B deleted the first and third; F removed the pre-commit stack.
+Verification during the realignment is therefore manual, using the standing gate
+below, and `verify` is the first skill written in H.
 
 Deletions precede rewrites so the rewrites describe the end state. B preceded G
 because `release.yml` triggered on `push: tags: "*"` and G's closing version bump
@@ -457,47 +457,78 @@ no wheel was vendored into the parent.
 
 ### F. Remove the pre-commit stack
 
-Clean break. All three hooks go, and test automation is rebuilt afterward rather
-than migrated. `follow-up-tooling.md` carries what each did.
+Clean break. All three hook definitions are removed; automation will be rebuilt
+rather than migrated. `follow-up-tooling.md` carries their behavior and replacement
+requirements. Recorded by `chore(tooling): remove the pre-commit stack`.
 
-- [ ] `.pre-commit-config.yaml`
-- [ ] `.mdformat.toml` (a `[plugin.mkdocs]` block, vestigial once the site is gone)
-- [ ] The nine-setting `[tool.yamlfix]` block in `pyproject.toml`
-- [ ] `pre-commit` from the `dev` dependency group, and regenerate `uv.lock`
-- [ ] While in the tooling config: `.gitignore` still carries roughly forty lines
-  of upstream Python-packaging boilerplate for tooling this project does not use -
-  `.Python`, `develop-eggs/`, `eggs/`, `parts/`, `var/`, `man/`, `.installed.cfg`,
-  `*.egg`, `pip-log.txt`, `pip-selfcheck.json`, `nosetests.xml`, `htmlcov/`,
-  `.tox/`, `coverage.xml`, `*.mo`, `*.pot`, `.mr.developer.cfg`, `.project`,
-  `.pydevproject`, `.ropeproject` - plus `libcomplexipy.dylib*`, which `target/`
-  already covers
-- [ ] No Git hook to uninstall: this checkout's hooks live in
-  `.git/modules/repos/complexipy/hooks/` and contain only `.sample` files
+- [x] Remove `.pre-commit-config.yaml` and `.mdformat.toml` (the latter contained
+  only the obsolete `[plugin.mkdocs]` setting).
+- [x] Remove the nine-setting `[tool.yamlfix]` block in `pyproject.toml`.
+- [x] Remove `pre-commit` from the `dev` dependency group and regenerate `uv.lock`.
+  The lockfile loses only pre-commit and nine orphaned dependencies: `cfgv`,
+  `distlib`, `filelock`, `identify`, `nodeenv`, `platformdirs`, `python-discovery`,
+  `pyyaml`, `virtualenv`. All retained third-party package records are unchanged.
+- [x] Prune `.gitignore` of obsolete packaging, installer, coverage, translation
+  and legacy IDE patterns, plus the redundant `libcomplexipy.dylib*` entry.
+  Retain `target/` (maturin wheels and Cargo builds), `dist/` as a safeguard for
+  other local packaging frontends, `.venv/`, the Python native extension and
+  bytecode patterns, pytest/analyzer caches, and existing local editor/OS
+  exclusions. Add explicit `.ruff_cache/` coverage instead of relying on Ruff's
+  self-hiding directory. No ignored files were deleted.
+- [x] Confirm no Git hook needs uninstalling: the submodule's hooks directory,
+  under the parent's `.git/modules/repos/complexipy/hooks/`, contains only
+  `.sample` files; `core.hooksPath` has no override. No Git config was changed.
+- [x] Remove the dead `[tool.complexipy]` block; retain root `complexipy.toml`
+  byte-for-byte. The removed block used `paths = ["crates", "complexipy"]`,
+  `failed = true`, `quiet = true` and no exclusion. The retained config uses
+  `paths = ["."]`, `failed = false`, `quiet = false`, `exclude = ["tests/**"]`.
+  Discovery is first-hit-wins with no merge (`crates/complexipy-cli/src/utils/toml.rs`
+  `get_complexipy_toml_config`), so removing the shadowed block changes no active
+  setting. Consumer support for pyproject config remains, pinned by the sibling
+  discovery tests.
+- [x] Update `AGENTS.md` and `docs/cli.md` alongside the config removal. Interim
+  Markdown policy: no repository formatter; preserve surrounding style manually,
+  check ASCII punctuation and `git diff --check`. These checks are not Markdown
+  validation. Keep the `SKILL.md` frontmatter hazard in the permanent agent guide,
+  not only this temporary tracker.
 
-Three things must come back in the rebuild, and are recorded as such:
+Still deferred to the tooling rebuild:
 
 - A `local` complexipy hook driving the **locally built** extension. The removed
-  hook pinned `rohaquinlop/complexipy-pre-commit` at `v6.1.0`, so the
-  self-dogfooding gate ran upstream's binary against fork source.
-- A decision on markdown formatting. If any formatter returns, it needs the
-  `SKILL.md` exclusion: mdformat has no frontmatter support and rewrites a skill's
-  opening `---` as a thematic break and its closing `---` as a setext heading,
-  destroying the YAML that makes the skill loadable.
-- A `commit-msg` Conventional Commits check. Commit messages have never been
-  machine-validated here - `pr-title.yml` checked pull-request titles - and
-  git-cliff now depends on the convention with nothing else guarding it.
+  definition pinned `rohaquinlop/complexipy-pre-commit` at `v6.1.0`, not the fork.
+- Decide whether to restore a Markdown formatter. Any formatter needs the
+  `SKILL.md` exclusion: mdformat rewrites a skill's opening `---` as a thematic
+  break and its closing `---` as a setext heading, destroying its YAML frontmatter.
+- A `commit-msg` Conventional Commits check. `pr-title.yml` checked pull-request
+  titles, not commits; G's planned git-cliff generation still has no validator.
 
-Also settle the duplicate complexipy config while here: root `complexipy.toml`
-(`paths = ["."]`, `exclude = ["tests/**"]`, `failed = false`, `quiet = false`) and
-`pyproject.toml`'s `[tool.complexipy]` (`paths = ["crates", "complexipy"]`,
-`failed = true`, `quiet = true`) disagree on exactly those four settings - but the
-choice is not symmetric. Discovery is first-hit-wins with no merge
-(`utils/toml.rs:7-16`), and `complexipy.toml` exists, so **the pyproject block is
-never read and retiring it is a no-op**, while retiring `complexipy.toml` flips
-four settings and loses `exclude = ["tests/**"]`.
+Validation on CPython 3.14.3/macOS arm64: `uv lock --check`, `uv sync --frozen`,
+`maturin develop`, 144 pytest tests, 300 Rust tests (`--workspace --locked`),
+Clippy with `-D warnings`, Cargo format check, the standalone CLI compile check,
+Ruff lint and format checks, ty, and the installed-wheel contract `--self-test`
+all pass.
+The full standing gate applies because F changes tooling dependencies and config,
+not only documentation. `Cargo.lock` and root `complexipy.toml` are unchanged.
 
-Verify: `uv sync --frozen`; confirm `git status` is clean without hook
-intervention.
+A temporary built-CLI smoke test loaded copies of the before/after project config:
+identical output and exit status, `tests/**` excluded, threshold overrides at 1
+and 2 returning 1 and 0 for a function of complexity 2. The existing ignored-path
+inventory is unchanged; `pre-commit` is absent from the synced environment.
+Changed files pass ASCII and `git diff --check` checks. No Markdown formatter was
+run, following the new interim policy.
+
+A case-insensitive reference sweep for `pre-commit`, `pre_commit`, `mdformat` and
+`yamlfix` found only the permanent frontmatter warning, realignment records,
+historical `CHANGELOG.md` entries, and a conditional downstream-hook example in
+`release-notes/SKILL.md` ("Downstream Release Verification"). The latter invokes no
+removed tool and remains H-owned. `.claude/settings.json` has attribution settings
+only, not hooks. No live command references to the removed tooling remain.
+
+Fresh Oracle review completed before commit (three reviewers). Follow-ups:
+record the residue sweep, add the explicit lock freshness check, retain `dist/`,
+move manual-verification guidance to "Commands", and tidy wrapping. No
+source/test changes or unresolved F blockers; no G/H implementation or
+parent-repository changes are included.
 
 ### G. Changelog, version, and branch cleanup
 
@@ -616,7 +647,8 @@ cases the prose is already incomplete.
 Scope for rebuilt tooling lives in [`follow-up-tooling.md`](follow-up-tooling.md).
 
 - **Test automation.** `verify` skill first, then a rebuilt pre-commit config.
-  Nothing checks this repository automatically until they exist.
+  The skill records a procedure; checks remain manual until hooks or CI actually
+  invoke the gates.
 - **CI rebuild.** Separate branch after this work lands. Written for this fork
   rather than adapted from upstream's.
 - **Pull requests.** Adopted only when that CI gives them a purpose.

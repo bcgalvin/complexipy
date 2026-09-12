@@ -25,15 +25,6 @@ module-name = "complexipy._complexipy"
 bindings = "pyo3"
 include = ["LICENSE"]
 
-[tool.complexipy]
-paths = ["crates", "complexipy"]
-max-complexity-allowed = 15
-quiet = true
-ignore-complexity = false
-failed = true
-sort = "asc"
-output-format = []
-
 [tool.uv]
 cache-keys = [
     {file = "pyproject.toml"},
@@ -55,17 +46,6 @@ exclude = ["tests/src/**", "tests/fixtures/**"]
 [tool.ruff.format]
 exclude = ["tests/fixtures/**", "tests/src/**"]
 
-[tool.yamlfix]
-explicit_start = true
-line_length = 120
-whitelines = 1
-comments_whitelines = 1
-section_whitelines = 1
-comments_min_spaces_from_content = 2
-comments_require_starting_space = true
-preserve_quotes = true
-sequence_style = "keep_style"
-
 [tool.ty.src]
 exclude = ["tests"]
 
@@ -81,7 +61,6 @@ error-on-warning = true
 [dependency-groups]
 dev = [
     "maturin>=1.8.3",
-    "pre-commit>=3.5.0",
     "pytest>=8.3.5",
     "ruff>=0.9.0",
     "ty>=0.0.1a1",
