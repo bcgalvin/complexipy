@@ -51,7 +51,9 @@ Three consequences, all absorbed into the tracker:
   before the first fetch re-imports 39 tags.
 - B asked whether `origin` carries the inherited tags. It does not, so G's local
   `git tag -d` is sufficient and no `git push --delete` is needed.
-- `git remote prune origin` is close to a no-op.
+- `git remote prune origin` targets the fork. (Execution note: it pruned 36 stale
+  remote-tracking refs inherited from the fork clone, so this was not the no-op
+  predicted here - the remote side was right, the local side was not checked.)
 
 ### 3. This checkout is a git submodule, and `git submodule update` will revert it
 

@@ -17,8 +17,7 @@ Before staging or committing:
 
 1. Run `git status --short` to see changed files.
 1. Inspect recent commit style with `git log --oneline -n 10`.
-1. Check project guidance files when present, such as `AGENTS.md`, `CONTRIBUTING.md`,
-   `README.md`, or `.github/` templates.
+1. Check project guidance files when present, such as `AGENTS.md` or `README.md`.
 1. Follow explicit project conventions over this generic default.
 1. Derive the repo's commit shape from the log - subject-only vs bodies, scoped vs
    unscoped, bundled vs split - and match it.

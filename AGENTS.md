@@ -53,8 +53,7 @@ complexipy/
 │   ├── contract/                 # Installed-wheel stub/runtime contract harness
 │   └── test_*.py                 # Utility module tests
 │
-├── docs/                         # MkDocs content (EN + es/)
-└── .github/workflows/            # CI, PR title check, release
+└── docs/                         # MkDocs content (EN + es/)
 ```
 
 ## Commands
@@ -120,8 +119,9 @@ Excluded explicit paths are skipped, so a successful command does not mean those
 files were checked.
 
 All three crates inherit workspace Clippy warnings for `exit`, `dbg_macro`,
-`todo`, and `unimplemented`. CI promotes warnings to errors with `-D warnings`;
-the full Clippy restriction group is not enabled.
+`todo`, and `unimplemented`. They are declared as warnings, so promotion to
+errors comes from the `-D warnings` flag in the Clippy command above and nothing
+else enforces it automatically. The full Clippy restriction group is not enabled.
 
 ty treats `possibly-unresolved-reference`, `possibly-missing-attribute`,
 `unused-ignore-comment`, and `redundant-cast` as errors. Every remaining warning
@@ -131,10 +131,6 @@ from the root ty check; severity policy does not verify native/stub parity, whic
 what the `tests/contract/` harness covers for its cases.
 The analysis Python version is inferred from `requires-python`.
 
-The CI lint job installs only dependencies with
-`uv sync --group dev --no-install-project --frozen`, then runs Ruff and ty with
-`uv run --no-sync` to avoid installing the extension. Its final metadata check
-asserts complexipy was not installed. Preserve no-sync on every lint-job command.
 Re-run rule, warning, and Python-target controls when upgrading ty.
 
 ### Feature-isolation compile check
@@ -156,24 +152,6 @@ cargo check -p complexipy-cli --locked
 uv run complexipy <path>
 uv run complexipy . --diff main --max-complexity-allowed 15
 uv run complexipy complexipy --failed          # dogfood the tool on itself
-```
-
-### Benchmarks
-
-```bash
-./benchmarks/benchmark-cli.sh # corpus comparison plus synthetic scaling guard
-```
-
-`benchmark-cli.sh` compares the current CLI against the 7.0.1 baseline on
-pinned real repos, then times a generated synthetic fixture at 1x/2x/4x
-sizes (generated into `~/.cache/complexipy-benchmarks/scaling/`, never
-committed) and records the scaling ratios in `benchmarks/results.md`,
-which the docs pages include via pymdownx snippets.
-
-### Docs
-
-```bash
-uv run mkdocs serve
 ```
 
 ## Architecture
@@ -330,10 +308,9 @@ dependency means adding it to the crate that uses it.
 ## Conventions
 
 - **Package manager:** Always use `uv` - `uv run pytest`, `uv run ruff`, `uv run complexipy`
-- **Cargo lockfile:** Regenerate and review `Cargo.lock` after dependency or workspace-version changes, and include required lockfile updates with the change. The Rust CI job uses `--locked` and rejects lockfile drift.
+- **Cargo lockfile:** Regenerate and review `Cargo.lock` after dependency or workspace-version changes, and include required lockfile updates with the change. Every Cargo command here that resolves dependencies passes `--locked`, so drift fails rather than silently resolving. `maturin develop` does not, so a manifest edit followed by a rebuild can regenerate the lockfile without warning.
 - **Commits:** Only commit when explicitly asked. Never auto-commit. Stage explicit paths - never `git add -A` or `git add .`
-- **PR titles:** Must follow Conventional Commits (enforced by CI).
-- **GitHub CLI:** When available, use `gh` to retrieve context before making changes - check linked issues for requirements (`gh issue view <number>`), review open PRs for related work (`gh pr list`, `gh pr view <number>`), inspect CI status (`gh run list`, `gh run view <id>`), and search the repo (`gh search issues`, `gh search prs`). Always check the relevant issue or PR before implementing to understand the full scope and any prior discussion. If `gh` is not installed, skip these checks and work from the code and local context only.
+- **Commit subjects:** Must follow Conventional Commits. Nothing enforces this automatically - there is no CI and no pull-request workflow - and the changelog will be generated from the commit log, so a malformed subject is unrecoverable once it is history.
 
 ## Agent Configuration Layout
 

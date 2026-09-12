@@ -87,9 +87,3 @@ pyrightconfig.json
 
 # ES doc
 site-es/
-
-# Pi extension state (baselines, last report)
-.pi/rust-validate/
-
-# Benchmark working directories
-benchmarks/corpus/

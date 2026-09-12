@@ -46,11 +46,11 @@ Observed 2026-09-12.
 | Consumed artifact | `complexipy-8.0.0+rcq.2` wheel recorded in `../../wheelhouse/README.md` **(external)** |
 | Inherited tags | 39 upstream tags, `0.2.0` through `8.0.0`, present in this checkout. No `8.0.1` tag, though `030e207` is contained |
 | Remotes | Exactly one: `origin = https://github.com/bcgalvin/complexipy.git`, the fork. **There is no upstream remote**, which G and H both once assumed |
-| Remote branches | `origin` has only `main`, still at `030e207` - the eleven local commits have never been pushed. Local remote-tracking refs are stale |
+| Remote branches | `origin` has only `main`, still at `030e207` - the eleven local commits have never been pushed. Local remote-tracking refs were stale; B pruned 36 of them |
 | Remote tags | `git ls-remote --tags origin` returns zero. The 39 inherited tags are local to this checkout |
 | Local branches | `rcq` (at `9926391`) and `followup-batch-1` (at `d690c9f`) are both contained in `main` |
 | GitHub Actions | 0 workflow runs have ever executed on this fork **(external)** |
-| Repo settings | Issues disabled, Wiki enabled and unused, no Pages site, `homepageUrl` still `complexipy.com` **(external)** |
+| Repo settings | Issues disabled, no Pages site, `main` unprotected. Wiki was enabled and unused and `homepageUrl` was `complexipy.com`; B disabled the Wiki and cleared the homepage **(external)** |
 | Tracked YAML after `.github/` and mkdocs removal | `.pre-commit-config.yaml` only, which F then removes |
 | Refactor rules | Seven: C001, C002, C003, C004, C005, C007, C011. The ID space is non-contiguous |
 
@@ -105,6 +105,11 @@ standing gate below, and `verify` is the first skill written in H.
 Deletions precede rewrites so the rewrites describe the end state. B precedes G
 because `release.yml` triggers on `push: tags: "*"` and G's closing version bump
 is what the `release` skill tags.
+
+Review cadence: A and B were reviewed individually before committing. C onward
+run completion to commit directly, with one thorough review once every workstream
+has landed. Each workstream still runs the standing gate before its commit, and
+still corrects what it itself falsifies rather than deferring that to E.
 
 The standing gate, from `AGENTS.md`:
 
@@ -162,17 +167,17 @@ standalone CLI build serializes a different snapshot shape than the shipped one.
 
 ### B. Remove public-project, publishing, and unused tooling
 
-- [ ] `.github/` in full: `workflows/CI.yml`, `workflows/release.yml`,
+- [x] `.github/` in full: `workflows/CI.yml`, `workflows/release.yml`,
   `workflows/pr-title.yml`, `ISSUE_TEMPLATE/`, `PULL_REQUEST_TEMPLATE.md`,
   `FUNDING.yml`
-- [ ] `SECURITY.md`, `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`
-- [ ] `.pi/` (6 tracked files), and the `.pi/rust-validate/` entry in `.gitignore`
-- [ ] `benchmarks/` (3 tracked files), and the `benchmarks/corpus/` entry in
+- [x] `SECURITY.md`, `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`
+- [x] `.pi/` (6 tracked files), and the `.pi/rust-validate/` entry in `.gitignore`
+- [x] `benchmarks/` (3 tracked files), and the `benchmarks/corpus/` entry in
   `.gitignore`
-- [ ] GitHub settings: disable the Wiki, clear `homepageUrl` **(external)**
-- [ ] No action on remote tags: `origin` carries none, so G's local deletion is
+- [x] GitHub settings: disable the Wiki, clear `homepageUrl` **(external)**
+- [x] No action on remote tags: `origin` carries none, so G's local deletion is
   sufficient and no `git push --delete` is needed.
-- [ ] `git remote prune origin`
+- [x] `git remote prune origin`
 
 On `release.yml`: only the leaf job `notify-downstream` consumes
 `CROSS_REPO_TOKEN`, and nothing depends on it. The `release` job needs the build
@@ -355,23 +360,30 @@ any residual URL neither D nor E enumerated.
   `rg -n 'wasm|web/|vscode|mkdocs|docs/es|\.github|benchmark|pre-commit|pull request|3\.8' AGENTS.md`
   and resolve every hit.
 
-    **A already corrected everything it falsified**, in its own commit, per
-    `AGENTS.md`'s same-commit rule for structural invariants: the WASM/web command
-    block, the dual-target crate model (now "Crate split"), the wasm Key Files and
-    Architecture entries, the `web/` and `vscode/` Project Structure entries, the
-    wasm-pack Tech Stack line, the crate count, and the cross-target block (now a
-    single feature-isolation check). Do not treat that as licence to skip E's sweep.
-    Note also that A shifted AGENTS.md by -17 lines, so cite section names rather
-    than the line numbers an earlier revision of this tracker used.
+    **A and B already corrected everything they falsified**, in their own commits,
+    per `AGENTS.md`'s same-commit rule for structural invariants. A: the WASM/web
+    command block, the dual-target crate model (now "Crate split"), the wasm Key
+    Files and Architecture entries, the `web/` and `vscode/` Project Structure
+    entries, the wasm-pack Tech Stack line, the crate count, and the cross-target
+    block (now a single feature-isolation check). B: the `### Benchmarks` block,
+    the `### Docs` block (`uv run mkdocs serve`, which B broke by deleting a
+    snippet target `mkdocs.yml` resolves with `check_paths: true`), the
+    `.github/workflows/` Project Structure entry, the CI lint-job paragraph, and
+    the PR-title and `gh` conventions bullets. Do not treat that as licence to
+    skip E's sweep.
 
-    Still dead and outstanding: the `### Docs` block (`uv run mkdocs serve`) and the
-    `### Benchmarks` block; the `.github/workflows/` Project Structure entry; the
-    Tech Stack lines "Python 3.8+" and "MkDocs Material (EN + ES)"; the CI lint-job
-    paragraph; the pre-commit hooks bullet under Code Style; the rule-authoring
-    instruction to document in both `docs/refactoring-rules.md` and
-    `docs/es/refactoring-rules.md`; the PR-title-enforced-by-CI and `gh` issue/PR
-    conventions; and the "Contributors on Windows need symlink support" note, which
-    decision 3 abolishes.
+    Cite section names, never line numbers - A and B between them shifted this
+    file by roughly thirty lines. E's regex is also largely spent: `wasm`, `web/`,
+    `vscode`, `\.github`, `benchmark`, and `pull request` no longer match.
+
+    Still dead and outstanding: the Tech Stack lines "Python 3.8+" and "MkDocs
+    Material (EN + ES)"; the pre-commit hooks bullet under Code Style; the
+    rule-authoring instruction to document in both `docs/refactoring-rules.md`
+    and `docs/es/refactoring-rules.md`; the three-place FFI rule under "The FFI
+    contract", stated without the type-versus-field qualifier D corrects; the
+    git-URL claims on the `runner.rs` line of the Project Structure tree and the
+    `runner.rs` bullet under "Rust core"; and the "Contributors on Windows need
+    symlink support" note, which decision 3 abolishes.
 
 - [ ] `AGENTS.md` claims the regex cannot find, because their wrongness has no
   keyword. `:211` states the three-place FFI rule with no type-versus-field
@@ -500,8 +512,11 @@ Retire:
 Keep and retune:
 
 - `git-commit`: now the primary guard on the commit convention that git-cliff
-  parses. It currently instructs reading `CONTRIBUTING.md` and `.github/`
-  templates, which B deletes, and lists `web` among example scopes. Its
+  parses. B already dropped its references to `CONTRIBUTING.md` and `.github/`
+  templates. The remaining `web` example scope sits in a generic list
+  (`api`, `web`, `cli`, `server`, `docs`) that describes no project in particular,
+  so H's real question is whether this skill should become fork-specific at all.
+  Its
   lockfile-pairing section (`pyproject.toml` with `uv.lock`, `Cargo.toml` with
   `Cargo.lock`) is worth keeping and is what C, E, F, and G depend on.
 

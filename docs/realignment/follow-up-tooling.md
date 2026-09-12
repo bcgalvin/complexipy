@@ -418,8 +418,10 @@ cases a design decision. Keeping them out of a deletion-heavy realignment keeps
    depends on.
 1. **`vendor-build` skill** - the one genuinely needed half of `release.yml`.
 1. **CI rebuild** - separate branch, written for this fork rather than adapted.
-   Carry over the dependency-only lint assertion, the three surviving cross-target
-   checks, and the CLI exclusion and `--failed` behaviors no pytest case covers.
+   Carry over the dependency-only lint assertion, the one surviving compile check
+   (`cargo check -p complexipy-cli --locked`), and `complexipy complexipy --failed`.
+   Do **not** reinstate the two `--no-default-features` checks, which A made
+   tautological, or the `--exclude` validations, which were vacuous.
 1. **Benchmarks** - own tooling, baselined against a pinned `wheelhouse/` wheel,
    keeping the parity gate and the scaling guard.
 1. **Rule documentation links** - only if a downstream consumer asks for them.
