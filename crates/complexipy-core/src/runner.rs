@@ -232,13 +232,17 @@ where
                 .par_iter()
                 .map(|file_path| collect_file(file_path, &base_dir))
                 .collect();
-            for locs in results.into_iter().flatten() {
-                all_locations.extend(locs);
+            for (file_path, result) in files.into_iter().zip(results) {
+                match result {
+                    Ok(locs) => all_locations.extend(locs),
+                    Err(_) => failed_paths.push(file_path),
+                }
             }
         } else if path_obj.is_file() {
             let parent_dir = path_obj.parent().and_then(|p| p.to_str()).unwrap_or(".");
-            if let Ok(locs) = collect_file(path_str, parent_dir) {
-                all_locations.extend(locs)
+            match collect_file(path_str, parent_dir) {
+                Ok(locs) => all_locations.extend(locs),
+                Err(_) => failed_paths.push(path_str.to_string()),
             }
         } else {
             failed_paths.push(path_str.to_string());
