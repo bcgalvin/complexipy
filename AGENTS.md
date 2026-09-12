@@ -56,7 +56,7 @@ complexipy/
 |   |       +-- refactor_plans.rs         # ComplexityRegion tree + build_refactor_plans()
 |   |       +-- rules/                    # Clippy-style refactor rule system
 |   |       |   +-- types.rs              # RefactorRule trait + RuleMetadata
-|   |       |   +-- complexity.rs         # Concrete rules (C001-C007, C011)
+|   |       |   +-- complexity.rs         # Concrete rules (C001-C005, C007, C011)
 |   |       |   `-- registry.rs           # Registration, filtering, ranking, overlap
 |   |       +-- runner.rs                 # Local file/dir walk + shared entry points
 |   |       +-- diff.rs                   # git-diff comparison (compute_diff, DiffEntry)
@@ -85,6 +85,10 @@ complexipy/
 ## Commands
 
 Verification is manual: no repository-managed Git hooks or CI run the gates below.
+The `verify` skill sequences these checks and adds a built-CLI smoke invocation.
+For documentation/skill-only changes, the build and test gate does not apply:
+check the instructions, references, Markdown structure, ASCII punctuation and
+`git diff --check`, and explicitly report that the standing gate was not run.
 
 ### Setup
 
@@ -268,9 +272,11 @@ Do not move or rename those stable Rust exports without a major release.
 
 ### Refactor rules (`--suggest-refactors`)
 
-A rule is `RefactorRule::check(region, source, function_complexity) -> Option<RefactorPlan>`
-plus a `&'static RuleMetadata`. `RuleMetadata::new_plan()` prefills the identity fields
-so `id` / `category` / `applicability` / `description` can only ever come from
+A rule implements `RefactorRule::check(region, source, index, def_names,
+function_complexity) -> Option<RefactorPlan>` plus a `&'static RuleMetadata`.
+`index` is a `LineIndex`; `def_names` is the collected set of definition names.
+`RuleMetadata::new_plan()` prefills the identity fields so
+`id` / `category` / `applicability` / `description` can only ever come from
 metadata; rules fill in the dynamic fields via `..metadata().new_plan()`.
 
 `RuleRegistry::analyze()` then, in order: collects plans over the region tree
@@ -282,10 +288,16 @@ higher-spliceable/higher-effectiveness/higher-reduction plan, and caps at 5
 plans per function.
 
 `effectiveness` in `RuleMetadata` is the single source of truth for ranking - the
-registry reads it via `effectiveness_by_rule_id()`, so there is no `match rule_id`
-anywhere. Adding a rule is therefore: write the struct + `impl RefactorRule` in
+registry reads it via `effectiveness_by_rule_id()`, not a separate hardcoded
+ranking switch. Adding a rule is therefore: write the struct + `impl RefactorRule` in
 `crates/complexipy-core/src/rules/complexity.rs`, set its `effectiveness` tier, register it in
 `RuleRegistry::register_defaults()`, and document it in `docs/rules.md`.
+Update `crates/complexipy-core/src/rules/registry/tests.rs` as well:
+`fixture_for`, the checked-rule count
+in `every_registered_rule_produces_a_plan_consistent_with_its_own_metadata`, and
+`effectiveness_matches_documented_tiers`. Add behavioral fixtures and assertions
+under `tests/fixtures/refactor_plans/` and `tests/test_refactor_plans.py`.
+The `add-refactor-rule` skill is the task procedure for this lockstep.
 
 Guiding principle for rule output: never emit a suggestion the tool cannot stand
 behind. If a heuristic isn't confident, emit `help` text rather than a wrong
@@ -383,10 +395,25 @@ Each piece of agent config has exactly one real copy; the other paths point at i
 - `.agents/skills/` holds the real skill files, so any tool that reads `.agents/` sees
   plain files. `.claude/skills` is a symlink to `../.agents/skills` - **do not replace
   it with copies.** Add a new skill once, under `.agents/skills/<name>/SKILL.md`.
-- Never run `mdformat` over `SKILL.md`: it rewrites the opening `---` as a
-  thematic break and the closing `---` as a setext heading, silently destroying
-  the YAML frontmatter that makes a skill loadable. Any future Markdown formatter
-  must exclude `(^|/)SKILL\.md$`. There is no formatter hook at present.
+
+The local skills are short procedures, not automation entry points:
+
+- `verify`: applicable gate and built-CLI smoke; docs-only checks when appropriate.
+- `git-commit`: fork-specific messages and explicit-path staging, only when asked.
+- `vendor-build`: build and check a wheel for the same-machine parent consumer.
+- `release`: local version, changelog and authorized tag; no publishing.
+- `add-refactor-rule`: rule metadata, registration, fixtures and ranking tests.
+- `ffi-change`: binding/stub/export changes and the existing wheel contract.
+- `sync-upstream`: deliberate comparison, not automatic adoption.
+
+Keep each skill to one `SKILL.md` unless a concrete task needs more. Do not
+reintroduce issue/PR/publishing workflows or duplicate the canonical commands
+and invariants into a separate tooling framework.
+
+Never run `mdformat` over `SKILL.md`: it rewrites the opening `---` as a
+thematic break and the closing `---` as a setext heading, silently destroying
+the YAML frontmatter that makes a skill loadable. Any future Markdown formatter
+must exclude `(^|/)SKILL\.md$`. There is no formatter hook at present.
 
 ## Keeping This File Current
 
@@ -395,7 +422,9 @@ Treat this file as part of the change, not as documentation to catch up on later
 - If a change alters a **command**, a **structural invariant** (the FFI three-place
   contract, the region -> rule direction, Rust tests as `mod tests;` siblings), an **architectural
   boundary**, or a **convention**, update this file in the same commit - scope it
-  `docs(agents)` when the doc edit stands alone.
+  `docs(agents)` when the doc edit stands alone. If a gate command changes, update
+  `.agents/skills/verify/SKILL.md` in the same change: it repeats those commands
+  in execution order and must not become a stale copy.
 - New refactor rule, export format, or CLI flag: check whether Project Structure, Key
   Files, or Architecture now describe something that no longer exists.
 - Do not restate any of this in `CLAUDE.md`. That file imports this one via

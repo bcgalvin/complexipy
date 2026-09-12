@@ -290,8 +290,8 @@ an audience this fork does not have. Issues are already disabled on the
 repository, so the templates were unreachable and CONTRIBUTING's issue links were
 already dead.
 
-The PR template's checklist - tests pass, code formatted, conventional title -
-survives as the `verify` skill.
+The PR template's test/format checklist survives as the manual `verify` skill;
+commit subjects are reviewed through `git-commit`, not a PR-title check.
 
 One item is a policy choice rather than dead weight: `SECURITY.md` routed
 vulnerability reports to GitHub Security Advisories with a 7-day acknowledgement
@@ -307,9 +307,9 @@ The inherited changelog is replaced at G finalization, after H.
 
 The `release-notes` skill maintained `CHANGELOG.md` and its Spanish mirror by
 hand, moved `## Unreleased` into a dated section at release time, created the tag,
-and published through `gh release create`. It also verified sdist contents and
-version consistency before tagging - a check worth carrying into the `release`
-skill even though there is no sdist to publish.
+and published through `gh release create`. H removed it. The new local `release`
+skill retains version consistency checks before tagging, not sdist verification
+or publishing: there is no sdist consumer.
 
 The hand-maintained changelog had already drifted: `## Unreleased` described two
 commits while four fork commits had landed, missing `8a35091` and `0f691e7`.
@@ -317,9 +317,14 @@ Generation from the log is the fix.
 
 ## Skills
 
-- `create-issue` - **Drop.** Issues are disabled; there are no reporters.
-- `create-pr` - **Decide.** Rebuild alongside CI if pull requests return.
-- `release-notes` - **Replace.** Superseded by git-cliff and the `release` skill.
+- `create-issue` - **Drop, completed in H.** No local need for an issue workflow.
+- `create-pr` - **Drop, completed in H.** No PR or CI workflow is planned.
+- `release-notes` - **Replace, completed in H.** The new `release` skill uses
+  git-cliff directly and does not publish.
+
+H also retuned `git-commit` and added `verify`, `vendor-build`,
+`add-refactor-rule`, `ffi-change` and `sync-upstream`. Each is a single
+`SKILL.md`, not a script or an automation layer. `AGENTS.md` indexes them.
 
 ## Pre-existing defects
 
@@ -329,18 +334,15 @@ file records removed capabilities only.
 
 ## Replacement priorities
 
-1. **`verify` skill** - the local procedure replacing what CI and `.pi/` ran.
-   A skill does not schedule checks; verification remains manual until a hook
-   or CI job actually invokes the gates.
-1. **`.pre-commit-config.yaml` rebuild** - a `local` complexipy hook on the built
-   extension, plus `commit-msg` Conventional Commits validation that git-cliff
-   depends on.
-1. **`vendor-build` skill** - the one genuinely needed half of `release.yml`.
-1. **CI rebuild** - separate branch, written for this fork rather than adapted.
-   Carry over the dependency-only lint assertion, the one surviving compile check
-   (`cargo check -p complexipy-cli --locked`), and `complexipy complexipy --failed`.
-   Do **not** reinstate the two `--no-default-features` checks, which A made
-   tautological, or the `--exclude` validations, which were vacuous.
+1. **Local procedures, completed in H.** `verify` and `vendor-build` preserve
+   the useful checks without scheduling them. `verify` includes the standalone
+   CLI compile check and built-CLI smoke; the existing wheel harness covers
+   selected stub/runtime promises.
+1. **Hooks/CI, not planned.** The earlier rebuild proposals are not commitments.
+   Reconsider only for a demonstrated need. git-cliff does not require a
+   commit-msg hook; unknown subjects are retained and the changelog is reviewed
+   manually. Do not restore no-default-features or vacuous exclusion checks
+   merely because they appeared in deleted automation.
 1. **Benchmarks** - own tooling, baselined against a pinned `wheelhouse/` wheel,
    keeping the parity gate and the scaling guard.
 1. **Rule documentation links** - only if a downstream consumer asks for them.

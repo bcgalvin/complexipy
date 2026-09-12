@@ -38,12 +38,14 @@ an automated commit validator.
 
 For the first fork release, use `8.1.0`. Commit implementation work first.
 Bump the workspace version and
-regenerate/review `Cargo.lock`, then write a candidate:
+regenerate/review `Cargo.lock`, then write a candidate. Substitute an existing
+absolute scratch directory outside the checkout, using the agent's session
+scratchpad when available:
 
 ```bash
 git-cliff --config cliff.toml --offline --no-exec --tag 8.1.0 \
   030e2079457412221087f520445e9f2a709faad6..HEAD \
-  > /tmp/complexipy-changelog.md
+  > "<absolute-scratch>/complexipy-changelog.md"
 ```
 
 Check the command succeeded and read the candidate. Confirm the first fork fix,

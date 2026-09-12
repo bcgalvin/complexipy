@@ -353,8 +353,9 @@ rolling schema proves behavioral compatibility with the pinned binary.
 - **Record homes:** the tracker reserves `docs/maintenance/` for the catalog,
   unfinished tooling records and this research, with relocation after H.
 - **Still finalization work:** replace the inherited changelog, bump/tag 8.1.0,
-  retire old skills in H, clean refs and coordinate the parent. None of these
-  steps is automated by this preparation.
+  clean refs and coordinate the parent. H has retired the old skills and added
+  concise local procedures. None of the finalization steps is automated by this
+  preparation.
 
 Research was read-only apart from this report. Preparation's final scope is
 configuration and documentation, with manual native-tool verification recorded

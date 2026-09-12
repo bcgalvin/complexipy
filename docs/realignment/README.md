@@ -113,11 +113,10 @@ say so.
 
 ## Execution order
 
-A through F landed and G preparation is complete. Continue with H, then G
-finalization and coordinated parent adoption. G preparation resolved git-cliff
-and permanent document homes; keep the tracker and predecessor skills until H
-has used them.
-The final version/tag and directory deletion come after H, not before it.
+A through F, G preparation and H are complete. Next is G finalization and
+coordinated parent adoption. G preparation resolved git-cliff and permanent document homes;
+H has used and retired the predecessor skills. Keep the tracker until final
+cleanup. The final version/tag and directory deletion are not part of H.
 
 No automation runs the gates. Before B there were three candidates and none
 qualified: `.pi/` belonged to a harness this fork does not use,
@@ -125,7 +124,7 @@ qualified: `.pi/` belonged to a harness this fork does not use,
 `.github/workflows/CI.yml` triggered on `pull_request` only, which decision 8
 abolishes. B deleted the first and third; F removed the pre-commit stack.
 Verification during the realignment is therefore manual, using the standing gate
-below, and `verify` is the first skill written in H.
+below. H wrote `verify` first; it records the procedure, not a scheduler.
 
 Deletions precede rewrites so the rewrites describe the end state. B preceded G
 because `release.yml` triggered on `push: tags: "*"` and G's closing version bump
@@ -135,9 +134,12 @@ gone.
 Review cadence: every workstream is reviewed by the oracle before committing,
 each review in a **new chat with a self-contained briefing** - no reliance on a
 prior thread. A thorough review follows once every workstream has landed. Each
-workstream runs the standing gate before its commit, corrects what it itself
-falsifies rather than deferring that to E, and records anything it finds in
-`design-issues-and-bugs.md`.
+workstream runs the applicable verification before its commit, corrects what
+it itself falsifies rather than deferring that to E, and records anything it
+finds in `design-issues-and-bugs.md`. Source, test, dependency and build/config
+changes run the standing gate. Documentation/skill-only changes check the
+instructions, references, formatting and `git diff --check` instead, and state
+plainly that the build/test gate did not apply and was not run.
 
 The standing gate, from `AGENTS.md`:
 
@@ -523,9 +525,9 @@ run, following the new interim policy.
 A case-insensitive reference sweep for `pre-commit`, `pre_commit`, `mdformat` and
 `yamlfix` found only the permanent frontmatter warning, realignment records,
 historical `CHANGELOG.md` entries, and a conditional downstream-hook example in
-`release-notes/SKILL.md` ("Downstream Release Verification"). The latter invokes no
-removed tool and remains H-owned. `.claude/settings.json` has attribution settings
-only, not hooks. No live command references to the removed tooling remain.
+`release-notes/SKILL.md` ("Downstream Release Verification"). That example invoked
+no removed tool at F's completion; H subsequently removed the entire skill.
+`.claude/settings.json` has attribution settings only, not hooks. No live command references to the removed tooling remain.
 
 Fresh Oracle review completed before commit (three reviewers). Follow-ups:
 record the residue sweep, add the explicit lock freshness check, retain `dist/`,
@@ -583,8 +585,9 @@ no Markdown formatter was run.
   `87ad610..HEAD`, which loses the first fork fix and includes inherited history.
   Keep D's two field removals and E's Python floor visible, along with the
   merge and five empty-body commits. Omit session trailers from rendered prose.
-- [ ] Retire the `release-notes` skill, which hand-maintains `CHANGELOG.md` plus
-  the Spanish mirror and publishes through `gh release create`.
+- [x] H retired `release-notes`, which hand-maintained `CHANGELOG.md` plus the
+  Spanish mirror and published through `gh release create`. The new `release`
+  skill uses the direct local git-cliff procedure, with no publishing step.
 - [ ] Bump to `8.1.0` in the workspace `Cargo.toml`. `pyproject.toml` has no
   literal version: it declares `dynamic = ["version"]` and maturin resolves it
   through `manifest-path` to `[workspace.package]`.
@@ -598,6 +601,10 @@ no Markdown formatter was run.
   predates the branch point by seven commits. Until the bump lands, a parent
   `git submodule update` checks out that tree.
 - [ ] Delete `rcq` and `followup-batch-1` after the work lands on `main`.
+- [ ] Sweep `.agents/skills/` when finalizing: remove `release`'s temporary
+  tracker clause and `vendor-build`'s pre-8.1.0 embargo; update `add-refactor-rule`
+  to the catalog's permanent path and retire the temporary `realignment` scope
+  example in `git-commit`. Check other live links to the moved records too.
 - [ ] Delete `docs/realignment/`, after rehoming what outlives it: any unfinished
   `follow-up-tooling.md` entries, and `design-issues-and-bugs.md` in full, which
   is not realignment work. Move the records to the reserved `docs/maintenance/`
@@ -617,39 +624,48 @@ Verify: `cargo test --workspace --locked` after the lock regeneration, then
 
 ### H. Re-cut the skills
 
-`.claude/skills` is a symlink to `.agents/skills` and must stay a symlink.
+Implemented as seven short `SKILL.md` procedures, with no scripts, generated
+assets, installer, CI or release framework. `.claude/skills` retains its tracked
+symlink to `.agents/skills`.
 
-Retire:
+- [x] Retire `create-issue`, `create-pr` and `release-notes`. No issue/PR/publishing
+  workflow is needed for one developer on one local machine.
+- [x] Make `git-commit` fork-specific: local scopes, explicit staging, explanatory
+  bodies without relying on PRs, manifest/lockfile pairing, breaking descriptions
+  and git-cliff's reserved bookkeeping subjects. It is guidance, not a validator.
+- [x] Write `verify` first, then the remaining five procedures below.
+- [x] Update `AGENTS.md`'s skill catalog and `CLAUDE.md`'s skill loading guidance.
+  Correct the abbreviated rule signature and add the three registry test gates
+  to the canonical instructions rather than preserving their omission.
 
-- `create-issue`: issues are disabled and there are no reporters.
-- `create-pr`: no PR workflow until CI exists. Rebuild it with the CI branch.
-- `release-notes`: superseded by git-cliff and the absence of a release target.
-
-Keep and retune:
-
-- `git-commit`: now the primary guard on the commit convention that git-cliff
-  parses. B already dropped its references to `CONTRIBUTING.md` and `.github/`
-  templates. The remaining `web` example scope sits in a generic list
-  (`api`, `web`, `cli`, `server`, `docs`) that describes no project in particular,
-  so H's real question is whether this skill should become fork-specific at all.
-  Its
-  lockfile-pairing section (`pyproject.toml` with `uv.lock`, `Cargo.toml` with
-  `Cargo.lock`) is worth keeping and is what C, E, F, and G depend on.
-
-Proposed. `verify` is written first:
-
-| Skill | Encodes |
+| Skill | Implemented procedure |
 | -- | -- |
-| `verify` | The standing gate above, plus one invocation of the built CLI, and a note that the gate's `uv run ty check .` runs with the editable project installed - so ty reads the native module, not the stub. That is the configuration the deleted CI lint job existed to avoid, and after B it is the only one available locally; `tests/contract/check_stub_contract.py` is what still checks stub/runtime parity, through eight diagnostic cases after E plus separate runtime checks, not exhaustive API coverage - nothing in the gate exercises the binary, and `.pi/hook-scripts/py-complexipy.sh` and CI's `complexipy complexipy --failed` were the only things that did. `maturin develop` before pytest is the one hard ordering constraint and the most-repeated trap in `AGENTS.md`; the contract harness builds its own wheel into a fresh venv and is independent of it. |
-| `vendor-build` | Wheel into `../../wheelhouse/` with `CARGO_TARGET_DIR` outside the checkout, stub and runtime parity check, provenance table. Currently prose in another repository. |
-| `release` | Bump the workspace `Cargo.toml` (the only literal), regenerate `Cargo.lock`, regenerate the changelog with git-cliff, rebuild, tag. It must not reintroduce a publish step. Carry over the removed `release-notes` skill's version-consistency check. |
-| `add-refactor-rule` | The rule lockstep: struct and `impl` in `complexity.rs`, `register_defaults()`, effectiveness tier, docs entry, fixture test - plus the three hardcoded gates in `rules/registry/tests.rs` that `AGENTS.md` omits: a new arm in `fixture_for()` (which panics on an unknown id), the literal `assert_eq!(checked, 7, ...)`, and the expected-tier table in `effectiveness_matches_documented_tiers`. The count assertion sits under a plain `//` comment reading "if a 9th rule is added" while seven are registered - one of the code comments the catalog records against the no-comments rule. The skill must not teach that pattern; correcting the comment itself is a code change outside H. |
-| `ffi-change` | For a new type: `classes.rs`, the `#[pymodule]` export list, `_complexipy.pyi`, `complexipy/__init__.py` plus `__all__`, the `lib.rs` stable re-export block, and `crates/complexipy-core/tests/lib_surface.rs`. For a field: `classes.rs` plus the stub, and every Rust struct-literal site. `py_diff` types (`DiffEntry`, `DiffStatus`) live in `complexipy-python/src/lib.rs`; a field change there locksteps with the stub only, but a new type still needs `add_class`. Every variant adds a `tests/contract/cases/` case. |
-| `sync-upstream` | Evaluating an upstream release as deliberate maintenance. Upstream is **not** currently a remote - the skill must add it or fetch by URL, and `--no-tags` belongs at add time or all 39 inherited tags come back. |
+| `verify` | Standing gate, CLI feature-isolation compile check and built `complexipy complexipy --failed` smoke. Rebuild before pytest. Distinguishes the root editable-install ty check from the installed-wheel harness's selected guarantees. Documentation/skills-only changes use manual content/structure/ASCII and diff checks, not the build gate. |
+| `vendor-build` | Direct `maturin build --locked --release` into `../../wheelhouse/`, with an external `CARGO_TARGET_DIR`. Check the exact emitted wheel using the existing harness's `--wheel` option and inspect its source-stub-match receipt field (not an enforced assertion). Reuse the parent's provenance table when in scope, not a new receipt system. No parent install or gitlink change is implied. |
+| `release` | Workspace version, deliberate `cargo update --workspace`, direct git-cliff candidate review, rebuild and agreement of workspace/lock/installed/CLI versions. Commit and bare local tag only when authorized. No publish or sdist step. |
+| `add-refactor-rule` | Metadata, registration, effectiveness, docs and behavioral fixtures; update `fixture_for`, the checked-rule count and `effectiveness_matches_documented_tiers`. Do not copy the catalogued stale "9th rule" comment. Its removal remains a code change outside H. |
+| `ffi-change` | Separate type, field, function and public-export paths. New Python-visible types need native registration and stubs; package and stable Rust exports change only when applicable. Fields include affected literals and conversions, including `py_diff` conversions. Add/update contract cases and runtime checks for the changed promise. |
+| `sync-upstream` | Fetch a requested ref by upstream URL with `--no-tags`, record its SHA and compare deliberately. A persistent remote is optional and also uses `--no-tags`. Evaluation does not authorize a merge or the return of upstream deployment tooling. |
 
-`add-refactor-rule` and `ffi-change` are worth building precisely because
-`AGENTS.md` states those invariants as prose a subagent can skip, and in both
-cases the prose is already incomplete.
+The parent wheel guide still describes `rcq`, `+rcq.N` and upstream as the fetch
+remote, and its reduced-record writer still reads `plan.references`/`plan.doc_url`.
+H verified those facts and warns against adopting those stale instructions.
+The first wheel waits for G's 8.1.0 release; adoption also requires the consumer
+compatibility fix. H does not build a wheel or edit the parent.
+
+Verified: all seven skills pass the skill-creator frontmatter/name/scaffold
+validator. Each contains only `SKILL.md`; the shared symlink is unchanged.
+Commands and source references were inspected, retired-skill references swept,
+and surviving changed files checked as Markdown-only and ASCII-only.
+`git diff --check` is clean. No Markdown formatter was run. The standing build
+and test gate did not apply to this documentation-only change and was not run.
+Fresh Oracle review completed before commit. Applied the relevant corrections:
+clean-tree/existing-tag release preflight, a same-change update rule for the
+verification command list, explicit catalog and contract-case wiring, and a G
+cleanup sweep for temporary skill guidance. The changelog candidate example now
+uses a scratch directory compatible with agent instructions. Wheel validation
+failure must be reported before any adoption; the requested direct wheelhouse
+build remains a manual local procedure, not a new artifact-promotion system.
 
 ## Deferred
 
@@ -657,12 +673,11 @@ Possible rebuild ideas live in [`follow-up-tooling.md`](follow-up-tooling.md).
 They are not an implementation checklist. Under the current single-machine scope,
 only a demonstrated local need or explicit request justifies adopting one.
 
-- **Test automation.** `verify` skill first, then a rebuilt pre-commit config.
-  The skill records a procedure; checks remain manual until hooks or CI actually
-  invoke the gates.
-- **CI rebuild.** Separate branch after this work lands. Written for this fork
-  rather than adapted from upstream's.
-- **Pull requests.** Adopted only when that CI gives them a purpose.
+- **Test automation.** H supplies the manual `verify` procedure. A hook is an
+  optional future response to a demonstrated local need, not the next required
+  step.
+- **CI and pull requests.** Not planned under the single-developer, single-machine
+  mandate. Reconsider only if the workflow changes and creates an actual need.
 - **Benchmarks.** Own tooling, baselined against a pinned `wheelhouse/` wheel.
 - **Outer-repository catch-up.** `wheelhouse/README.md` and
   `docs/tools/complexipy.md` sections 9.6 and 9.7 are updated after the first

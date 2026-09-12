@@ -12,10 +12,10 @@ only what is specific to Claude Code.
 
 ## Claude Code specifics
 
-- **Skills:** load `git-commit` before running any `git commit`, and `create-pr` before
-  opening a PR or writing a PR description. `release-notes` covers release write-ups.
-  `.claude/skills` is a symlink to `../.agents/skills` - edit skills there, and never
-  replace the symlink with copies.
+- **Skills:** load `git-commit` before running any `git commit`. Choose other
+  task skills from the catalog in `AGENTS.md`; `.claude/skills` exposes those
+  same files through its symlink to `../.agents/skills`. Edit the canonical
+  files, never replace the symlink with copies.
 - **Commit attribution:** `.claude/settings.json` blanks the commit and PR attribution
   footers - do not add Claude as co-author or re-add an attribution trailer.
 - **Temporary files:** use the session scratchpad, never the repo working tree and never

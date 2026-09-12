@@ -363,9 +363,9 @@ Recorded by `chore(tooling): remove the pre-commit stack`.
   `every_registered_rule_produces_a_plan_consistent_with_its_own_metadata`,
   reading "if a 9th rule is added" while seven are registered), `api/tests.rs`
   (2), and `output/render/tests.rs` (2). Doc comments (`///`) are not counted.
-  Recorded because H's `add-refactor-rule` skill cites that registry test as one
-  of its hardcoded gates and must not teach the pattern; removing the comments
-  is a code change outside H.
+  H's `add-refactor-rule` skill now cites that registry test as one of its
+  explicit gates and warns against copying the comment pattern. Removing the
+  comments remains a code change outside H; the defect is not closed by guidance.
 
 ### Deferred
 
@@ -497,8 +497,9 @@ harness (`tests/contract/check_stub_contract.py`) checks stub/runtime parity fro
 a neutral directory. After E it has eight diagnostic cases, including positive
 getter types and negative assignment/construction for all eight result types,
 plus separate runtime checks. These are selected promises, not exhaustive API
-coverage. The `verify` skill should distinguish these checks; a rebuilt CI should
-restore the dependency-only environment.
+coverage. H's `verify` skill distinguishes these checks. No CI rebuild is
+planned under the single-machine mandate; a separate root-lint environment
+remains an unadopted option, not a prerequisite for the existing wheel harness.
 
 ### The parser is a network-fetched git dependency on a mutable tag
 
@@ -538,8 +539,9 @@ harmless, but the omission is anomalous and the fix is free.
 Git-URL analysis was removed in 8.0.0. D removed its stub-docstring residue;
 E corrected both `AGENTS.md` claims and removed `cache.rs::looks_like_remote`.
 The same hazard applies to `doc_url`, `references`, the wasm target and the
-`runner` feature unless each removal sweeps for its own references. Worth a
-grep step in the `verify` skill.
+`runner` feature unless each removal sweeps for its own references. H's `verify`
+skill now calls for a live-reference sweep on removal/rename changes; that is
+manual guidance, not an enforced check.
 
 ### Provenance after the realignment
 
