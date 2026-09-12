@@ -72,7 +72,13 @@ sort = "asc"
 output-format = []
 
 [tool.uv]
-cache-keys = [{file = "pyproject.toml"}, {file = "Cargo.toml"}, {file = "**/*.rs"}]
+cache-keys = [
+    {file = "pyproject.toml"},
+    {file = "Cargo.toml"},
+    {file = "Cargo.lock"},
+    {file = "crates/*/Cargo.toml"},
+    {file = "**/*.rs"},
+]
 
 [tool.ruff]
 line-length = 80
