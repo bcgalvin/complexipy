@@ -359,7 +359,7 @@ both builds.
 The sweep found roughly a dozen live bugs that are not realignment work. They are
 recorded with their evidence and sequencing in
 [`follow-up-tooling.md`](follow-up-tooling.md#pre-existing-defects), which is the
-file that outlives this directory - one is fixed before workstream A, four fold
+file that outlives this directory - one was fixed before workstream A, four fold
 into D, one into C, and the rest are deferred past the realignment.
 
 The three that bear on how `recsys-code-quality` consumes this tool: `--color` is

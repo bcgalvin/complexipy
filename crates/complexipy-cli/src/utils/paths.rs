@@ -51,7 +51,8 @@ pub fn resolve_output_paths(
         return Err(PathsError::StdoutNotSupported);
     }
 
-    let destination = std::path::absolute(output).map_err(|e| PathsError::Io(e.to_string()))?;
+    let destination = std::path::absolute(invocation_path.join(output))
+        .map_err(|e| PathsError::Io(e.to_string()))?;
     let is_directory_hint = is_directory_output_hint(output);
 
     if output_formats.len() > 1 {

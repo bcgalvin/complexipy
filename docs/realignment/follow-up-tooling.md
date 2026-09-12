@@ -297,37 +297,32 @@ wholesale when the directory goes.
 Several bear directly on how `recsys-code-quality` consumes this tool; those are
 marked **consumer-facing**.
 
-### Fix before workstream A
+### Fixed before workstream A
 
-**A relative `--output` resolves against the process CWD, and a test writes into
-the checkout on every gate run.**
+**A relative `--output` resolved against the process CWD, and a test wrote into
+the checkout on every gate run.** Fixed.
 
-`crates/complexipy-cli/src/utils/paths.rs:37-66` takes an `invocation_path`
-parameter and uses it when `--output` is omitted (`:47`), but absolutizes a
-relative `--output` with `std::path::absolute` against the **process CWD**
-(`:54`), ignoring the parameter. The two branches disagree about what a relative
-path is relative to. `:64` then calls `fs::create_dir_all` during path
-*resolution*, so merely resolving a relative output creates a directory before any
-analysis runs.
+`crates/complexipy-cli/src/utils/paths.rs` took an `invocation_path` and used it
+when `--output` was omitted, but absolutized a relative `--output` with
+`std::path::absolute` against the **process CWD**, ignoring the parameter. The two
+branches disagreed about what a relative path is relative to, and
+`fs::create_dir_all` runs during path *resolution*, so merely resolving a relative
+output created a directory before any analysis.
 
-In ordinary CLI use the divergence is latent, because `run_cli` defaults
-`invocation_path` to `"."`. It surfaces for any caller that passes a different
-invocation path - which is exactly what
-`crates/complexipy-cli/src/utils/paths/tests.rs:147-162` does: it passes a tempdir
-as the invocation path and `"rel-out/"` as the output, and then asserts against
-`std::env::current_dir().join("rel-out")`. The result is
-`crates/complexipy-cli/rel-out/`, which exists on disk now, untracked and
-un-gitignored, recreated by every `cargo test --workspace` - and that command is in
-the standing gate, so every workstream's verification recreates it. Empty
-directories are invisible to git, so it stays silent until an output file lands
-there. This violates the parent's read-only-input policy for `repos/complexipy`.
+In ordinary CLI use the divergence was latent, because `run_cli` defaults
+`invocation_path` to `"."`. It surfaced through
+`crates/complexipy-cli/src/utils/paths/tests.rs`, which passes a tempdir as the
+invocation path and `"rel-out/"` as the output: the result was
+`crates/complexipy-cli/rel-out/`, untracked and un-gitignored, recreated by every
+`cargo test --workspace` - a command in the standing gate, so every workstream's
+verification recreated it inside a checkout the parent treats as a read-only
+input.
 
-Preferred fix: resolve the relative output against `invocation_path`, matching the
-no-`--output` branch. That removes the inconsistency and makes the test write into
-its own tempdir. It is a behavior change, but a latent one - nothing in CLI use
-passes a non-CWD invocation path today. The narrower alternative is to restructure
-the test so it does not call the directory-creating path with a relative output,
-which leaves the inconsistency in place.
+Resolution: `std::path::absolute(invocation_path.join(output))`, matching the
+no-`--output` branch. An absolute `--output` is unaffected, since `Path::join`
+replaces on an absolute argument, and CLI behavior is unchanged because
+`invocation_path` is `"."` there. Verified by removing the directory and
+confirming the test no longer recreates it.
 
 ### Fold into workstream D
 
@@ -422,5 +417,5 @@ cases a design decision. Keeping them out of a deletion-heavy realignment keeps
    keeping the parity gate and the scaling guard.
 1. **Rule documentation links** - only if a downstream consumer asks for them.
 
-The pre-existing defects above are sequenced separately: one before A, four folded
-into D, one into C, and the rest deferred past the realignment.
+The pre-existing defects above are sequenced separately: one fixed before A, four
+folded into D, one into C, and the rest deferred past the realignment.

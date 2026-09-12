@@ -152,8 +152,8 @@ fn relative_output_is_absolutized() {
     let result = resolve_output_paths(&[OutputFormat::Csv], Some(output), dir.path())
         .expect("should succeed");
 
-    let expected = std::env::current_dir()
-        .expect("cwd")
+    let expected = std::path::absolute(dir.path())
+        .expect("absolute")
         .join("rel-out")
         .join("complexipy-results.csv");
     assert_eq!(result.len(), 1);
