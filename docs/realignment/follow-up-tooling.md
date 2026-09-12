@@ -41,8 +41,13 @@ complexipy tests/src --exclude "exclude_dir/**" --ignore-complexity
 complexipy tests/src --exclude "**/test_exclude*.py" --ignore-complexity
 ```
 
-Self-dogfooding and glob exclusion are only exercised here. A replacement should
-either carry them or add pytest coverage for exclusion.
+Self-dogfooding is only exercised here and is worth carrying. The two exclusion
+invocations are not: both pass `--ignore-complexity`, and `ExitReport::success()`
+resolves to `all_pass || ignore_complexity`, so their exit code was 0 whether or
+not the glob matched anything. Reproducing them faithfully would reproduce a check
+that cannot fail on the thing it appears to test. Exclusion in the analysis path
+needs real coverage instead - nothing in either language currently walks a
+directory through `run_analysis_shared`.
 
 `rust-tests` - `cargo test --workspace --locked`,
 `cargo clippy --workspace --all-targets --locked -- -D warnings`,
@@ -56,7 +61,13 @@ cargo check -p complexipy-core --no-default-features --features python --locked
 cargo check -p complexipy-wasm --target wasm32-unknown-unknown --locked   # dies with the wasm crate
 ```
 
-The first three remain meaningful. Cargo caching was keyed on `hashFiles('Cargo.lock')`.
+Only the CLI check retains a subject after the wasm crate goes: `runner` is then
+on for every build path, and `complexipy-python` always takes
+`["python", "runner"]`, so both `--no-default-features` variants verify a shape
+nothing builds. The CLI check still matters, because the `serde(skip)` attributes
+on `FunctionComplexity` and `FileComplexity` are gated on the `python` feature, so
+a standalone CLI build serializes a different snapshot shape than the shipped one.
+Cargo caching was keyed on `hashFiles('Cargo.lock')`.
 
 ### `.pi/` hooks
 
