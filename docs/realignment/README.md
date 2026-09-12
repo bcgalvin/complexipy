@@ -121,16 +121,16 @@ uv run python tests/contract/check_stub_contract.py --self-test
 
 ### A. Remove the unshipped build targets
 
-- [ ] `vscode/` (15 files, ~2885 lines)
-- [ ] `web/` (7 files, ~1250 lines)
-- [ ] `build-wasm.sh`, `serve-web-version.sh`
-- [ ] `crates/complexipy-wasm/` (2 files, 46 lines). The workspace uses
+- [x] `vscode/` (15 files, ~2885 lines)
+- [x] `web/` (7 files, ~1250 lines)
+- [x] `build-wasm.sh`, `serve-web-version.sh`
+- [x] `crates/complexipy-wasm/` (2 files, 46 lines). The workspace uses
   `members = ["crates/*"]`, so no manifest edit is needed.
-- [ ] The `wasm` feature in `complexipy-core`. It is declared `wasm = []` and gates
+- [x] The `wasm` feature in `complexipy-core`. It is declared `wasm = []` and gates
   exactly two sites: `CodeComplexity.version` in `classes.rs:117` and its
   initializer in `cognitive_complexity.rs:27`. The two consumers being deleted
   read `result.functions` and never `version`.
-- [ ] Collapse the `runner` feature. `complexipy-wasm` is the only consumer that
+- [x] Collapse the `runner` feature. `complexipy-wasm` is the only consumer that
   sets `default-features = false`, so once it goes `runner` is on for every build
   and the feature is permanently-true dead configuration. Remove `default` and
   `runner` from `[features]` (keep `python`); make `ignore`, `globset`, `wax`, and
@@ -142,12 +142,12 @@ uv run python tests/contract/check_stub_contract.py --self-test
   runner-gated items with no `cfg`, so that crate's tests have never compiled
   without default features. With the feature gone there is no configuration in
   which those imports fail.
-- [ ] Workspace deps `wasm-bindgen`, `serde-wasm-bindgen`,
+- [x] Workspace deps `wasm-bindgen`, `serde-wasm-bindgen`,
   `console_error_panic_hook` (`Cargo.toml:32-34`)
-- [ ] Regenerate `Cargo.lock` in the same commit. Every build path passes
+- [x] Regenerate `Cargo.lock` in the same commit. Every build path passes
   `--locked`, including A's own verify line, so between the deletion and the
   regeneration the standing gate is unrunnable.
-- [ ] `.gitignore`: `pkg/`, `vscode/complexipy/wasm/`, `web/wasm/`,
+- [x] `.gitignore`: `pkg/`, `vscode/complexipy/wasm/`, `web/wasm/`,
   `vscode/complexipy/complexipy-*.vsix`, `vscode/complexipy/.vscode/**`,
   `vscode/complexipy/.vscode-test/**`, `node_modules/`
 
@@ -339,37 +339,47 @@ any residual URL neither D nor E enumerated.
   `pip install` instructions; the footer nav row's PyPI and upstream GitHub
   links; the "Built with ... by @rohaquinlop and contributors" line; and the
   top-nav anchors that dangle once those sections go
+
 - [ ] `pyproject.toml`: authors, `[project.urls]`, `description`, the 16-entry
   PyPI-discovery `keywords` list, classifiers (currently stopping at 3.12),
   and `requires-python` raised from `>=3.8` to `>=3.14`
+
 - [ ] Regenerate `uv.lock`. It pins `requires-python = ">=3.8"` at line 3 and
   carries three resolution markers (`<3.9`, `==3.9.*`, `>=3.10`) with
   version-split `pre-commit` and `pytest` entries, plus `mkdocs-material` in
   the dev group from C.
+
 - [ ] `Cargo.toml`: authors, homepage, documentation, repository
+
 - [ ] `AGENTS.md`. Rather than working a list, run
   `rg -n 'wasm|web/|vscode|mkdocs|docs/es|\.github|benchmark|pre-commit|pull request|3\.8' AGENTS.md`
-  and resolve every hit. Known dead content: the `### WASM / web demo` command
-  block (`./build-wasm.sh`, `./serve-web-version.sh`) at lines 182-183, the
-  `### Docs` block (`uv run mkdocs serve`) at 189, and the `### Benchmarks`
-  block; the four-crate dual-target model, the Key Files and Architecture
-  entries for `crates/complexipy-wasm/src/lib.rs`, and the Project Structure
-  entries for `web/`, `vscode/`, `.github/workflows/`; the Tech Stack lines
-  ("Python 3.8+", "wasm-pack", "MkDocs Material (EN + ES)"); the Cross-target
-  compile checks block, whose
-  `cargo check -p complexipy-wasm --target wasm32-unknown-unknown` becomes an
-  invalid command; the CI lint-job paragraph; the pre-commit hooks bullet under
-  Code Style; the rule-authoring instruction to document in both
-  `docs/refactoring-rules.md` and `docs/es/refactoring-rules.md`; the
-  PR-title-enforced-by-CI and `gh` issue/PR conventions; and the
-  "Contributors on Windows need symlink support" note at line 366, which
-  decision 3 abolishes.
+  and resolve every hit.
+
+    **A already corrected everything it falsified**, in its own commit, per
+    `AGENTS.md`'s same-commit rule for structural invariants: the WASM/web command
+    block, the dual-target crate model (now "Crate split"), the wasm Key Files and
+    Architecture entries, the `web/` and `vscode/` Project Structure entries, the
+    wasm-pack Tech Stack line, the crate count, and the cross-target block (now a
+    single feature-isolation check). Do not treat that as licence to skip E's sweep.
+    Note also that A shifted AGENTS.md by -17 lines, so cite section names rather
+    than the line numbers an earlier revision of this tracker used.
+
+    Still dead and outstanding: the `### Docs` block (`uv run mkdocs serve`) and the
+    `### Benchmarks` block; the `.github/workflows/` Project Structure entry; the
+    Tech Stack lines "Python 3.8+" and "MkDocs Material (EN + ES)"; the CI lint-job
+    paragraph; the pre-commit hooks bullet under Code Style; the rule-authoring
+    instruction to document in both `docs/refactoring-rules.md` and
+    `docs/es/refactoring-rules.md`; the PR-title-enforced-by-CI and `gh` issue/PR
+    conventions; and the "Contributors on Windows need symlink support" note, which
+    decision 3 abolishes.
+
 - [ ] `AGENTS.md` claims the regex cannot find, because their wrongness has no
   keyword. `:211` states the three-place FFI rule with no type-versus-field
   qualifier - the exact rule D corrects. `:36` and `:236` credit `runner.rs` with
   git-URL walking, removed in 8.0.0. The "docs in `docs/` (EN + ES)" line does not
   contain the literal `docs/es`, and the "PR titles" bullet does not say "pull
   request". Read the structural-invariant sections rather than trusting the sweep.
+
 - [ ] `CLAUDE.md`: anything that assumes the removed workflow. Leave its skill
   list to H, which is what changes it - editing it here means writing it twice.
 

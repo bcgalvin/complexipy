@@ -241,6 +241,12 @@ path rather than a URL.
   `code_complexity_shared()` the Python path uses. Rebuilding an editor or browser
   surface means re-adding a thin crate over that function, not reimplementing
   analysis.
+- **Merge-surface divergence.** Removing the crate also let workstream A collapse
+  core's `runner` feature, which upstream still has. A future `sync-upstream` will
+  therefore conflict in `crates/complexipy-core/Cargo.toml`,
+  `crates/complexipy-core/src/lib.rs`, `src/helpers.rs`, and
+  `tests/collector_failures.rs`. The resolution is always to keep this fork's
+  unconditional form.
 - The core `wasm` feature gated exactly one thing: `CodeComplexity.version`.
   Neither consumer read it.
 - `build-wasm.sh` - `wasm-pack build --target web --out-name complexipy_wasm`, then

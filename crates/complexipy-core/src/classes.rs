@@ -114,8 +114,6 @@ pub struct FileComplexity {
 pub struct CodeComplexity {
     pub functions: Vec<FunctionComplexity>,
     pub complexity: u64,
-    #[cfg(feature = "wasm")]
-    pub version: String,
 }
 
 #[cfg_attr(

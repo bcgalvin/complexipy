@@ -1,5 +1,4 @@
 //! Per-file failures must surface in the collectors' failed-path list.
-#![cfg(feature = "runner")]
 
 use std::fs;
 use std::path::Path;

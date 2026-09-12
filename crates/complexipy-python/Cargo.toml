@@ -17,7 +17,7 @@ name = "complexipy"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-complexipy-core = { path = "../complexipy-core", features = ["python", "runner"] }
+complexipy-core = { path = "../complexipy-core", features = ["python"] }
 complexipy-cli = { path = "../complexipy-cli" }
 pyo3 = { workspace = true }
 clap = { workspace = true }

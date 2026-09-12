@@ -85,20 +85,6 @@ docs/_build/
 # Pyright LSP
 pyrightconfig.json
 
-# Web
-node_modules/
-pkg/
-
-# WASM files
-vscode/complexipy/wasm/
-web/wasm/
-
-# VSCode package
-vscode/complexipy/complexipy-*.vsix
-
-vscode/complexipy/.vscode/**
-vscode/complexipy/.vscode-test/**
-
 # ES doc
 site-es/
 

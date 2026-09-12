@@ -11,12 +11,11 @@ put anything tool-agnostic here, not there. See [Keeping This File Current](#kee
 - **Language:** Python 3.8+ (package shell) + Rust (engine, CLI, diff)
 - **Framework:** clap (CLI args), owo-colors/syntect/comfy-table (terminal output)
 - **Package Manager:** uv (Python), Cargo (Rust)
-- **Build:** maturin (Rust → Python extension), wasm-pack (Rust → WASM)
+- **Build:** maturin (Rust → Python extension)
 - **Docs:** MkDocs Material (EN + ES)
 
 The analysis engine is Rust; the CLI and public Python API are thin wrappers over a
-PyO3 extension module (`complexipy._complexipy`). The same Rust core also compiles to
-WASM for the browser demo and the VS Code extension. Scoring follows G. Ann Campbell's
+PyO3 extension module (`complexipy._complexipy`). Scoring follows G. Ann Campbell's
 SonarSource cognitive complexity paper.
 
 ## Project Structure
@@ -39,8 +38,7 @@ complexipy/
 │   │       ├── utils.rs                  # CSV/JSON writers, snapshot I/O, AST helpers
 │   │       └── helpers/exclude.rs        # Glob-based file exclusion
 │   ├── complexipy-cli/           # CLI: clap args, output rendering, run orchestration
-│   ├── complexipy-python/        # PyO3 module (_complexipy) + py_diff wrappers
-│   └── complexipy-wasm/          # wasm-bindgen entry point
+│   └── complexipy-python/        # PyO3 module (_complexipy) + py_diff wrappers
 │
 ├── complexipy/                   # Python package: thin re-export layer over Rust
 │   ├── __init__.py               # Public API: imports _complexipy, file_complexity wrapper
@@ -56,8 +54,6 @@ complexipy/
 │   └── test_*.py                 # Utility module tests
 │
 ├── docs/                         # MkDocs content (EN + es/)
-├── web/                          # Browser demo (WASM + CodeMirror)
-├── vscode/                       # VS Code extension (WASM module)
 └── .github/workflows/            # CI, PR title check, release
 ```
 
@@ -123,7 +119,7 @@ and formatting; `force-exclude` also protects explicitly supplied fixture paths.
 Excluded explicit paths are skipped, so a successful command does not mean those
 files were checked.
 
-All four crates inherit workspace Clippy warnings for `exit`, `dbg_macro`,
+All three crates inherit workspace Clippy warnings for `exit`, `dbg_macro`,
 `todo`, and `unimplemented`. CI promotes warnings to errors with `-D warnings`;
 the full Clippy restriction group is not enabled.
 
@@ -141,19 +137,17 @@ The CI lint job installs only dependencies with
 asserts complexipy was not installed. Preserve no-sync on every lint-job command.
 Re-run rule, warning, and Python-target controls when upgrading ty.
 
-### Cross-target compile checks
+### Feature-isolation compile check
 
-PR CI checks these configurations in separate Cargo invocations so workspace
-feature unification cannot hide missing feature gates. The CLI check exercises
-core's default `runner` feature set without `python`. These are compilation
-checks, not runtime coverage for every target. Install the WASM target first
-with `rustup target add wasm32-unknown-unknown`.
+One configuration is checked separately so workspace feature unification cannot
+hide a missing feature gate. The CLI check exercises core without `python`, which
+matters because the `serde(skip)` attributes on `FunctionComplexity` and
+`FileComplexity` are gated on that feature: a standalone CLI build serializes a
+different snapshot shape than the shipped extension does. This is a compilation
+check, not runtime coverage.
 
 ```bash
 cargo check -p complexipy-cli --locked
-cargo check -p complexipy-core --no-default-features --locked
-cargo check -p complexipy-core --no-default-features --features python --locked
-cargo check -p complexipy-wasm --target wasm32-unknown-unknown --locked
 ```
 
 ### Run
@@ -175,13 +169,6 @@ pinned real repos, then times a generated synthetic fixture at 1x/2x/4x
 sizes (generated into `~/.cache/complexipy-benchmarks/scaling/`, never
 committed) and records the scaling ratios in `benchmarks/results.md`,
 which the docs pages include via pymdownx snippets.
-
-### WASM / web demo
-
-```bash
-./build-wasm.sh          # wasm-pack build → web/wasm/ + vscode/complexipy/wasm/
-./serve-web-version.sh   # serve web/ on :8080
-```
 
 ### Docs
 
@@ -242,8 +229,6 @@ stable, and new exports belong in `__init__.py` + `__all__` with docs in `docs/`
   `file_complexity` (mirrors the Python public API).
 - `crates/complexipy-core/src/utils.rs` - CSV/JSON writers, snapshot file I/O, and
   AST helpers (`count_bool_ops`, noqa/ignore-comment scanning).
-- `crates/complexipy-wasm/src/lib.rs` - the browser entry point; calls the same
-  `code_complexity_shared()` the Python path uses.
 
 ### Refactor rules (`--suggest-refactors`)
 
@@ -271,22 +256,19 @@ Guiding principle for rule output: never emit a suggestion the tool cannot stand
 behind. If a heuristic isn't confident, emit `help` text rather than a wrong
 `suggestion`, and never print a complexity number the code knows is fabricated.
 
-### Dual-target Rust
+### Crate split
 
-The workspace splits the three build targets across crates instead of feature
-flags:
+The workspace splits the build across three crates:
 
-- `complexipy-core` - target-agnostic engine. Features: `default = ["runner"]`,
-  `runner` (file-walker deps `ignore`/`globset`/`wax`), `python` (pyo3 `#[pyclass]`
-  attributes on shared types), `wasm` (adds `CodeComplexity.version`).
-- `complexipy-cli` - clap args + output rendering; depends on core (default features).
-- `complexipy-python` - PyO3 module; depends on core (`python`, `runner`) and the
-  cli crate (for `run_cli`). Built by maturin via `manifest-path` in pyproject.toml.
-- `complexipy-wasm` - wasm-bindgen entry; depends on core with
-  `default-features = false` and `features = ["wasm"]`.
+- `complexipy-core` - the engine. One optional feature, `python`, which adds the
+  pyo3 `#[pyclass]` attributes **and the `serde(skip)` attributes** to the shared
+  types. Everything else is unconditional.
+- `complexipy-cli` - clap args + output rendering; depends on core.
+- `complexipy-python` - PyO3 module; depends on core (`python`) and the cli crate
+  (for `run_cli`). Built by maturin via `manifest-path` in pyproject.toml.
 
-Dependency direction is one-way: python → cli → core, wasm → core. Never the
-reverse. Adding a dependency means adding it to the crate that uses it.
+Dependency direction is one-way: python → cli → core. Never the reverse. Adding a
+dependency means adding it to the crate that uses it.
 
 ## Testing
 
@@ -341,7 +323,6 @@ reverse. Adding a dependency means adding it to the crate that uses it.
 - `crates/complexipy-cli/src/output.rs` - Console display, `handle_display`, `handle_results_storage`
 - `crates/complexipy-cli/src/utils/paths.rs` - Output path resolution for CSV/JSON/GitLab/SARIF exports
 - `crates/complexipy-cli/src/utils/snapshot.rs` - `evaluate_snapshot()`, `SnapshotEvaluation`, watermark logic
-- `crates/complexipy-wasm/src/lib.rs` - wasm-bindgen entry over `code_complexity_shared`
 - `complexipy/__init__.py` - Public Python API surface (`__all__` compatibility promise)
 - `complexipy/_complexipy.pyi` - Type stubs for the Rust extension module
 - `tests/main.py` - Core test suite including SonarSource paper conformance tests
@@ -390,7 +371,9 @@ Treat this file as part of the change, not as documentation to catch up on later
 - Do not add docstrings that describe changelog or history. Docstrings describe what a function does.
 - Do not commit without explicit user instruction.
 - Do not use `pip` or `python -m` - use `uv run` for all commands.
-- Do not modify `crates/` (Rust) without understanding the per-crate target setup.
+- Do not modify `crates/` (Rust) without understanding what the `python` feature
+  gates - it controls both the `#[pyclass]` attributes and the `serde(skip)`
+  attributes, so a build without it serializes a different shape.
 - Do not run pytest against stale Rust changes - `uv run maturin develop` first.
 - Do not adjust asserted complexity totals in `tests/main.py` to make a run pass.
 - Do not duplicate agent config. `CLAUDE.md` imports this file; `.claude/skills` is a

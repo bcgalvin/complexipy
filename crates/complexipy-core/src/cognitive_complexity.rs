@@ -24,8 +24,6 @@ pub fn code_complexity_shared(
     Ok(CodeComplexity {
         functions,
         complexity,
-        #[cfg(feature = "wasm")]
-        version: env!("CARGO_PKG_VERSION").to_string(),
     })
 }
 
