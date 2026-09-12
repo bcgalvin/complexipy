@@ -72,8 +72,7 @@ DiffEntry:
   ├─ func_name: str
   ├─ old_complexity: Optional[int]
   ├─ new_complexity: Optional[int]
-  ├─ status: DiffStatus (property)
-  └─ delta: Optional[int] (property)
+  └─ status: DiffStatus (property)
 
 DiffStatus: REGRESSED | IMPROVED | UNCHANGED | NEW | REMOVED
 ```

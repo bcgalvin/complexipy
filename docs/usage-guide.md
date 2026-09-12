@@ -546,15 +546,18 @@ if has_regressions(entries, 15):
 ```
 
 `DiffEntry` exposes `file_path`, `func_name`, `old_complexity`, and
-`new_complexity` (either may be `None` for NEW / REMOVED functions), plus the
-`status` and `delta` properties. `status` is a `DiffStatus` member - a
+`new_complexity` (either may be `None` for NEW / REMOVED functions) as
+read-only attributes, plus the `status` property. `status` is a `DiffStatus` member - a
 `str`-based enum, so it compares equal to its string value (e.g.
 `DiffStatus.REGRESSED == "REGRESSED"`).
 
 ```python
 for e in entries:
     if e.status != DiffStatus.UNCHANGED:
-        print(f"{e.file_path}::{e.func_name}: {e.status} {e.delta}")
+        print(
+            f"{e.file_path}::{e.func_name}: {e.status} "
+            f"{e.old_complexity} -> {e.new_complexity}"
+        )
 ```
 
 ### Practical API Usage

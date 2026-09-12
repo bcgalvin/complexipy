@@ -52,6 +52,7 @@ complexipy/
 │   ├── main.py                   # Core tests + paper conformance
 │   ├── src/                      # Test fixture .py files (excluded from collection)
 │   ├── fixtures/refactor_plans/  # Rule-behaviour fixtures
+│   ├── contract/                 # Installed-wheel stub/runtime contract harness
 │   └── test_*.py                 # Utility module tests
 │
 ├── docs/                         # MkDocs content (EN + es/)
@@ -83,6 +84,15 @@ are meaningless.
 ```bash
 uv run pytest
 cargo test --workspace --locked
+```
+
+Installed-wheel typing contract (builds a wheel, installs it into a fresh
+venv, type-checks `tests/contract/cases/` from a neutral directory with ty,
+and checks runtime agreement; `--self-test` also proves wrong expectations
+fail):
+
+```bash
+uv run python tests/contract/check_stub_contract.py --self-test
 ```
 
 Single test:
@@ -121,7 +131,8 @@ ty treats `possibly-unresolved-reference`, `possibly-missing-attribute`,
 `unused-ignore-comment`, and `redundant-cast` as errors. Every remaining warning
 also causes failure, including unknown configured rules. Warning-driven failure
 does not enable disabled rules; retain the explicit rule list. Tests remain excluded
-from the root ty check; severity policy does not verify native/stub parity.
+from the root ty check; severity policy does not verify native/stub parity, which is
+what the `tests/contract/` harness covers for its cases.
 The analysis Python version is inferred from `requires-python`.
 
 The CI lint job installs only dependencies with
@@ -201,7 +212,8 @@ Changing one of those structs means updating **three** places in lockstep:
 `crates/complexipy-core/src/classes.rs` → the `#[pymodule]` export list in
 `crates/complexipy-python/src/lib.rs` → the stubs in `complexipy/_complexipy.pyi`.
 The core crate's `python` feature gates the `#[pyclass]` attributes on the shared
-types.
+types. The `py_diff` types defined directly in `crates/complexipy-python/src/lib.rs`
+(`DiffEntry`, `DiffStatus`) follow the same lockstep rule with the stub.
 
 `complexipy/__init__.py` is the public Python API surface: `code_complexity`,
 `file_complexity`, `collect_all_ignored_locations`,
@@ -287,6 +299,12 @@ reverse. Adding a dependency means adding it to the crate that uses it.
 - `tests/fixtures/refactor_plans/` - fixtures for rule behaviour, deliberately kept out
   of the `tests/src/` complexity corpus so rule work doesn't perturb the asserted
   totals.
+- `tests/contract/` - the installed-wheel stub contract harness. `cases/*.py` are
+  deliberately wrong or right consumer snippets with expected ty diagnostics encoded
+  in `check_stub_contract.py`; they are not collected by pytest and are outside the
+  root ty scope, but they are inside Ruff's scope, so cases must stay lint- and
+  format-clean (type errors only). Adding a stub declaration means adding a case that
+  proves it.
 - Rust tests live next to their module. Public-API tests go in the crate's
   `tests/` directory; tests that need private items are a `mod tests;` child module
   in a sibling file (e.g. `crates/complexipy-core/src/utils.rs` →
