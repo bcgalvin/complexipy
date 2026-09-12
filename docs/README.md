@@ -14,6 +14,8 @@ markdown files read from the repository.
   exceptions it raises, and the enum, result-object and typing contracts.
 - [Diff and snapshots](diff-and-snapshots.md) - the two ratchets, and the
   `DiffStatus` comparison contract.
+- [Changelog maintenance](changelog.md) - local git-cliff version check,
+  configuration and manual generation.
 
 `AGENTS.md` at the repository root covers commands, architecture, and
 conventions. [`realignment/`](realignment/) tracks the in-progress fork

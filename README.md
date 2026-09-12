@@ -7,7 +7,10 @@ This repository is a hard fork of
 [`rohaquinlop/complexipy`](https://github.com/rohaquinlop/complexipy), maintained
 for `recsys-code-quality`. It is consumed from source as a locally built wheel,
 not published to PyPI. There is no documentation site, editor extension, or
-upstream contribution workflow.
+upstream contribution workflow. This is local-only work by one developer on one
+machine, with no external distribution, sharing or portability requirement.
+Maintenance favors direct local commands and small configuration over tooling
+frameworks; [AGENTS.md](AGENTS.md#scope-and-engineering-defaults) records that scope.
 
 ## Local development
 

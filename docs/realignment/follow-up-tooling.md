@@ -4,20 +4,27 @@ Inventory of functionality the realignment removes, recorded so replacements can
 be scoped deliberately rather than rediscovered. Removal is the default; this file
 is the record that makes aggressive removal safe.
 
+This is not a rebuild checklist. Current scope is one developer on one machine,
+local use only, with no portability or sharing requirement. Keep direct commands
+and manual procedures unless a concrete local need or explicit request justifies
+more machinery. External-project practices are examples, not requirements.
+
 Every entry carries enough mechanics to rebuild the capability without reading the
 deleted code. Deleted content is also recoverable from Git history; commit
 `d690c9f` is the last revision before the realignment.
 
 Disposition values:
 
-- **Replace** - the capability is wanted; rebuild it for this fork.
+- **Replace** - a candidate replacement if a local need is demonstrated; not an
+  instruction to rebuild it now.
 - **Decide** - worth having, but the shape is an open question.
 - **Drop** - recorded for completeness; no replacement intended.
 
 ## Test and lint automation
 
-**Disposition: Replace.** This is the first thing to rebuild. Nothing runs these
-gates automatically after the realignment.
+**Disposition: Replace.** Keep the manual gate as the default.
+Nothing runs it automatically after the realignment; that alone is not a reason
+to build an automation framework.
 
 ### `.github/workflows/CI.yml`
 
@@ -116,7 +123,8 @@ no installed Git hook and no `core.hooksPath` override, so no uninstall was need
 
 Commit messages have never been machine-validated here. `pr-title.yml` checked
 pull-request titles, not commits. With git-cliff parsing the log and no CI, a
-`commit-msg` Conventional Commits check is the only guard. **Replace.**
+`commit-msg` Conventional Commits check could add automatic validation if a
+local need arises. Manual review remains sufficient for now. **Replace.**
 
 ## Release and distribution
 
@@ -292,7 +300,10 @@ users that is correct; note it as a deliberate choice rather than an oversight.
 
 ## Changelog and release notes
 
-**Disposition: Replace with git-cliff.**
+**Disposition: Replace with git-cliff.** G preparation uses a local 2.14.1
+version check, root `cliff.toml` and direct commands in `docs/changelog.md`.
+No installer, wrapper, artifact manifest or bespoke test framework is retained.
+The inherited changelog is replaced at G finalization, after H.
 
 The `release-notes` skill maintained `CHANGELOG.md` and its Spanish mirror by
 hand, moved `## Unreleased` into a dated section at release time, created the tag,

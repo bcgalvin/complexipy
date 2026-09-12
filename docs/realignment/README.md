@@ -38,14 +38,16 @@ directory.
 ## Position
 
 - Hard fork of `rohaquinlop/complexipy`. No upstream contribution is intended.
-- Sole developer. No outside collaborators are expected, ever.
+- Sole developer on one macOS arm64 machine. No outside collaborators,
+  external distribution or portability target. Prefer direct local commands and
+  small config; research options are not implementation requirements.
 - Consumed from source by `recsys-code-quality` as a locally built wheel
   (CPython 3.14, macOS arm64). There is no PyPI target. **(external)**
 - Docs become local markdown in this repository. There is no published site and
   no multi-language support.
 - The VS Code extension and the browser demo are not needed.
-- CI is not part of the loop today and will be recreated from scratch on a
-  separate branch after this realignment lands.
+- CI is not part of this local loop. Rebuild ideas are records, not commitments;
+  automation or portability work needs a concrete local need or explicit request.
 
 ## Baseline facts
 
@@ -111,9 +113,10 @@ say so.
 
 ## Execution order
 
-A, B, C and D landed. Continue with E, F, G preparation, H, then G finalization
-and coordinated parent adoption. G preparation resolves git-cliff and permanent
-document homes; keep the tracker and predecessor skills until H has used them.
+A through F landed and G preparation is complete. Continue with H, then G
+finalization and coordinated parent adoption. G preparation resolved git-cliff
+and permanent document homes; keep the tracker and predecessor skills until H
+has used them.
 The final version/tag and directory deletion come after H, not before it.
 
 No automation runs the gates. Before B there were three candidates and none
@@ -532,37 +535,54 @@ parent-repository changes are included.
 
 ### G. Changelog, version, and branch cleanup
 
+#### Preparation before H
+
+- [x] Use the locally installed **git-cliff 2.14.1**, confirmed with
+  `git-cliff --version`. This is sufficient for one developer on one machine;
+  no repository installer, artifact manifest, wrapper or portability layer.
+- [x] Add root `cliff.toml` and the short manual procedure in
+  [`../changelog.md`](../changelog.md). Keep merge summaries, routine/unknown
+  subjects and D/E breaking descriptions; do not render bodies/session trailers.
+  Reserve nonbreaking release-bookkeeping subjects for changelog/version work.
+- [x] Decide to regenerate the whole changelog at finalization, replacing the
+  old preamble and both handwritten Unreleased entries rather than duplicating
+  their source commits. The existing file stays unchanged during preparation.
+- [x] Reserve `docs/maintenance/design-issues-and-bugs.md`,
+  `docs/maintenance/follow-up-tooling.md` and
+  `docs/maintenance/changelog-git-cliff.md` as permanent homes. Move the records
+  only after H has used them; no duplicate copies now.
+
+The research is [`changelog-git-cliff.md`](changelog-git-cliff.md). An initial
+implementation over-applied its suggestions and added an installer, wrapper and
+large test suite. Those uncommitted additions were removed after the maintainer
+clarified the scope. `AGENTS.md` now records the local-only, single-developer,
+single-machine rule and the requirement for a concrete need before adding such
+machinery. Future Python scripts, if needed, should use PEP 723; this workflow
+needs no Python script.
+
+Manual validation at `5ec3c37`: native git-cliff 2.14.1 selected all 29 fork
+commits exactly once, retained the merge and five empty-body entries, preserved
+D/E migration details, and rendered ASCII without session trailers. This is
+manual verification, not a checked-in contract framework. The existing standing
+gate was rerun after simplification: 144 Python tests, 300 Rust tests, lint,
+format/type checks, CLI feature isolation and the installed-wheel contract all
+pass. A fresh Oracle review of the simplified diff preceded the commit; its
+document-currency findings were applied. ASCII and whitespace checks pass;
+no Markdown formatter was run.
+
+#### Finalization after H
+
 - [ ] Delete the 39 inherited upstream tags from this checkout. They remain on
   upstream.
 - [ ] There is no upstream remote to set a fetch policy on, and `origin` carries
   no tags, so local deletion holds. If upstream is ever added as a remote,
   `--no-tags` belongs at add time - `git fetch` auto-follows tags reachable from
   fetched history and would re-import all 39 on the first fetch.
-- [ ] Truncate `CHANGELOG.md` at and below `## [8.0.1]`, then regenerate
-  `030e207..HEAD` with git-cliff. **Not** `87ad610..HEAD`, which excludes
-  `87ad610` itself and includes the nine inherited upstream commits the merge
-  `9926391` brought in: 19 commits at the branch point, 31 at `39e1bd5`, against
-  23 for the correct range.
-- [ ] Decide what happens to the two hand-written `## Unreleased` entries. They
-  describe `fa174cc` (stub path and module-total documentation) and `87ad610`
-  (C002 loop-guard refusal). Regenerating duplicates those two - and picks up
-  `8a35091` and `0f691e7`, two user-visible `fix:` commits the hand-written
-  section never recorded. The drift is an argument for regenerating, not
-  against. The file preamble's "links to its GitHub release notes" also
-  becomes false with no release target.
-- [ ] Record both `--output-format json` schema changes from D as breaking
-  entries: `doc_url` and `references` each leave the refactor-plan objects.
-- [ ] Confirm git-cliff's merge-commit handling. One of the 23 commits in
-  `030e207..HEAD` is the merge `9926391`; git-cliff commonly filters merges, so
-  the regenerated body may carry 22 entries from a correct range.
-- [ ] Decide how the regeneration treats two commit-log inputs nothing has
-  planned for. 18 of the 23 commits end in a `Claude-Session:` trailer
-  (`.claude/settings.json` blanks the attribution footers, not this one), and
-  five have no body at all: `fa174cc`, `c613bdb`, `f6d4a14`, the merge
-  `9926391`, and `5999826`. Whether git-cliff renders the trailer, strips it, or
-  ignores bodies entirely is not established; whatever handles it must keep the
-  `BREAKING CHANGE:` footer on `39e1bd5`, which is the only machine-readable
-  record of D's schema changes.
+- [ ] Regenerate `030e207..HEAD` using the direct command in `docs/changelog.md`
+  and review the candidate before replacing `CHANGELOG.md`. Not
+  `87ad610..HEAD`, which loses the first fork fix and includes inherited history.
+  Keep D's two field removals and E's Python floor visible, along with the
+  merge and five empty-body commits. Omit session trailers from rendered prose.
 - [ ] Retire the `release-notes` skill, which hand-maintains `CHANGELOG.md` plus
   the Spanish mirror and publishes through `gh release create`.
 - [ ] Bump to `8.1.0` in the workspace `Cargo.toml`. `pyproject.toml` has no
@@ -580,22 +600,11 @@ parent-repository changes are included.
 - [ ] Delete `rcq` and `followup-batch-1` after the work lands on `main`.
 - [ ] Delete `docs/realignment/`, after rehoming what outlives it: any unfinished
   `follow-up-tooling.md` entries, and `design-issues-and-bugs.md` in full, which
-  is not realignment work and has no other home. The destination is undecided;
-  see below.
+  is not realignment work. Move the records to the reserved `docs/maintenance/`
+  paths and update links before deleting this directory.
 
-**Blocked on two decisions this tracker has so far left implicit.** Neither is
-made here.
-
-1. git-cliff exists nowhere in the tree: no `cliff.toml`, no entry in
-   `pyproject.toml`, `uv.lock`, or `Cargo.toml`, no skill or command that invokes
-   it. A `git-cliff` binary on the developer's `PATH` (`~/.local/bin/git-cliff`)
-   is an environment fact, not a repository one, and its version is unrecorded.
-   The changelog, the `release` skill, and the trailer item above all wait on how
-   it is pinned and configured.
-1. `design-issues-and-bugs.md` has no destination. It is the one document here
-   that must survive this directory, and nothing names where it goes - a
-   top-level file, a `docs/` page, or the parent repository. Until that is
-   chosen, the last item above cannot be executed.
+The former tooling and document-home choices are settled above. Finalization
+waits for H, not for a repository-managed git-cliff distribution mechanism.
 
 Do not build a vendored wheel mid-realignment. Without the `+rcq.N` segment it
 would report `8.0.1`, which is indistinguishable from upstream's release while
@@ -644,7 +653,9 @@ cases the prose is already incomplete.
 
 ## Deferred
 
-Scope for rebuilt tooling lives in [`follow-up-tooling.md`](follow-up-tooling.md).
+Possible rebuild ideas live in [`follow-up-tooling.md`](follow-up-tooling.md).
+They are not an implementation checklist. Under the current single-machine scope,
+only a demonstrated local need or explicit request justifies adopting one.
 
 - **Test automation.** `verify` skill first, then a rebuilt pre-commit config.
   The skill records a procedure; checks remain manual until hooks or CI actually
@@ -660,8 +671,8 @@ Scope for rebuilt tooling lives in [`follow-up-tooling.md`](follow-up-tooling.md
   and `plan.doc_url` while building its reduced record - still true at `39e1bd5`,
   checked against the parent checkout - so it raises `AttributeError` against an
   8.1.0 wheel until it is fixed. The gitlink bump is *not* deferred; see G.
-- **git-cliff tooling choice.** Pinning and invocation are researched when the
-  changelog work is scheduled. The direction is settled; the mechanism is not.
+- **git-cliff upkeep.** Check the local version, keep `cliff.toml` small and
+  manually review generated output. No further tooling layer is planned.
 
 ## Working hazard
 

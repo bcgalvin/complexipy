@@ -6,6 +6,30 @@ This is the single source of truth for agent instructions in this repository.
 `CLAUDE.md` is a pointer to this file plus a short Claude-Code-specific section -
 put anything tool-agnostic here, not there. See [Keeping This File Current](#keeping-this-file-current).
 
+## Scope and engineering defaults
+
+This is local-only work by one developer on one machine: macOS arm64 with
+CPython 3.14+. The parent project consumes locally built wheels on that same
+machine. There is no external distribution, sharing or portability requirement.
+
+- Prefer a direct command, existing local tool and small config over a wrapper,
+  installer or framework. For git-cliff, a local `--version` check is sufficient.
+- Do not add artifact manifests, download/checksum machinery, cross-platform
+  support, environment isolation layers, CI or generalized release automation
+  merely because other projects use them. Add machinery only for a demonstrated
+  local problem or an explicit request; explain that need first.
+- Test actual behavior and regressions that matter here, not hypothetical
+  distribution, portability or hostile-machine scenarios. Keep the existing
+  analyzer and installed-wheel contract gates: they verify the actual local
+  consumer, not a speculative deployment target.
+- Treat research as evidence to select from, not a checklist to implement.
+  Prefer manual verification for infrequent local maintenance when it is clear
+  and sufficient.
+- If a standalone Python tool is actually needed, use PEP 723 metadata for its
+  Python requirement and dependencies (`[]` for stdlib-only scripts), and run it
+  with `uv run --script`. Keep its Python floor aligned with this project.
+  That convention is not a reason to wrap a working native CLI in Python.
+
 ## Tech Stack
 
 - **Language:** CPython 3.14+ (package shell) + Rust (engine, CLI, diff)
@@ -151,6 +175,13 @@ check, not runtime coverage.
 ```bash
 cargo check -p complexipy-cli --locked
 ```
+
+### Changelog
+
+Use the locally installed git-cliff directly. Confirm `git-cliff --version`
+reports `2.14.1`; root `cliff.toml` holds the configuration. The short manual
+procedure is in `docs/changelog.md`. No installer, wrapper or automated release
+pipeline is maintained here.
 
 ### Run
 
@@ -302,7 +333,8 @@ dependency means adding it to the crate that uses it.
 
 ## Code Style
 
-- No comments in code. The code must speak for itself.
+- No explanatory comments in code. The code must speak for itself. Required
+  PEP 723 metadata in a standalone script is configuration and is permitted.
 - ASCII punctuation only. Never use Unicode dashes (em dash U+2014, en
   dash U+2013, horizontal bar U+2015) in code, comments, docs, or commit
   messages. Use ASCII `-`.
@@ -337,7 +369,10 @@ dependency means adding it to the crate that uses it.
 - **Package manager:** Always use `uv` - `uv run pytest`, `uv run ruff`, `uv run complexipy`
 - **Cargo lockfile:** Regenerate and review `Cargo.lock` after dependency or workspace-version changes, and include required lockfile updates with the change. Every Cargo command here that resolves dependencies passes `--locked`, so drift fails rather than silently resolving. `maturin develop` does not, so a manifest edit followed by a rebuild can regenerate the lockfile without warning.
 - **Commits:** Only commit when explicitly asked. Never auto-commit. Stage explicit paths - never `git add -A` or `git add .`
-- **Commit subjects:** Must follow Conventional Commits. Nothing enforces this automatically - there is no CI and no pull-request workflow - and the changelog will be generated from the commit log, so a malformed subject is unrecoverable once it is history.
+- **Commit subjects:** Must follow Conventional Commits. There is no automatic
+  validator. git-cliff retains unknown subjects in `Other` rather than silently
+  losing history; that is not validation. Review the generated changelog before
+  committing release artifacts.
 
 ## Agent Configuration Layout
 
@@ -369,7 +404,8 @@ Treat this file as part of the change, not as documentation to catch up on later
 
 ## Anti-Patterns
 
-- Do not add comments to code. Use descriptive variable/function names instead.
+- Do not add explanatory comments to code. Use descriptive variable/function
+  names instead; required PEP 723 script metadata is the narrow exception.
 - Do not add docstrings that describe changelog or history. Docstrings describe what a function does.
 - Do not commit without explicit user instruction.
 - Do not use `pip` or `python -m` - use `uv run` for all commands.

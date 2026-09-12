@@ -23,6 +23,14 @@ file is the one that stays actionable after `docs/realignment/` is deleted.
 
 ### Fixed
 
+- **Changelog message handling was unspecified.** G preparation now uses
+  local git-cliff 2.14.1 and root `cliff.toml`. A manual native-tool check at
+  `5ec3c37` accounted for all 29 fork SHAs, including merge `9926391` and the
+  five empty-body commits (`fa174cc`, `c613bdb`, `f6d4a14`, `9926391`,
+  `5999826`). D/E migration descriptions survive; session trailers do not render.
+  This is a manual check, not an automated contract suite. Replacing the
+  inherited changelog remains G finalization work after H.
+
 - **A relative `--output` resolved against the process CWD, not the invocation
   path.** `crates/complexipy-cli/src/utils/paths.rs` honoured `invocation_path`
   when `--output` was omitted but absolutized a relative `--output` against
@@ -204,15 +212,6 @@ Recorded by `chore(tooling): remove the pre-commit stack`.
   `get_complexipy_toml_config`). The sibling tests
   `complexipy_toml_wins_over_every_other_candidate` and `candidates_are_not_merged`
   pin that behavior; pyproject config support remains available to consumers.
-
-### Assigned to a workstream
-
-- **Commit-log inputs the changelog regeneration has not planned for.** At
-  `7025244`, 18 of the 27 commits in `030e207..7025244` carry a `Claude-Session:`
-  trailer. Five have no body: `fa174cc`, `c613bdb`, `f6d4a14`, merge `9926391`,
-  and `5999826`. Recompute the inputs at G rather than treating these snapshot
-  counts as current. git-cliff's trailer and empty-body handling remains
-  unverified; the `BREAKING CHANGE:` footer on `39e1bd5` must survive. **G**.
 
 ### Open
 
