@@ -127,9 +127,21 @@ uv run python tests/contract/check_stub_contract.py --self-test
 - [ ] `crates/complexipy-wasm/` (2 files, 46 lines). The workspace uses
   `members = ["crates/*"]`, so no manifest edit is needed.
 - [ ] The `wasm` feature in `complexipy-core`. It is declared `wasm = []` and gates
-  exactly two sites: `CodeComplexity.version` in `classes.rs` and its
-  initializer in `cognitive_complexity.rs`. The two consumers being deleted
+  exactly two sites: `CodeComplexity.version` in `classes.rs:117` and its
+  initializer in `cognitive_complexity.rs:27`. The two consumers being deleted
   read `result.functions` and never `version`.
+- [ ] Collapse the `runner` feature. `complexipy-wasm` is the only consumer that
+  sets `default-features = false`, so once it goes `runner` is on for every build
+  and the feature is permanently-true dead configuration. Remove `default` and
+  `runner` from `[features]` (keep `python`); make `ignore`, `globset`, `wax`, and
+  `rayon` unconditional dependencies; strip the six `#[cfg(feature = "runner")]`
+  attributes (`src/lib.rs:1,6,10,14,24` and `src/helpers.rs:1`) and the
+  `#![cfg(feature = "runner")]` at `tests/collector_failures.rs:2`; and reduce
+  `complexipy-python`'s dependency line to `features = ["python"]`.
+  This also resolves a latent breakage: `tests/lib_surface.rs:7-12` imports
+  runner-gated items with no `cfg`, so that crate's tests have never compiled
+  without default features. With the feature gone there is no configuration in
+  which those imports fail.
 - [ ] Workspace deps `wasm-bindgen`, `serde-wasm-bindgen`,
   `console_error_panic_hook` (`Cargo.toml:32-34`)
 - [ ] Regenerate `Cargo.lock` in the same commit. Every build path passes
@@ -139,13 +151,14 @@ uv run python tests/contract/check_stub_contract.py --self-test
   `vscode/complexipy/complexipy-*.vsix`, `vscode/complexipy/.vscode/**`,
   `vscode/complexipy/.vscode-test/**`, `node_modules/`
 
-Verify: `cargo check -p complexipy-cli --locked`, then the standing gate. The two
-`--no-default-features` checks are vestigial once the wasm crate is gone - `runner`
-is then on for every build path and `complexipy-python` always takes
-`["python", "runner"]`, so both verify a shape nothing builds. Keep or drop them
-deliberately. `cargo test -p complexipy-core --no-default-features` has in any case
-never compiled: `tests/lib_surface.rs:7-12` imports runner-gated items with no
-`cfg`, and `cargo check` skips `tests/`.
+Verify: `cargo check -p complexipy-cli --locked`, then the standing gate.
+
+The two `--no-default-features` cross-target checks are dropped with the feature
+they exercised. They only ever distinguished a build shape `complexipy-wasm`
+produced; with `runner` collapsed there is one core configuration plus the `python`
+feature, and the CLI check is what still carries weight - the `serde(skip)`
+attributes on `FunctionComplexity` and `FileComplexity` are gated on `python`, so a
+standalone CLI build serializes a different snapshot shape than the shipped one.
 
 ### B. Remove public-project, publishing, and unused tooling
 

@@ -61,12 +61,13 @@ cargo check -p complexipy-core --no-default-features --features python --locked
 cargo check -p complexipy-wasm --target wasm32-unknown-unknown --locked   # dies with the wasm crate
 ```
 
-Only the CLI check retains a subject after the wasm crate goes: `runner` is then
-on for every build path, and `complexipy-python` always takes
-`["python", "runner"]`, so both `--no-default-features` variants verify a shape
-nothing builds. The CLI check still matters, because the `serde(skip)` attributes
-on `FunctionComplexity` and `FileComplexity` are gated on the `python` feature, so
-a standalone CLI build serializes a different snapshot shape than the shipped one.
+Only the CLI check survives the realignment. The wasm check dies with its target,
+and the two `--no-default-features` variants die with the `runner` feature, which
+workstream A collapses because `complexipy-wasm` was the only consumer that ever
+disabled default features. A replacement CI job should carry the CLI check and not
+reinstate the others: it still matters because the `serde(skip)` attributes on
+`FunctionComplexity` and `FileComplexity` are gated on the `python` feature, so a
+standalone CLI build serializes a different snapshot shape than the shipped one.
 Cargo caching was keyed on `hashFiles('Cargo.lock')`.
 
 ### `.pi/` hooks

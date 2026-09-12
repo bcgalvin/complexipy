@@ -296,7 +296,9 @@ semantic that `refactoring-rules.md` spends a section on.
   retains a subject, and the `serde` finding below is why it matters.
   Independently, `cargo test -p complexipy-core --no-default-features` has never
   compiled: `tests/lib_surface.rs:7-12` imports runner-gated items with no `cfg`,
-  and `cargo check` skips `tests/`.
+  and `cargo check` skips `tests/`. **Resolved in the plan:** workstream A now
+  collapses the `runner` feature outright and drops both checks, which also
+  removes the configuration in which `lib_surface.rs` fails to compile.
 
 ### Serialized output differs by build shape
 
