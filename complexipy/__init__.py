@@ -5,8 +5,6 @@ implemented in Rust and exposed through the ``complexipy._complexipy``
 extension module. This package is a thin re-export layer only.
 """
 
-from __future__ import annotations
-
 from pathlib import Path
 
 import complexipy._complexipy as _complexipy
@@ -72,9 +70,7 @@ def file_complexity(
         file, including all functions found and their complexity scores.
 
     Raises:
-        FileNotFoundError: If the specified file does not exist.
-        PermissionError: If the file cannot be read due to permissions.
-        SyntaxError: If the Python file contains syntax errors.
+        ValueError: If reading, UTF-8 decoding, or parsing the file fails.
     """
     path = Path(file_path).resolve()
     cwd = Path.cwd().resolve()

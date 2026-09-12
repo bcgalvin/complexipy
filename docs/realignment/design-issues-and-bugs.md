@@ -113,7 +113,9 @@ file is the one that stays actionable after `docs/realignment/` is deleted.
   survivors, asserted by id, and a sibling test pins that a spliceable plan
   beats a help-only plan of higher effectiveness, which nothing had pinned.
 
-### Assigned to a workstream
+### Fixed in workstream E
+
+Recorded by `refactor(fork)!: align identity and Python 3.14 contracts`.
 
 - **Eight phantom constructors in the stub.** `classes.rs` has zero
   `#[pymethods]` and zero `#[new]` - the only `#[new]` in the tree is
@@ -123,49 +125,42 @@ file is the one that stays actionable after `docs/realignment/` is deleted.
   `CodeComplexity`, `IgnoredLocation`, and `RemovableIgnore`, with
   runtime-impossible Example blocks. Every attribute is also declared writable
   when all are read-only (`get_all` generates getters only; `DiffEntry` is the
-  one type using `@property`). Was assigned to D; D landed without touching it,
-  and `docs/python-api.md` ("Enums, and what the stub still gets wrong") now
-  documents the gap for consumers. **E**, which opens the stub for the
-  typing-alias sweep below.
+  one type using `@property`). **Fixed in E**: getter-only properties, a
+  typing-only `Never` construction guard, and removal of impossible examples.
+  The installed-wheel contract now checks positive getter types and rejected
+  assignment/construction for all eight result types, with runtime agreement.
+  Runtime checks also compare native getter names and value types with the
+  installed stub and verify list getters return independent copies.
+  `docs/python-api.md` was updated in the same change.
 
 - **Git-URL residue in code and AGENTS.md.**
   `crates/complexipy-cli/src/utils/cache.rs` `looks_like_remote`, called from
   `normalize_target`, passes github/gitlab URL targets through as cache keys when
   nothing can produce one; `AGENTS.md` credits `runner.rs` with git-URL walking
   twice (the Project Structure tree and the "Rust core" bullet).
-  **E**, which opens AGENTS.md for the identity sweep. D left the dead function
-  alone because removing it is a behavior-neutral cleanup with no bearing on the
-  field removal, and bundling it would have widened a diff that already touched
-  thirteen files.
+  **Fixed in E**: removed the helper and its branch, and corrected both
+  `AGENTS.md` descriptions.
+  scope.
 
 - **Native docstrings omit two parameters.** The `code_complexity` and
   `file_complexity` docstrings in the stub document only `code` / `file_path`
   and `base_path`, not `check_script` or `no_ignore`. D corrected the collector
-  docstrings' git-URL claim but not these parameter lists. **E**, with the stub
-  entries above and below.
+  docstrings' git-URL claim but not these parameter lists. **Fixed in E**:
+  both native analysis docstrings now describe the two parameters.
 
 - **Python-3.8 idioms the raised floor makes obsolete.**
   `from __future__ import annotations` in `complexipy/__init__.py`,
   `complexipy/cli.py`, `tests/test_refactor_plans.py`, and
   `tests/contract/check_stub_contract.py`; `typing.List`, `Optional`, and
   `Tuple` imported in `complexipy/_complexipy.pyi` (32 subscripted uses) and
-  `List`/`Tuple` in `tests/main.py` (6). Harmless today - nothing introspects
-  `__annotations__` - but wrong for a `>=3.14` stub that consumers' type
-  checkers read. Flagged by the explore sweep and absent from E's checklist
-  until now. **E**.
+  `List`/`Tuple` in `tests/main.py` (6), counted before E. Flagged by the explore
+  sweep and absent from E's checklist
+  until now. **Completed in E as policy cleanup**: remove the future imports
+  and use builtin generics/unions. The old aliases were valid, not runtime
+  defects. The floor is now `>=3.14` and the lockfile was regenerated.
 
-- **Commit-log inputs the changelog regeneration has not planned for.** 18 of
-  the 23 commits in `030e207..HEAD` end in a `Claude-Session:` trailer;
-  `.claude/settings.json` blanks the attribution footers, not this one. Five
-  commits have no body at all: `fa174cc`, `c613bdb`, `f6d4a14`, the merge
-  `9926391`, and `5999826`. git-cliff's handling of trailers and empty bodies is
-  not established, and the `BREAKING CHANGE:` footer on `39e1bd5` - the only
-  machine-readable record of D's schema changes - must survive whatever strips
-  the trailer. **G**.
-
-- **The stub and the wrapper docstring promise exceptions the runtime never
-  raises.** Every native failure is a `ValueError` carrying the Rust error
-  string: `code_complexity` on a syntax error, `file_complexity` on a missing or
+- **The stub and wrapper promised unmapped analysis exceptions.** Native
+  analysis failures are reported as `ValueError` carrying the Rust error string: `code_complexity` on a syntax error, `file_complexity` on a missing or
   unreadable file. `_complexipy.pyi` documents `SyntaxError`, `FileNotFoundError`,
   `PermissionError` and `UnicodeDecodeError`, and `complexipy/__init__.py`
   `file_complexity` repeats three of them. `tests/main.py` `_analyze_paths`
@@ -176,14 +171,35 @@ file is the one that stays actionable after `docs/realignment/` is deleted.
   collectors' `invocation_path` is documented as "working directory for
   resolving relative paths" and is never read (see Dead code), and the
   `additional_refactor_plans` docstring names only the cap where `registry.rs`
-  `analyze` also counts plans whose measured reduction fell below one. **E**,
-  with the other stub entries.
+  `analyze` also counts plans whose measured reduction fell below one.
+  **Fixed in E**: corrected these docstrings and updated the matching caveats in
+  `docs/python-api.md` and `docs/rules.md`. Runtime behavior is unchanged.
 
 - **The doc comment on `crates/complexipy-core/src/lib.rs`'s `classes`
   re-export block** claims it "mirrors `complexipy/__init__.py`'s `__all__`". It
   also exports
   `compute_staged_diff` and `run_analysis_shared`, and its `DiffEntry` /
-  `DiffStatus` are different types from the `py_diff` ones Python sees. **E**.
+  `DiffStatus` are different types from the `py_diff` ones Python sees.
+  **Fixed in E**: removed the false comment and stated the separate Rust and
+  Python compatibility contracts in `AGENTS.md`.
+
+- **Two more stub claims contradicted the scoring tests.** `LineComplexity`
+  described boolean operators as incrementing individually;
+  `TestPaperConformance.test_boolean_runs_are_counted_per_operator_sequence`
+  pins runs instead. `FunctionComplexity.name` excluded class names from method
+  names and suggested separate nested-function results;
+  `TestScorerContract.test_methods_are_named_class_method` and the scorer's
+  function traversal disagree. **Fixed in E**: describe operator runs,
+  `Class::method` names and nested-function aggregation.
+
+### Assigned to a workstream
+
+- **Commit-log inputs the changelog regeneration has not planned for.** At
+  `7025244`, 18 of the 27 commits in `030e207..7025244` carry a `Claude-Session:`
+  trailer. Five have no body: `fa174cc`, `c613bdb`, `f6d4a14`, merge `9926391`,
+  and `5999826`. Recompute the inputs at G rather than treating these snapshot
+  counts as current. git-cliff's trailer and empty-body handling remains
+  unverified; the `BREAKING CHANGE:` footer on `39e1bd5` must survive. **G**.
 
 - **Two config files at the repo root, one dead.** Discovery is first-hit-wins
   with no merge, so `complexipy.toml` shadows `[tool.complexipy]` in
@@ -191,6 +207,15 @@ file is the one that stays actionable after `docs/realignment/` is deleted.
   `quiet`. **F** retires one.
 
 ### Open
+
+- **Enum construction and subclassing remain over-promised by the stub.**
+  E's review found that `RuleCategory()`, `Applicability()` and `DiffStatus()`
+  pass ty but raise `TypeError` at runtime. The stub also permits a subclass of
+  `LineComplexity`, which the native type rejects. Verified with a temporary
+  consumer snippet and native calls on CPython 3.14.3/ty 0.0.28; not pinned by
+  a committed case. E's constructor work covers the eight result structs, not
+  enum construction or subclassability. A follow-up should model these limits
+  and add negative typing/runtime cases rather than infer them from `@property`.
 
 - **Statements in a class body that are not functions are scored nowhere.**
   `cognitive_complexity.rs` iterates a `ClassDef` body matching only
@@ -461,9 +486,11 @@ The deleted CI lint job ran ruff and ty in an environment with the extension
 deliberately *not* installed, and asserted that through `importlib.metadata`,
 so ty always read the stub. The standing gate's `uv run ty check .` runs with
 the editable project installed, so ty reads the native module. The contract
-harness (`tests/contract/check_stub_contract.py`) is what still checks
-stub/runtime parity, and it covers four cases against eighteen `__all__`
-members. The `verify` skill should say this plainly; a rebuilt CI should
+harness (`tests/contract/check_stub_contract.py`) checks stub/runtime parity from
+a neutral directory. After E it has eight diagnostic cases, including positive
+getter types and negative assignment/construction for all eight result types,
+plus separate runtime checks. These are selected promises, not exhaustive API
+coverage. The `verify` skill should distinguish these checks; a rebuilt CI should
 restore the dependency-only environment.
 
 ### The parser is a network-fetched git dependency on a mutable tag
@@ -493,15 +520,17 @@ harmless, but the omission is anomalous and the fix is free.
 - Exclusion has no analysis-path coverage. The CI checks that appeared to
   cover it passed `--ignore-complexity`, so their exit code could not fail on a
   non-matching glob.
-- The contract harness leaves twelve of eighteen `__all__` members unproven.
+- The installed-wheel cases now touch all eighteen public exports, but cover
+  selected signatures, getter types and failure modes rather than every input
+  combination or runtime behavior.
 - `tests/src/exclude_dir/` exists only to feed the deleted CI checks but must
   stay: `tests/main.py` asserts a corpus total that includes it.
 
 ### Removed features leave residue
 
-Git-URL analysis was removed in 8.0.0. Its residue survived in the stub
-docstrings, two `AGENTS.md` claims, and `cache.rs::looks_like_remote`. The
-same pattern will apply to `doc_url`, `references`, the wasm target and the
+Git-URL analysis was removed in 8.0.0. D removed its stub-docstring residue;
+E corrected both `AGENTS.md` claims and removed `cache.rs::looks_like_remote`.
+The same hazard applies to `doc_url`, `references`, the wasm target and the
 `runner` feature unless each removal sweeps for its own references. Worth a
 grep step in the `verify` skill.
 

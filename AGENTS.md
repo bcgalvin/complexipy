@@ -8,11 +8,13 @@ put anything tool-agnostic here, not there. See [Keeping This File Current](#kee
 
 ## Tech Stack
 
-- **Language:** Python 3.8+ (package shell) + Rust (engine, CLI, diff)
+- **Language:** CPython 3.14+ (package shell) + Rust (engine, CLI, diff)
 - **Framework:** clap (CLI args), owo-colors/syntect/comfy-table (terminal output)
 - **Package Manager:** uv (Python), Cargo (Rust)
-- **Build:** maturin (Rust → Python extension)
+- **Build:** maturin (Rust -> Python extension)
 - **Docs:** plain markdown in `docs/`, read from the repository
+- **Distribution:** local source-built wheels for `recsys-code-quality`, not PyPI;
+  the current validation target is CPython 3.14 on macOS arm64
 
 The analysis engine is Rust; the CLI and public Python API are thin wrappers over a
 PyO3 extension module (`complexipy._complexipy`). Scoring follows G. Ann Campbell's
@@ -22,38 +24,38 @@ SonarSource cognitive complexity paper.
 
 ```
 complexipy/
-├── crates/                       # Cargo workspace (root Cargo.toml is virtual)
-│   ├── complexipy-core/          # engine: algorithm, types, rules, runner, diff
-│   │   └── src/
-│   │       ├── cognitive_complexity.rs   # AST walking + scoring algorithm
-│   │       ├── classes.rs                # Data types (FunctionComplexity, RefactorPlan, ...)
-│   │       ├── refactor_plans.rs         # ComplexityRegion tree + build_refactor_plans()
-│   │       ├── rules/                    # Clippy-style refactor rule system
-│   │       │   ├── types.rs              # RefactorRule trait + RuleMetadata
-│   │       │   ├── complexity.rs         # Concrete rules (C001-C007, C011)
-│   │       │   └── registry.rs           # Registration, filtering, ranking, overlap
-│   │       ├── runner.rs                 # File/dir/git-URL walk + shared entry points
-│   │       ├── diff.rs                   # git-diff comparison (compute_diff, DiffEntry)
-│   │       ├── api.rs                    # Rust-level code_complexity / file_complexity
-│   │       ├── utils.rs                  # CSV/JSON writers, snapshot I/O, AST helpers
-│   │       └── helpers/exclude.rs        # Glob-based file exclusion
-│   ├── complexipy-cli/           # CLI: clap args, output rendering, run orchestration
-│   └── complexipy-python/        # PyO3 module (_complexipy) + py_diff wrappers
-│
-├── complexipy/                   # Python package: thin re-export layer over Rust
-│   ├── __init__.py               # Public API: imports _complexipy, file_complexity wrapper
-│   ├── cli.py                    # Console-script bootstrap → _complexipy.run_cli
-│   ├── py.typed                  # PEP 561 marker
-│   └── _complexipy.pyi           # Type stubs for the Rust extension
-│
-├── tests/                        # pytest test suite
-│   ├── main.py                   # Core tests + paper conformance
-│   ├── src/                      # Test fixture .py files (excluded from collection)
-│   ├── fixtures/refactor_plans/  # Rule-behaviour fixtures
-│   ├── contract/                 # Installed-wheel stub/runtime contract harness
-│   └── test_*.py                 # Utility module tests
-│
-└── docs/                         # Local markdown reference (no site)
++-- crates/                       # Cargo workspace (root Cargo.toml is virtual)
+|   +-- complexipy-core/          # engine: algorithm, types, rules, runner, diff
+|   |   `-- src/
+|   |       +-- cognitive_complexity.rs   # AST walking + scoring algorithm
+|   |       +-- classes.rs                # Data types (FunctionComplexity, RefactorPlan, ...)
+|   |       +-- refactor_plans.rs         # ComplexityRegion tree + build_refactor_plans()
+|   |       +-- rules/                    # Clippy-style refactor rule system
+|   |       |   +-- types.rs              # RefactorRule trait + RuleMetadata
+|   |       |   +-- complexity.rs         # Concrete rules (C001-C007, C011)
+|   |       |   `-- registry.rs           # Registration, filtering, ranking, overlap
+|   |       +-- runner.rs                 # Local file/dir walk + shared entry points
+|   |       +-- diff.rs                   # git-diff comparison (compute_diff, DiffEntry)
+|   |       +-- api.rs                    # Rust-level code_complexity / file_complexity
+|   |       +-- utils.rs                  # CSV/JSON writers, snapshot I/O, AST helpers
+|   |       `-- helpers/exclude.rs        # Glob-based file exclusion
+|   +-- complexipy-cli/           # CLI: clap args, output rendering, run orchestration
+|   `-- complexipy-python/        # PyO3 module (_complexipy) + py_diff wrappers
+|
++-- complexipy/                   # Python package: thin re-export layer over Rust
+|   +-- __init__.py               # Public API: imports _complexipy, file_complexity wrapper
+|   +-- cli.py                    # Console-script bootstrap -> _complexipy.run_cli
+|   +-- py.typed                  # PEP 561 marker
+|   `-- _complexipy.pyi           # Type stubs for the Rust extension
+|
++-- tests/                        # pytest test suite
+|   +-- main.py                   # Core tests + paper conformance
+|   +-- src/                      # Test fixture .py files (excluded from collection)
+|   +-- fixtures/refactor_plans/  # Rule-behaviour fixtures
+|   +-- contract/                 # Installed-wheel stub/runtime contract harness
+|   `-- test_*.py                 # Utility module tests
+|
+`-- docs/                         # Local markdown reference (no site)
 ```
 
 ## Commands
@@ -94,7 +96,7 @@ Single test:
 
 ```bash
 uv run pytest tests/main.py::TestFiles::test_match
-uv run pytest tests/test_refactor_plans.py::test_match_dispatcher_creates_dispatcher_plan
+uv run pytest tests/test_refactor_plans.py::test_long_elif_chain_on_single_variable_recommends_match
 uv run pytest -k refactor
 cargo test -p complexipy-core --locked rules::registry
 ```
@@ -129,7 +131,9 @@ also causes failure, including unknown configured rules. Warning-driven failure
 does not enable disabled rules; retain the explicit rule list. Tests remain excluded
 from the root ty check; severity policy does not verify native/stub parity, which is
 what the `tests/contract/` harness covers for its cases.
-The analysis Python version is inferred from `requires-python`.
+The analysis Python version is inferred from `requires-python` (currently 3.14).
+Ruff also infers its Python target from that metadata. The contract harness uses
+its running interpreter to build and install the wheel, so run it on CPython 3.14+.
 
 Re-run rule, warning, and Python-target controls when upgrading ty.
 
@@ -159,26 +163,39 @@ uv run complexipy complexipy --failed          # dogfood the tool on itself
 ### Layering
 
 ```
-complexipy/cli.py        console-script bootstrap: sys.argv → _complexipy.run_cli()
+complexipy/cli.py        console-script bootstrap: sys.argv -> _complexipy.run_cli()
 complexipy/__init__.py   public API: re-exports _complexipy names + file_complexity wrapper
-  └─ complexipy._complexipy  PyO3 module (crates/complexipy-python)
-       ├─ run_cli → complexipy_cli::run::run_at()   clap args → RunConfig → display/exit
-       ├─ code_complexity / file_complexity         engine entry points (complexipy-core)
-       └─ compute_diff / has_regressions            diff ratchet (complexipy-core)
+  `- complexipy._complexipy  PyO3 module (crates/complexipy-python)
+       +- run_cli -> complexipy_cli::run::run_at()   clap args -> RunConfig -> display/exit
+       +- code_complexity / file_complexity         engine entry points (complexipy-core)
+       `- compute_diff / has_regressions            diff ratchet (complexipy-core)
 ```
 
 ### The FFI contract
 
-Every Rust-side type crosses into Python through
+Shared analysis types cross into Python through
 `crates/complexipy-core/src/classes.rs` (`FileComplexity`, `FunctionComplexity`,
 `LineComplexity`, `RefactorPlan`, `CodeSuggestion`, `RuleCategory`,
 `Applicability`, `IgnoredLocation`, `RemovableIgnore`, `CodeComplexity`).
-Changing one of those structs means updating **three** places in lockstep:
-`crates/complexipy-core/src/classes.rs` → the `#[pymodule]` export list in
-`crates/complexipy-python/src/lib.rs` → the stubs in `complexipy/_complexipy.pyi`.
-The core crate's `python` feature gates the `#[pyclass]` attributes on the shared
-types. The `py_diff` types defined directly in `crates/complexipy-python/src/lib.rs`
-(`DiffEntry`, `DiffStatus`) follow the same lockstep rule with the stub.
+Adding or removing a type changes `crates/complexipy-core/src/classes.rs`, the
+`#[pymodule]` export list in `crates/complexipy-python/src/lib.rs`, and
+`complexipy/_complexipy.pyi`. A field change updates its Rust definition and the
+stub plus all Rust struct literals; `add_class` does not enumerate fields.
+The core crate's `python` feature gates both `#[pyclass]` and `serde(skip)` on the
+shared types. `DiffEntry` and `DiffStatus` are defined in `py_diff` in
+`crates/complexipy-python/src/lib.rs`, not in core's `classes.rs`.
+
+The eight result structs in `classes.rs` have getters but no Python constructors.
+Their stub properties are read-only; a required `Never` argument to `__new__`
+rejects direct construction statically, including zero-argument calls. It is a
+typing-only guard, not a runtime token API. `DiffEntry` has a real constructor.
+Keep these promises covered by the installed-wheel contract's positive getter,
+negative assignment/construction, and runtime checks.
+
+Function changes must also keep the binding, stub, wrapper and public exports in
+sync. Use explicit `#[pyo3(signature = ...)]` for defaulted arguments and test
+omitted-argument and keyword calls at runtime. A Rust `Option` alone does not
+specify a Python default.
 
 `complexipy/__init__.py` is the public Python API surface: `code_complexity`,
 `file_complexity`, `collect_all_ignored_locations`,
@@ -186,6 +203,10 @@ types. The `py_diff` types defined directly in `crates/complexipy-python/src/lib
 `DiffEntry` / `DiffStatus` types. Those exports, their signatures, and the
 `DiffStatus` values are a compatibility promise - internal refactors must keep them
 stable, and new exports belong in `__init__.py` + `__all__` and on `docs/python-api.md`.
+The stable Rust re-exports in `crates/complexipy-core/src/lib.rs` have their own
+contract in `crates/complexipy-core/tests/lib_surface.rs`; they include Rust-only
+entry points and core diff types, so they are not a copy of Python's `__all__`.
+Do not move or rename those stable Rust exports without a major release.
 
 ### Rust core
 
@@ -195,10 +216,11 @@ stable, and new exports belong in `__init__.py` + `__all__` and on `docs/python-
 - `crates/complexipy-core/src/refactor_plans.rs` - defines `ComplexityRegion` /
   `RegionKind` / `ComplexityResult` and `build_refactor_plans()`, which lazily builds
   a `OnceLock<RuleRegistry>` and delegates to it. Scoring produces regions; regions
-  produce refactor plans. Keep that direction - rules never re-parse source to find
-  structure, they consume regions.
+  produce refactor plans. Keep that direction - rules consume regions to find
+  structure. Expression parsing inside rules and re-parsing a source splice to
+  measure its reduction are allowed.
 - `crates/complexipy-core/src/rules/` - the refactor rule system (see below).
-- `crates/complexipy-core/src/runner.rs` - path/dir/git-URL expansion, exclusion
+- `crates/complexipy-core/src/runner.rs` - local file/dir expansion, exclusion
   globs, and the shared entry points (`run_analysis_shared`, `file_complexity_shared`,
   the ignored-location collectors).
 - `crates/complexipy-core/src/diff.rs` - git diff comparison, `DiffEntry` /
@@ -217,7 +239,7 @@ metadata; rules fill in the dynamic fields via `..metadata().new_plan()`.
 
 `RuleRegistry::analyze()` then, in order: collects plans over the region tree
 recursively, drops any plan with `estimated_reduction < 1` as noise, sorts by
-spliceable desc → `effectiveness` desc → reduction desc → line asc (a
+spliceable desc -> `effectiveness` desc -> reduction desc -> line asc (a
 machine-applicable replacement beats a help-only plan of higher
 effectiveness), resolves overlapping line ranges by keeping the
 higher-spliceable/higher-effectiveness/higher-reduction plan, and caps at 5
@@ -244,7 +266,7 @@ The workspace splits the build across three crates:
 - `complexipy-python` - PyO3 module; depends on core (`python`) and the cli crate
   (for `run_cli`). Built by maturin via `manifest-path` in pyproject.toml.
 
-Dependency direction is one-way: python → cli → core. Never the reverse. Adding a
+Dependency direction is one-way: python -> cli -> core. Never the reverse. Adding a
 dependency means adding it to the crate that uses it.
 
 ## Testing
@@ -266,7 +288,7 @@ dependency means adding it to the crate that uses it.
   proves it.
 - Rust tests live next to their module. Public-API tests go in the crate's
   `tests/` directory; tests that need private items are a `mod tests;` child module
-  in a sibling file (e.g. `crates/complexipy-core/src/utils.rs` →
+  in a sibling file (e.g. `crates/complexipy-core/src/utils.rs` ->
   `crates/complexipy-core/src/utils/tests.rs`). No `#[path]`
   wiring - a new test file is invisible until the owning module declares it.
 - `pyproject.toml` sets `python_files = ["test_*.py", "main.py"]`, so `tests/main.py` is
@@ -295,7 +317,7 @@ dependency means adding it to the crate that uses it.
 - `crates/complexipy-core/src/diff.rs` - Git diff comparison, `DiffEntry`/`DiffStatus`, `compute_diff`, `has_regressions`
 - `crates/complexipy-core/src/runner.rs` - Shared entry points: `run_analysis_shared`, `file_complexity_shared`, ignored-location collectors
 - `crates/complexipy-python/src/lib.rs` - PyO3 module `_complexipy`, pyfunctions, `py_diff` wrappers
-- `crates/complexipy-cli/src/run.rs` - `run_at()`: config → analysis → snapshot → display → exit code
+- `crates/complexipy-cli/src/run.rs` - `run_at()`: config -> analysis -> snapshot -> display -> exit code
 - `crates/complexipy-cli/src/utils/config.rs` - `resolve_config()`: merges CLI args + TOML into `RunConfig`
 - `crates/complexipy-cli/src/output.rs` - Console display, `handle_display`, `handle_results_storage`
 - `crates/complexipy-cli/src/utils/paths.rs` - Output path resolution for CSV/JSON/GitLab/SARIF exports
@@ -320,8 +342,6 @@ Each piece of agent config has exactly one real copy; the other paths point at i
 - `.agents/skills/` holds the real skill files, so any tool that reads `.agents/` sees
   plain files. `.claude/skills` is a symlink to `../.agents/skills` - **do not replace
   it with copies.** Add a new skill once, under `.agents/skills/<name>/SKILL.md`.
-  (Contributors on Windows need symlink support in their checkout, i.e.
-  `git config core.symlinks true` with Developer Mode enabled.)
 - `SKILL.md` files are excluded from the mdformat hook. mdformat has no frontmatter
   support: it rewrites the opening `---` as a thematic break and the closing `---` as a
   setext heading, which silently destroys the YAML that makes a skill loadable. Do not
@@ -332,7 +352,7 @@ Each piece of agent config has exactly one real copy; the other paths point at i
 Treat this file as part of the change, not as documentation to catch up on later.
 
 - If a change alters a **command**, a **structural invariant** (the FFI three-place
-  contract, the region → rule direction, Rust tests as `mod tests;` siblings), an **architectural
+  contract, the region -> rule direction, Rust tests as `mod tests;` siblings), an **architectural
   boundary**, or a **convention**, update this file in the same commit - scope it
   `docs(agents)` when the doc edit stands alone.
 - New refactor rule, export format, or CLI flag: check whether Project Structure, Key

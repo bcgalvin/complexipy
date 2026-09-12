@@ -5,11 +5,10 @@ resolver = "2"
 [workspace.package]
 version = "8.0.1"
 edition = "2024"
-authors = ["Robin Quintero <rohaquinlop301@gmail.com>"]
+authors = ["Bryan Galvin"]
 license = "MIT"
-homepage = "https://github.com/rohaquinlop/complexipy"
-documentation = "https://complexipy.com/"
-repository = "https://github.com/rohaquinlop/complexipy"
+homepage = "https://github.com/bcgalvin/complexipy"
+repository = "https://github.com/bcgalvin/complexipy"
 
 [workspace.lints.clippy]
 exit = "warn"

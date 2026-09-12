@@ -111,7 +111,10 @@ say so.
 
 ## Execution order
 
-A, B, C, D, E, F, G, then H.
+A, B, C and D landed. Continue with E, F, G preparation, H, then G finalization
+and coordinated parent adoption. G preparation resolves git-cliff and permanent
+document homes; keep the tracker and predecessor skills until H has used them.
+The final version/tag and directory deletion come after H, not before it.
 
 No automation runs the gates. Before B there were three candidates and none
 qualified: `.pi/` belonged to a harness this fork does not use,
@@ -375,107 +378,82 @@ any residual URL neither D nor E enumerated.
 
 ### E. Rewrite the identity surfaces
 
-- [ ] `README.md`: PyPI/Downloads/License badges pointing at upstream; the header
-  logo, which is an upstream raw URL
-  (`raw.githubusercontent.com/rohaquinlop/complexipy/.../complexipy_icon.svg`)
-  whose only local counterpart, `docs/img/`, C deletes; all `complexipy.com`
-  links; the Integrations section (GitHub Action, VS Code marketplace, and a
-  pre-commit `rev: v5.1.0` that disagrees with `.pre-commit-config.yaml`'s
-  `v6.1.0` and is repeated in `docs/index.md`); the Complexipy Teams link; the
-  `pip install` instructions; the footer nav row's PyPI and upstream GitHub
-  links; the "Built with ... by @rohaquinlop and contributors" line; and the
-  top-nav anchors that dangle once those sections go
+Completed after the review of C's pages at `7025244`, in
+`refactor(fork)!: align identity and Python 3.14 contracts`. A fresh Oracle review
+found no production regression; its stale-index finding and getter/constructor
+test improvements were applied. The separately verified enum-construction and
+subclassing typing gap remains open in the catalog.
 
-- [ ] `pyproject.toml`: authors, `[project.urls]`, `description`, the 16-entry
-  PyPI-discovery `keywords` list, classifiers (currently stopping at 3.12),
-  and `requires-python` raised from `>=3.8` to `>=3.14`
+- [x] Replace `README.md`'s upstream logo, badges, site links, PyPI installation,
+  integration recipes, footer and dangling navigation with the fork relationship,
+  local development commands and links to the six reference pages. Retain the
+  upstream attribution and unchanged `LICENSE`.
+- [x] `pyproject.toml`: identify the fork maintainer and repository, replace the
+  description, remove the PyPI-discovery keywords and classifiers, and raise
+  `requires-python` from `>=3.8` to `>=3.14`.
+- [x] Regenerate `uv.lock`: remove the older-interpreter branches and their
+  compatibility dependencies. `pre-commit` remains until F; this is not a tool
+  upgrade pass.
+- [x] `Cargo.toml`: identify the fork maintainer and repository/homepage. Remove
+  the site documentation URL and its `documentation.workspace` inheritance in
+  all three crate manifests. Leave the workspace version at `8.0.1` for G.
+- [x] Correct `AGENTS.md`'s Python floor, both Git-URL walking claims, the
+  type-versus-field FFI rule, the function-default binding contract, and the
+  contributor-facing Windows note. Preserve the Rust stable-export compatibility
+  promise separately from Python's exports. Keep the region-to-rule direction
+  with the qualification that expression parsing and splice measurement are
+  allowed. Normalize the edited file to ASCII.
+- [x] Remove `utils/cache.rs::looks_like_remote` and its call in
+  `normalize_target`, residue from removed Git-URL analysis. Remove the false
+  core `lib.rs` comment claiming its stable re-exports mirror Python `__all__`.
+- [x] Review `CLAUDE.md`: no E-owned edits needed. Its skill list stays until H.
+  Pre-commit commands and the `SKILL.md` exclusion in `AGENTS.md` stay until F,
+  which owns removing that stack in the same change as its guidance.
+- [x] Modernize the Python annotations: remove the four future-annotations
+  imports from the package, refactor tests and contract harness; replace the
+  stub's `List`/`Optional`/`Tuple` and `tests/main.py`'s `List`/`Tuple` with
+  builtin generics and unions. This is policy cleanup, not a claim that those
+  aliases are invalid on 3.14.
+- [x] Replace the eight phantom result constructors with a typing-only required
+  `Never` argument to `__new__`; expose result attributes as getter-only
+  properties. Remove runtime-impossible construction examples. Preserve the
+  genuine `DiffEntry` constructor and all existing public fields and signatures.
+- [x] Correct the stub and wrapper exception documentation, both ignored
+  `invocation_path` descriptions, and the `additional_refactor_plans` count.
+  Document `check_script` and `no_ignore` on both native analysis functions.
+- [x] Correct two further stub contradictions found during the E review:
+  `LineComplexity` counts boolean runs, not individual operators, and
+  `FunctionComplexity.name` includes `Class::method`; nested functions are not
+  separate results. These agree with `TestPaperConformance` and
+  `TestScorerContract.test_methods_are_named_class_method`.
+- [x] Update `docs/python-api.md`, `docs/rules.md` and the documentation index
+  together with the stub so their warnings about defects fixed here do not
+  become stale in reverse. Correct the stale DiffStatus formatting-test note
+  and the nonexistent single-test command in `AGENTS.md` found by the Oracle.
+- [x] Extend the installed-wheel contract with positive getter types for all
+  rejected assignments and construction, and runtime
+  rejection checks. Compare getter names and runtime value types against the
+  installed stub, check independent list copies, and reject correctly typed
+  positional construction as well as empty and keyword calls. Run every positive
+  diagnostic case at runtime, not just `valid_usage.py`.
 
-- [ ] Regenerate `uv.lock`. Its header pins `requires-python = ">=3.8"` and
-  three resolution markers (`>=3.10`, `==3.9.*`, `<3.9`), under which
-  `pre-commit` and `pytest` each resolve to three marker-split entries. C
-  already removed `mkdocs-material` from it.
+The floor change retargets Ruff and ty through `requires-python`; the contract
+harness uses `sys.executable` for wheel building and installation. Verification
+uses the existing CPython 3.14.3 environment. Cargo metadata edits do not change
+resolved dependencies or workspace versions; review `Cargo.lock` for unexpected
+drift rather than upgrading dependencies.
 
-- [ ] `Cargo.toml`: authors, homepage, documentation, repository
+Outside E: pre-commit/config removal (F), version/changelog and permanent catalog
+homes (G), skills (H), and all catalogued scoring/CLI behavior defects. The
+maturin floor mismatch and Python-source cache-key question remain recorded design
+issues rather than incidental edits to `pyproject.toml`.
 
-- [ ] `AGENTS.md`. Rather than working a list, run
-  `rg -n 'wasm|web/|vscode|mkdocs|docs/es|\.github|benchmark|pre-commit|pull request|3\.8' AGENTS.md`
-  and resolve every hit.
-
-    **A and B already corrected everything they falsified**, in their own commits,
-    per `AGENTS.md`'s same-commit rule for structural invariants. A: the WASM/web
-    command block, the dual-target crate model (now "Crate split"), the wasm Key
-    Files and Architecture entries, the `web/` and `vscode/` Project Structure
-    entries, the wasm-pack Tech Stack line, the crate count, and the cross-target
-    block (now a single feature-isolation check). B: the `### Benchmarks` block,
-    the `### Docs` block (`uv run mkdocs serve`, which B broke by deleting a
-    snippet target `mkdocs.yml` resolves with `check_paths: true`), the
-    `.github/workflows/` Project Structure entry, the CI lint-job paragraph, and
-    the PR-title and `gh` conventions bullets. Do not treat that as licence to
-    skip E's sweep.
-
-    C additionally corrected the Tech Stack docs line, the `docs/` tree entry,
-    the new-exports instruction, and the rule-authoring doc target. E's regex is
-    now down to two live terms, `pre-commit` and `3\.8`.
-
-    Cite section names, never line numbers - A, B and C between them shifted this
-    file substantially. E's regex is also largely spent: `wasm`, `web/`,
-    `vscode`, `\.github`, `benchmark`, and `pull request` no longer match.
-
-    Still dead and outstanding: the Tech Stack line "Python 3.8+"; the
-    pre-commit hooks bullet under Code Style; the three-place FFI rule under
-    "The FFI contract", stated without the type-versus-field qualifier; the
-    git-URL claims on the `runner.rs` line of the Project Structure tree and the
-    `runner.rs` bullet under "Rust core"; and the "Contributors on Windows need
-    symlink support" note, which decision 3 abolishes.
-
-- [ ] `AGENTS.md` claims the regex cannot find, because their wrongness has no
-  keyword. "The FFI contract" states the three-place rule with no type-versus-field
-  qualifier - the exact rule D corrects. The `runner.rs` line of the Project
-  Structure tree and the `runner.rs` bullet under "Rust core" credit it with
-  git-URL walking, removed in 8.0.0. Two earlier examples of the same class are
-  already gone: C replaced the "docs in `docs/` (EN + ES)" Tech Stack line, and B
-  replaced the "PR titles" bullet with "Commit subjects" under Conventions. Read
-  the structural-invariant sections rather than trusting the sweep.
-
-- [ ] `CLAUDE.md`: anything that assumes the removed workflow. Leave its skill
-  list to H, which is what changes it - editing it here means writing it twice.
-
-- [ ] Python-3.8 idioms the raised floor makes obsolete, flagged by the explore
-  sweep and missing from this list until now: `from __future__ import annotations` in `complexipy/__init__.py`, `complexipy/cli.py`,
-  `tests/test_refactor_plans.py`, and `tests/contract/check_stub_contract.py`;
-  `typing.List`, `Optional`, and `Tuple` imported in `complexipy/_complexipy.pyi`
-  (32 subscripted uses) and `List`/`Tuple` in `tests/main.py` (6). Under a 3.14
-  floor these are builtin generics and unions. `Final` stays.
-
-- [ ] While the stub is open for that sweep, the stub defects the catalog had
-  assigned to D and D did not touch: `__init__` declarations on eight types that
-  have no constructor (`CodeSuggestion`, `LineComplexity`, `RefactorPlan`,
-  `FunctionComplexity`, `FileComplexity`, `CodeComplexity`, `IgnoredLocation`,
-  `RemovableIgnore` - only `DiffEntry` has a `#[new]`), their runtime-impossible
-  `Example` blocks, attributes declared writable on types whose `get_all`
-  generates getters only (`DiffEntry` alone uses `@property`), and the
-  `code_complexity` / `file_complexity` docstrings that omit `check_script` and
-  `no_ignore`. `docs/python-api.md` ("Enums, and what the stub still gets wrong")
-  already tells consumers the constructors do not exist; the stub should stop
-  contradicting it. Each fix wants a `tests/contract/cases/` case:
-  `assign_readonly.py` covers `DiffEntry` only.
-
-Raising the Python floor is not metadata-only. `AGENTS.md` records that ty infers
-its analysis version from `requires-python`, `[tool.ruff]` sets no
-`target-version` so Ruff retargets with it, and
-`tests/contract/check_stub_contract.py` builds its wheel with
-`--interpreter sys.executable`, so the harness needs a 3.14 interpreter afterward.
-
-`LICENSE` is not edited. MIT requires retaining the upstream copyright notice, and
-`[tool.maturin] include = ["LICENSE"]` keeps it in the sdist. Record the fork
-relationship in `README.md` instead.
-
-`AGENTS.md` requires updating itself in the same commit as a structural change,
-which is in tension with deferring all rewrites to E. Either update it per
-workstream or accept the deviation deliberately.
-
-Verify: `uv sync --frozen`, `uv run ruff check .`, `uv run ty check .`, and the
-contract harness on 3.14.
+Verified: the standing gate (144 pytest tests, 300 Rust tests, lint/format/type
+checks and the eight-case installed-wheel contract self-test), the separate CLI
+feature-isolation check, `uv sync --frozen`, built-CLI smoke with exact output and
+both threshold exits, the Markdown hook, and whitespace/ASCII checks. The
+extension was rebuilt before pytest. Version and `Cargo.lock` remain unchanged;
+no wheel was vendored into the parent.
 
 ### F. Remove the pre-commit stack
 
@@ -622,7 +600,7 @@ Proposed. `verify` is written first:
 
 | Skill | Encodes |
 | -- | -- |
-| `verify` | The standing gate above, plus one invocation of the built CLI, and a note that the gate's `uv run ty check .` runs with the editable project installed - so ty reads the native module, not the stub. That is the configuration the deleted CI lint job existed to avoid, and after B it is the only one available locally; `tests/contract/check_stub_contract.py` is what still checks stub/runtime parity, and only for its four cases - nothing in the gate exercises the binary, and `.pi/hook-scripts/py-complexipy.sh` and CI's `complexipy complexipy --failed` were the only things that did. `maturin develop` before pytest is the one hard ordering constraint and the most-repeated trap in `AGENTS.md`; the contract harness builds its own wheel into a fresh venv and is independent of it. |
+| `verify` | The standing gate above, plus one invocation of the built CLI, and a note that the gate's `uv run ty check .` runs with the editable project installed - so ty reads the native module, not the stub. That is the configuration the deleted CI lint job existed to avoid, and after B it is the only one available locally; `tests/contract/check_stub_contract.py` is what still checks stub/runtime parity, through eight diagnostic cases after E plus separate runtime checks, not exhaustive API coverage - nothing in the gate exercises the binary, and `.pi/hook-scripts/py-complexipy.sh` and CI's `complexipy complexipy --failed` were the only things that did. `maturin develop` before pytest is the one hard ordering constraint and the most-repeated trap in `AGENTS.md`; the contract harness builds its own wheel into a fresh venv and is independent of it. |
 | `vendor-build` | Wheel into `../../wheelhouse/` with `CARGO_TARGET_DIR` outside the checkout, stub and runtime parity check, provenance table. Currently prose in another repository. |
 | `release` | Bump the workspace `Cargo.toml` (the only literal), regenerate `Cargo.lock`, regenerate the changelog with git-cliff, rebuild, tag. It must not reintroduce a publish step. Carry over the removed `release-notes` skill's version-consistency check. |
 | `add-refactor-rule` | The rule lockstep: struct and `impl` in `complexity.rs`, `register_defaults()`, effectiveness tier, docs entry, fixture test - plus the three hardcoded gates in `rules/registry/tests.rs` that `AGENTS.md` omits: a new arm in `fixture_for()` (which panics on an unknown id), the literal `assert_eq!(checked, 7, ...)`, and the expected-tier table in `effectiveness_matches_documented_tiers`. The count assertion sits under a plain `//` comment reading "if a 9th rule is added" while seven are registered - one of the code comments the catalog records against the no-comments rule. The skill must not teach that pattern; correcting the comment itself is a code change outside H. |

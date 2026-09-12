@@ -98,7 +98,7 @@ registry reads it through `effectiveness_by_rule_id()`, so there is no
 `additional_refactor_plans` counts what the cap dropped plus plans removed when
 measurement put their reduction below one. It excludes earlier noise and overlap
 rejections, so it is not a count of all candidate plans. (Source read of
-`analyze`; the stub's docstring mentions only the cap.)
+`analyze`; the stub documents both kinds of drop.)
 
 ## Measured versus estimated reduction
 

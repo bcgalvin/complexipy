@@ -57,15 +57,14 @@ f"{e.status}"                      # 'DiffStatus.REGRESSED'
 ```
 
 There is no `.name` and no `.value`, and formatting yields the qualified
-`DiffStatus.REGRESSED` rather than `REGRESSED`, so comparing against a string
-fails even after formatting. Compare against members. If you need plain names,
-build your own mapping. The member comparison is pinned by `RUNTIME_CHECKS` in
-`tests/contract/check_stub_contract.py`; the formatting claim rests on a runtime
-check at review time, not a test.
+`DiffStatus.REGRESSED` rather than `REGRESSED`, so comparison to an unqualified
+name fails even after formatting. Compare against members.
+If you need plain names, build your own mapping. Both member comparison and
+formatting are pinned by `RUNTIME_CHECKS` in
+`tests/contract/check_stub_contract.py`.
 
 `complexipy/_complexipy.pyi` declares `DiffStatus` as a plain class with `Final`
-members and says the same in its docstring, so the stub and the runtime agree
-here.
+members and documents the same comparison and formatting contract.
 
 ## Snapshots
 

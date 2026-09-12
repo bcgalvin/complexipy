@@ -11,7 +11,7 @@ markdown files read from the repository.
 - [CLI](cli.md) - configuration discovery and precedence, output paths, exit
   codes, inline ignores, and where the tool writes.
 - [Python API](python-api.md) - the `__all__` surface, the types it exposes, the
-  exceptions it raises, and where the type stubs still disagree with the runtime.
+  exceptions it raises, and the enum, result-object and typing contracts.
 - [Diff and snapshots](diff-and-snapshots.md) - the two ratchets, and the
   `DiffStatus` comparison contract.
 

@@ -5,8 +5,6 @@ formats, diff and ratchet gates) runs in Rust. This module only
 bootstraps the process and hands the arguments to the extension.
 """
 
-from __future__ import annotations
-
 import sys
 
 from complexipy._complexipy import run_cli

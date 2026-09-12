@@ -1,148 +1,54 @@
 # complexipy
 
-<div align="center">
-  <img src="https://raw.githubusercontent.com/rohaquinlop/complexipy/refs/heads/main/docs/img/complexipy_icon.svg" alt="complexipy" width="120" height="120">
+Cognitive complexity analysis for Python, implemented in Rust with a thin Python
+API and CLI.
 
-<p><em>Blazingly fast cognitive complexity analysis for Python, written in Rust.</em></p>
+This repository is a hard fork of
+[`rohaquinlop/complexipy`](https://github.com/rohaquinlop/complexipy), maintained
+for `recsys-code-quality`. It is consumed from source as a locally built wheel,
+not published to PyPI. There is no documentation site, editor extension, or
+upstream contribution workflow.
 
-<p>
-    <a href="https://pypi.org/project/complexipy"><img src="https://img.shields.io/pypi/v/complexipy?color=blue&style=flat-square" alt="PyPI"></a>
-    <a href="https://pepy.tech/project/complexipy"><img src="https://static.pepy.tech/badge/complexipy" alt="Downloads"></a>
-    <a href="https://github.com/rohaquinlop/complexipy/blob/main/LICENSE"><img src="https://img.shields.io/github/license/rohaquinlop/complexipy?style=flat-square" alt="License"></a>
-  </p>
+## Local development
 
-<p>
-    <a href="#installation">Installation</a> •
-    <a href="#quick-start">Quick Start</a> •
-    <a href="#integrations">Integrations</a> •
-    <a href="#learn-more">Learn More</a> •
-    <a href="https://complexipy.com/">Documentation</a> •
-    <a href="https://complexipy.com/changelog/">Changelog</a> •
-    <a href="https://www.complexipy-teams.com/">Complexipy Teams</a>
-  </p>
-</div>
-
-## What is Cognitive Complexity?
-
-> Cognitive complexity measures how hard code is to understand by humans, not machines.
-
-Unlike traditional metrics like cyclomatic complexity, cognitive complexity accounts for nesting depth and control flow patterns that affect human comprehension. Inspired by [G. Ann Campbell's research](https://www.sonarsource.com/resources/cognitive-complexity/) at SonarSource, complexipy provides a fast, accurate implementation for Python.
-
-**Key benefits:**
-
-- **Human-focused** - Penalizes nesting, flow breaks, and human-unfriendly logic
-- **Actionable insights** - Identifies genuinely hard-to-maintain code
-- **Different from cyclomatic** - Measures readability while cyclomatic measures structural, testing, and branch density
-
-## Common Questions
-
-**[How is complexity calculated?](https://complexipy.com/understanding-scores/)**
-Learn about the scoring algorithm, what each control structure contributes, and how nesting affects the final score.
-
-**[How does this compare to Ruff's PLR0912?](https://complexipy.com/comparison-with-ruff/)**
-Understand the key differences between cyclomatic complexity (Ruff) and cognitive complexity (complexipy), and why you might want to use both.
-
-**[Is this a SonarSource/Sonar product?](https://complexipy.com/about/)**
-No. complexipy is an independent project inspired by G. Ann Campbell's research, but it's not affiliated with or endorsed by SonarSource.
-
-## Installation
+Use CPython 3.14 or later, uv, and a Rust toolchain that supports edition 2024.
+The current consumer uses CPython 3.14 on macOS arm64; other platforms are not
+part of the local verification target.
 
 ```bash
-pip install complexipy
-# or
-uv add complexipy
+uv sync --frozen
+uv run maturin develop
+uv run complexipy complexipy --failed
 ```
 
-## Quick Start
+Rebuild the extension after changing Rust before running Python tests. See
+[AGENTS.md](AGENTS.md#commands) for the complete verification commands.
 
-### Command Line
-
-```bash
-# Analyze the current directory
-complexipy .
-
-# Set a custom threshold
-complexipy . --max-complexity-allowed 10
-
-# Show failing functions with refactor suggestions
-complexipy . --failed --suggest-refactors
-
-# Save results to JSON
-complexipy . --output-format json
-
-# Block regressions against a git reference
-complexipy . --diff main
-
-# Exclude paths with glob patterns
-complexipy . --exclude "tests/**"
-```
-
-### Python API
+## Python API
 
 ```python
-from complexipy import file_complexity
+from complexipy import code_complexity
 
-# Analyze a file
-result = file_complexity("app.py", check_script=True)
-print(f"File complexity: {result.complexity}")
-
-for func in result.functions:
-    print(f"{func.name}: {func.complexity}")
+result = code_complexity("def f(value):\n    if value:\n        return 1\n")
+for function in result.functions:
+    print(function.name, function.complexity)
 ```
 
-## Integrations
+Analysis results expose read-only attributes and are returned by the API, not
+constructed directly. [Python API](docs/python-api.md) documents the full
+surface and its limitations.
 
-<details>
-<summary><strong>🔧 GitHub Actions</strong></summary>
+## Reference
 
-```yaml
-- uses: rohaquinlop/complexipy-action@v2
-  with:
-      paths: .
-      max_complexity_allowed: 10
-      output_format: json
-```
+- [Documentation index](docs/README.md)
+- [Scoring contract and known limits](docs/scoring.md)
+- [Refactor rules](docs/rules.md)
+- [CLI and configuration](docs/cli.md)
+- [Diff and snapshots](docs/diff-and-snapshots.md)
 
-</details>
+Scoring follows G. Ann Campbell's cognitive complexity model. This project is
+independent of SonarSource and is not endorsed by it.
 
-<details>
-<summary><strong>🪝 Pre-commit Hook</strong></summary>
+## License
 
-```yaml
-repos:
-    - repo: https://github.com/rohaquinlop/complexipy-pre-commit
-      rev: v5.1.0
-      hooks:
-          - id: complexipy
-```
-
-</details>
-
-<details>
-<summary><strong>🔌 VS Code Extension</strong></summary>
-
-Install from the [marketplace](https://marketplace.visualstudio.com/items?itemName=rohaquinlop.complexipy) for real-time complexity analysis with visual indicators.
-
-</details>
-
-## Learn More
-
-- [Usage Guide](https://complexipy.com/usage-guide/) - every CLI flag, configuration files, snapshots, complexity diff, and inline ignores
-- [API Reference](https://complexipy.com/api-reference/) - the complete Python API
-- [Understanding Scores](https://complexipy.com/understanding-scores/) - how the scoring algorithm works
-- [Comparison with Ruff](https://complexipy.com/comparison-with-ruff/) - cognitive vs cyclomatic complexity
-- [Refactoring Rules](https://complexipy.com/refactoring-rules/) - the rules behind `--suggest-refactors`
-- [Changelog](https://complexipy.com/changelog/) - what changed in each release
-
-______________________________________________________________________
-
-<div align="center">
-
-<sub>Inspired by the <a href="https://www.sonarsource.com/resources/cognitive-complexity/">Cognitive Complexity</a> research by G. Ann Campbell</sub><br>
-<sub>complexipy is an independent project and is not affiliated with or endorsed by SonarSource</sub>
-
-**[Documentation](https://complexipy.com/) • [PyPI](https://pypi.org/project/complexipy/) • [GitHub](https://github.com/rohaquinlop/complexipy)**
-
-<sub>Built with ❤️ by <a href="https://github.com/rohaquinlop">@rohaquinlop</a> and <a href="https://github.com/rohaquinlop/complexipy/graphs/contributors">contributors</a></sub>
-
-</div>
+[MIT](LICENSE). The upstream copyright notice is retained.

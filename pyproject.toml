@@ -4,46 +4,11 @@ build-backend = "maturin"
 
 [project]
 name = "complexipy"
-description = "An extremely fast Python library to calculate the cognitive complexity of Python files, written in Rust."
+description = "Cognitive complexity analysis for Python, maintained for recsys-code-quality."
 readme = "README.md"
 license = { text = "MIT" }
-authors = [{name = "Robin Quintero", email = "rohaquinlop301@gmail.com"}]
-keywords = [
-    "maintainability",
-    "usability",
-    "DevEx tools",
-    "cognitive",
-    "complexity",
-    "cognitive complexity",
-    "quality",
-    "quality assurance",
-    "libraries",
-    "performance",
-    "static analysis",
-    "code quality",
-    "technical debt",
-    "refactoring",
-    "CI/CD",
-    "fast",
-]
-requires-python = ">=3.8"
-classifiers = [
-    "Development Status :: 5 - Production/Stable",
-    "Environment :: Console",
-    "Intended Audience :: Developers",
-    "Operating System :: OS Independent",
-    "License :: OSI Approved :: MIT License",
-    "Programming Language :: Python",
-    "Programming Language :: Python :: 3.8",
-    "Programming Language :: Python :: 3.9",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: 3.12",
-    "Programming Language :: Python :: 3 :: Only",
-    "Topic :: Software Development :: Quality Assurance",
-    "Topic :: Software Development :: Testing",
-    "Topic :: Software Development :: Libraries",
-]
+authors = [{name = "Bryan Galvin"}]
+requires-python = ">=3.14"
 dynamic = ["version"]
 
 dependencies = []
@@ -52,9 +17,7 @@ dependencies = []
 complexipy = "complexipy.cli:main"
 
 [project.urls]
-Homepage = "https://github.com/rohaquinlop/complexipy"
-Documentation = "https://complexipy.com/"
-Repository = "https://github.com/rohaquinlop/complexipy"
+Repository = "https://github.com/bcgalvin/complexipy"
 
 [tool.maturin]
 manifest-path = "crates/complexipy-python/Cargo.toml"

@@ -45,7 +45,7 @@ ignoring the second element silently discards them. `invocation_path` is
 accepted and ignored: `runner.rs` binds it as `_invocation_path`, relative
 `paths` resolve against the process working directory, and each result's `path`
 is relative to the parent of the directory you passed, or to a file's own parent
-(source read; the stub's description of the parameter is wrong).
+(source read; the stub describes the same behavior).
 
 ```python
 compute_diff(
@@ -62,15 +62,17 @@ contract harness pin the two-argument call). See
 
 ## Exceptions
 
-Every failure inside the extension is a plain `ValueError` carrying the Rust
-error string: `code_complexity` on a syntax error, `file_complexity` on a missing
-file or a path that is not a readable file (`TestErrors` in `tests/main.py`). The collectors do not raise for
-a missing path - it lands in the second tuple element
-(`tests/test_collector_failures.py`) - and `compute_diff` never raises; an
-unknown reference makes every function `NEW` (`compute_diff_git_error_skips_file`
-in `crates/complexipy-core/src/diff/tests.rs`). The stub and the wrapper
-docstring promise `SyntaxError`, `FileNotFoundError`, `PermissionError` and
-`UnicodeDecodeError`; none of those is ever raised.
+Native analysis reports reading, UTF-8 decoding and parsing failures as
+`ValueError` carrying the Rust error string: `code_complexity` on a syntax error,
+`file_complexity` on a missing file or a path that is not a readable file
+(`TestErrors` in `tests/main.py`). The stub and wrapper document this mapping.
+This is not a promise that every invalid API call raises `ValueError`: argument
+conversion can fail before analysis, and the Python wrapper resolves paths first.
+
+The collectors return a missing path in the second tuple element rather than
+raising (`tests/test_collector_failures.py`). `compute_diff` does not report Git
+failures as exceptions; an unknown reference makes every supplied function `NEW`
+(`compute_diff_git_error_skips_file` in `crates/complexipy-core/src/diff/tests.rs`).
 
 ## Types
 
@@ -100,13 +102,16 @@ named `Class::method`; script mode adds a `<module>` entry.
 
 `RuleCategory`, `Applicability`, `DiffStatus` - see the note below.
 
-## Enums, and what the stub still gets wrong
+## Enums and result objects
 
 **The enums are not `enum.Enum`.** `RuleCategory`, `Applicability` and
 `DiffStatus` are PyO3 simple enums: the MRO is `(cls, object)`, `.name` and
 `.value` raise `AttributeError`, and the class is not iterable. Compare members
 directly; to recover a name, build a mapping with `dir()`. The stub declares them
-correctly as plain classes with typed members.
+as plain classes with typed members. One typing gap remains: it permits
+zero-argument enum construction even though the runtime rejects it. It also
+permits subclassing `LineComplexity`, which the runtime rejects. Do not rely on
+those operations; the result-constructor checks below do not cover them.
 
 `Applicability` on a plan is the **rule's declared ceiling**, not what that plan
 achieved. A rule declaring `MachineApplicable` can still emit help text with no
@@ -114,21 +119,26 @@ suggestion, and the console renderer prints the plan's applicability in the head
 and the suggestion's in the body. Check `suggestion is not None` first, then read
 `suggestion.applicability`.
 
-**Still wrong: the constructors do not exist.** The stub declares `__init__` for
-`CodeSuggestion`, `LineComplexity`, `RefactorPlan`, `FunctionComplexity`,
-`FileComplexity`, `CodeComplexity`, `IgnoredLocation` and `RemovableIgnore`. None
-of those types has one - constructing any of them raises `TypeError`
-(`tests/contract/check_stub_contract.py` `RUNTIME_CHECKS` pins `LineComplexity`;
-the others follow from the absence of any `#[new]` in `classes.rs`). `DiffEntry` is the
-exception and is genuinely constructible. Every attribute on every type is
-read-only, though the stub declares them writable; the contract case
-`assign_readonly.py` pins this for `DiffEntry` only. Do not write consumer code
-that depends on either.
+**Result objects come from analysis, not constructors.** `CodeSuggestion`,
+`LineComplexity`, `RefactorPlan`, `FunctionComplexity`, `FileComplexity`,
+`CodeComplexity`, `IgnoredLocation` and `RemovableIgnore` reject construction
+with `TypeError`. The stub uses a required `Never` parameter to reject direct
+construction statically; it is not a token callers can obtain or pass at runtime.
+`DiffEntry` is the exception and has a real constructor.
 
-**Also wrong: the exception docstrings** (see [Exceptions](#exceptions)), the
-collectors' `invocation_path` description (see above), and the
-`additional_refactor_plans` docstring, which mentions only the cap - see
-[Refactor rules](rules.md#how-plans-are-selected).
+Result attributes are read-only and the stub exposes them as getter-only
+properties. List-valued getters return fresh Python lists; mutating one does
+not alter the result. The installed-wheel runtime checks verify this behavior.
+
+The installed-wheel contract checks all eight result types: `result_usage.py`
+checks getter types, `assign_results.py` checks rejected assignments, and
+`construct_results.py` checks rejected construction. `RUNTIME_CHECKS` compares
+native getter names and value types to the installed stub, checks assignment
+rejection and list-copy behavior, and checks that constructors reject empty,
+correctly typed positional and field-keyword calls. `assign_readonly.py` separately covers `DiffEntry`.
+
+`additional_refactor_plans` includes cap drops and post-measurement drops, not all
+candidate plans - see [Refactor rules](rules.md#how-plans-are-selected).
 
 ## Serialization surfaces
 

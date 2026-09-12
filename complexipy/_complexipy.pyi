@@ -1,601 +1,239 @@
-"""
-Type stubs for complexipy._complexipy module.
+"""Python bindings for cognitive complexity analysis."""
 
-This module provides Rust-powered cognitive complexity analysis for Python code.
-Cognitive complexity is a metric that measures how difficult a function is to
-understand and maintain, focusing on control flow structures that make code
-harder to reason about.
-"""
-
-from typing import Final, List, Optional, Tuple
+from typing import Final, Never, Self
 
 class RuleCategory:
-    """Category of a refactoring rule.
-
-    A PyO3 simple enum, not an ``enum.Enum``. Members are class attributes and
-    compare by identity; there is no ``.name``, no ``.value``, and the class is
-    not iterable.
-    """
+    """PyO3 enum with class members, no name/value attributes or iteration."""
 
     Complexity: Final[RuleCategory]
-    """Rules that reduce cognitive complexity."""
-
     Readability: Final[RuleCategory]
-    """Rules that improve code readability."""
 
 class Applicability:
-    """Applicability level for refactoring suggestions.
+    """PyO3 enum describing a rule's ceiling or a suggestion's applicability.
 
-    A PyO3 simple enum, not an ``enum.Enum``. Members are class attributes and
-    compare by identity; there is no ``.name``, no ``.value``, and the class is
-    not iterable.
-
-    This is the rule's declared ceiling, not what a given plan achieved. A rule
-    declaring ``MachineApplicable`` can still emit help text with no suggestion,
-    so read ``suggestion.applicability`` after checking ``suggestion is not
-    None``.
+    A MachineApplicable rule can produce help without a suggestion. Check for
+    a suggestion before reading its applicability. Members have no name/value
+    attributes and the class is not iterable.
     """
 
     MachineApplicable: Final[Applicability]
-    """Safe to apply automatically without human review."""
-
     MaybeIncorrect: Final[Applicability]
-    """May be incorrect in some cases, needs human review."""
-
     Informational: Final[Applicability]
-    """Informational only, not directly actionable."""
 
 class DiffStatus:
-    """Comparison status of a function between two analyzed versions.
+    """PyO3 enum, not enum.Enum or str; has no name/value or iteration.
 
-    A PyO3 simple enum, not an ``enum.Enum`` and not a ``str`` subclass.
-    Members are class attributes and compare by identity; there is no
-    ``.name``, no ``.value``, and the class is not iterable. Formatting a
-    member yields the qualified ``DiffStatus.REGRESSED``, so comparing against
-    a plain string fails even after formatting.
+    Formatting a member yields a qualified string such as DiffStatus.REGRESSED.
+    Compare members directly rather than comparing to unqualified strings.
     """
 
     REGRESSED: Final[DiffStatus]
-    """Complexity increased in the new version."""
-
     IMPROVED: Final[DiffStatus]
-    """Complexity decreased in the new version."""
-
     UNCHANGED: Final[DiffStatus]
-    """Complexity stayed the same."""
-
     NEW: Final[DiffStatus]
-    """Function only exists in the new version."""
-
     REMOVED: Final[DiffStatus]
-    """Function only exists in the old version."""
 
 class DiffEntry:
-    """Comparison result for a single function between two versions."""
+    """Constructible comparison result with read-only attributes."""
 
     def __init__(
         self,
         file_path: str,
         func_name: str,
-        old_complexity: Optional[int],
-        new_complexity: Optional[int],
+        old_complexity: int | None,
+        new_complexity: int | None,
     ) -> None: ...
     @property
-    def file_path(self) -> str:
-        """Path of the file containing the function."""
-        ...
-
+    def file_path(self) -> str: ...
     @property
-    def func_name(self) -> str:
-        """Name of the compared function."""
-        ...
-
+    def func_name(self) -> str: ...
     @property
-    def old_complexity(self) -> Optional[int]:
-        """Complexity in the old version, or None if the function is new."""
-        ...
-
+    def old_complexity(self) -> int | None: ...
     @property
-    def new_complexity(self) -> Optional[int]:
-        """Complexity in the new version, or None if the function was removed."""
-        ...
-
+    def new_complexity(self) -> int | None: ...
     @property
-    def status(self) -> DiffStatus:
-        """Comparison status derived from old and new complexity."""
-        ...
+    def status(self) -> DiffStatus: ...
 
 class CodeSuggestion:
-    """A concrete code suggestion with replacement text and applicability."""
+    """Replacement returned by analysis; cannot be constructed directly."""
 
-    replacement: str
-    """The suggested replacement code."""
-
-    applicability: Applicability
-    """How confident we are in this suggestion."""
-
-    description: str
-    """Description of what this suggestion does."""
-
-    spliceable: bool
-    """Whether the replacement is a faithful source splice that can be measured."""
-
-    def __init__(
-        self,
-        replacement: str,
-        applicability: Applicability,
-        description: str,
-        spliceable: bool,
-    ) -> None: ...
+    def __new__(cls, _token: Never, /) -> Self: ...
+    @property
+    def replacement(self) -> str: ...
+    @property
+    def applicability(self) -> Applicability: ...
+    @property
+    def description(self) -> str: ...
+    @property
+    def spliceable(self) -> bool:
+        """Whether the replacement is a source splice eligible for measurement."""
+        ...
 
 class LineComplexity:
-    """
-    Represents the cognitive complexity contribution of a single line of code.
+    """One line's score contribution, returned by analysis, not constructed.
 
-    Cognitive complexity is incremented by control flow structures like:
-    - if/elif statements (+1 each)
-    - loops (for/while) (+1 each)
-    - except clauses (+1 each)
-    - Nested structures (+1 for each level of nesting)
-    - Boolean operators in conditions (and/or) (+1 each)
-
-    This class tracks which specific lines contribute to the overall complexity
-    score, helping developers identify the most complex parts of their functions.
-
-    Example:
-        >>> # For a line like: if condition and other_condition:
-        >>> line_complexity = LineComplexity(line=5, complexity=2)
-        >>> print(f"Line {line_complexity.line} adds {line_complexity.complexity} to complexity")
+    Boolean complexity counts operator runs, not individual operators. See
+    docs/scoring.md for the scoring rules and expression-walker limits.
     """
 
-    line: int
-    """The line number (1-indexed) in the source code."""
-
-    complexity: int
-    """
-    The cognitive complexity value contributed by this line.
-
-    - 0: No complexity contribution (simple statements)
-    - 1+: Complexity added by control flow structures on this line
-    """
-
-    def __init__(self, line: int, complexity: int) -> None: ...
+    def __new__(cls, _token: Never, /) -> Self: ...
+    @property
+    def line(self) -> int:
+        """One-based source line number."""
+        ...
+    @property
+    def complexity(self) -> int: ...
 
 class RefactorPlan:
-    """Deterministic refactoring plan for reducing one function's complexity.
+    """Ranked refactoring plan returned by analysis, not constructed directly."""
 
-    This plan includes clippy-style metadata with rule information,
-    concrete suggestions or help text, and detailed explanations to help
-    developers and AI agents understand and apply the refactoring.
-    """
-
-    kind: str
-    """Type of refactoring (e.g., 'flatten_condition', 'extract_helper')."""
-
-    title: str
-    """Human-readable title of the refactoring suggestion."""
-
-    line_start: int
-    """Starting line number of the code region to refactor."""
-
-    line_end: int
-    """Ending line number of the code region to refactor."""
-
-    column_start: int
-    """1-indexed starting column of the offending construct on `line_start`."""
-
-    current_complexity: int
-    """Current cognitive complexity of the function."""
-
-    estimated_reduction: int
-    """Complexity reduction from applying this refactoring - measured when
-    `reduction_is_measured` is true, formula-estimated otherwise."""
-
-    estimated_complexity_after: int
-    """Complexity after applying this refactoring - measured when
-    `reduction_is_measured` is true, formula-estimated otherwise."""
-
-    reduction_is_measured: bool
-    """True when the reduction was measured by splicing the suggestion into
-    the source and re-scoring it; false for formula estimates (help-only
-    rules and measurement fallbacks)."""
-
-    rule_id: str
-    """Unique identifier for the rule (e.g., 'C001', 'C007')."""
-
-    category: RuleCategory
-    """Category of the refactoring rule."""
-
-    applicability: Applicability
-    """How confident we are in this suggestion."""
-
-    description: str
-    """Detailed description of what the rule checks for."""
-
-    explanation: str
-    """Explanation of why this refactoring helps."""
-
-    suggestion: Optional[CodeSuggestion]
-    """Concrete code suggestion for machine-applicable rules."""
-
-    help: Optional[str]
-    """Help text with actionable guidance for informational rules."""
-
-    def __init__(
-        self,
-        kind: str,
-        title: str,
-        line_start: int,
-        line_end: int,
-        column_start: int,
-        current_complexity: int,
-        estimated_reduction: int,
-        estimated_complexity_after: int,
-        reduction_is_measured: bool,
-        rule_id: str,
-        category: RuleCategory,
-        applicability: Applicability,
-        description: str,
-        explanation: str,
-        suggestion: Optional[CodeSuggestion],
-        help: Optional[str],
-    ) -> None: ...
+    def __new__(cls, _token: Never, /) -> Self: ...
+    @property
+    def kind(self) -> str: ...
+    @property
+    def title(self) -> str: ...
+    @property
+    def line_start(self) -> int: ...
+    @property
+    def line_end(self) -> int: ...
+    @property
+    def column_start(self) -> int:
+        """One-based column of the construct on line_start."""
+        ...
+    @property
+    def current_complexity(self) -> int: ...
+    @property
+    def estimated_reduction(self) -> int: ...
+    @property
+    def estimated_complexity_after(self) -> int: ...
+    @property
+    def reduction_is_measured(self) -> bool:
+        """True for a measured source splice; false for a formula estimate."""
+        ...
+    @property
+    def rule_id(self) -> str: ...
+    @property
+    def category(self) -> RuleCategory: ...
+    @property
+    def applicability(self) -> Applicability:
+        """Rule's declared ceiling, not the outcome of this plan."""
+        ...
+    @property
+    def description(self) -> str: ...
+    @property
+    def explanation(self) -> str: ...
+    @property
+    def suggestion(self) -> CodeSuggestion | None: ...
+    @property
+    def help(self) -> str | None: ...
 
 class FunctionComplexity:
-    """
-    Represents the cognitive complexity analysis of a Python function.
+    """Function result returned by analysis; cannot be constructed directly."""
 
-    This class provides a complete complexity analysis for a single function,
-    including the total complexity score and line-by-line breakdown. The
-    cognitive complexity score helps assess how difficult a function is to
-    understand and maintain.
+    def __new__(cls, _token: Never, /) -> Self: ...
+    @property
+    def name(self) -> str:
+        """Function name, Class::method for methods, or <module> in script mode.
 
-    Complexity Guidelines:
-    - 1-10: Simple function, easy to understand
-    - 11-15: Moderate complexity, consider refactoring
-    - 16+: High complexity, should be refactored
+        Nested functions contribute to their enclosing function and are not
+        separately reported.
+        """
+        ...
+    @property
+    def complexity(self) -> int: ...
+    @property
+    def line_start(self) -> int:
+        """One-based declaration start, including decorators."""
+        ...
+    @property
+    def line_end(self) -> int: ...
+    @property
+    def line_complexities(self) -> list[LineComplexity]: ...
+    @property
+    def refactor_plans(self) -> list[RefactorPlan]:
+        """Ranked refactoring plans, capped at five."""
+        ...
+    @property
+    def additional_refactor_plans(self) -> int:
+        """Cap drops plus selected plans whose measured reduction fell below one.
 
-    The analysis includes nested complexity penalties, where deeply nested
-    control structures add additional complexity points.
-
-    Example:
-        >>> func = FunctionComplexity(
-        ...     name="process_data",
-        ...     complexity=8,
-        ...     line_start=10,
-        ...     line_end=25,
-        ...     line_complexities=[LineComplexity(12, 2), LineComplexity(15, 1)]
-        ... )
-        >>> print(f"Function '{func.name}' has complexity {func.complexity}")
-        >>> # Find the most complex lines
-        >>> complex_lines = [lc for lc in func.line_complexities if lc.complexity > 0]
-    """
-
-    name: str
-    """
-    The name of the function as it appears in the source code.
-
-    For methods, this includes just the method name (not the class).
-    For nested functions, this is the inner function name.
-    """
-
-    complexity: int
-    """
-    The total cognitive complexity score for this function.
-
-    This is the sum of all complexity contributions from control flow
-    structures within the function, including nesting penalties.
-    Higher values indicate more complex, harder-to-understand code.
-    """
-
-    line_start: int
-    """
-    The starting line number of the function definition (1-indexed).
-
-    Points to the line containing 'def function_name(...):'
-    """
-
-    line_end: int
-    """
-    The ending line number of the function definition (1-indexed).
-
-    Points to the last line that belongs to this function's body.
-    """
-
-    line_complexities: List[LineComplexity]
-    """
-    Detailed complexity information for each line in the function.
-
-    This list contains LineComplexity objects for every line in the function,
-    allowing you to identify exactly which lines contribute to the overall
-    complexity score. Lines with zero complexity are included for completeness.
-
-    Example:
-        >>> # Find lines that add complexity
-        >>> complex_lines = [lc for lc in func.line_complexities if lc.complexity > 0]
-        >>> for line_info in complex_lines:
-        ...     print(f"Line {line_info.line}: +{line_info.complexity}")
-    """
-
-    refactor_plans: List[RefactorPlan]
-    """Ranked deterministic refactoring plans for this function, capped at 5."""
-
-    additional_refactor_plans: int
-    """Count of further plans that survived dedup but were dropped by the cap."""
-
-    def __init__(
-        self,
-        name: str,
-        complexity: int,
-        line_start: int,
-        line_end: int,
-        line_complexities: List[LineComplexity],
-        refactor_plans: List[RefactorPlan],
-        additional_refactor_plans: int,
-    ) -> None: ...
+        Does not include earlier noise or overlap rejections.
+        """
+        ...
 
 class FileComplexity:
-    """
-    Represents the cognitive complexity analysis of a Python source file.
+    """File result returned by analysis; cannot be constructed directly."""
 
-    This class aggregates complexity information for all functions found in a
-    Python file, providing both individual function analysis and file-level
-    metrics. It's useful for understanding the overall complexity of a module
-    and identifying which functions need attention.
+    def __new__(cls, _token: Never, /) -> Self: ...
+    @property
+    def path(self) -> str:
+        """Path relative to the analysis base where possible.
 
-    File Complexity Guidelines:
-    - Low: Most functions have complexity < 10
-    - Medium: Some functions have complexity 10-15
-    - High: Multiple functions have complexity > 15
-
-    The file total includes both reported function scores and module-level
-    statement complexity. With check_script=False, module-level complexity
-    contributes to the total without a separate function record. With
-    check_script=True, it appears as a '<module>' record in functions, so
-    the total equals the sum of the reported records.
-
-    Example:
-        >>> file_analysis = FileComplexity(
-        ...     path="/path/to/mymodule.py",
-        ...     file_name="mymodule.py",
-        ...     functions=[func1, func2, func3],
-        ...     complexity=25
-        ... )
-        >>> # Find the most complex functions
-        >>> complex_funcs = [f for f in file_analysis.functions if f.complexity > 10]
-        >>> print(f"File has {len(complex_funcs)} complex functions")
-    """
-
-    path: str
-    """
-    The analyzed file's path relative to the analysis base path.
-
-    The public complexipy.file_complexity wrapper resolves the input and
-    current working directory. For a file beneath that directory, path is
-    relative to it; otherwise path is the file's basename. The native
-    binding accepts an explicit base_path and retains file_path when it
-    cannot strip that prefix. This field is not always an absolute path.
-    """
-
-    file_name: str
-    """
-    The basename of the file (filename without directory path).
-
-    Example: For "/path/to/mymodule.py", this would be "mymodule.py"
-    """
-
-    functions: List[FunctionComplexity]
-    """
-    List of complexity analysis results for each function in the file.
-
-    This includes all top-level functions and methods found in the file.
-    Nested functions are analyzed as part of their containing function.
-    The list is ordered by appearance in the source code. When check_script
-    is True, a '<module>' record for module-level statements is appended.
-
-    Example:
-        >>> # Find the most complex function
-        >>> most_complex = max(file_analysis.functions, key=lambda f: f.complexity)
-        >>> print(f"Most complex function: {most_complex.name} ({most_complex.complexity})")
-
-            >>> # Get functions that exceed threshold
-        >>> threshold = 15
-        >>> problematic = [f for f in file_analysis.functions if f.complexity > threshold]
-    """
-
-    complexity: int
-    """
-    The total cognitive complexity of the entire file.
-
-    This includes reported function scores and module-level statement
-    complexity regardless of check_script. With check_script=False, the
-    total can exceed the sum of functions. With check_script=True, functions
-    includes the '<module>' record and its sum equals this total.
-    """
-
-    def __init__(
-        self,
-        path: str,
-        file_name: str,
-        functions: List[FunctionComplexity],
-        complexity: int,
-    ) -> None: ...
+        The public wrapper uses the CWD for files beneath it and the file's
+        parent otherwise, so out-of-tree files use their basename. The native
+        binding retains file_path if it cannot strip base_path.
+        """
+        ...
+    @property
+    def file_name(self) -> str: ...
+    @property
+    def functions(self) -> list[FunctionComplexity]:
+        """Top-level functions and methods, with <module> appended in script mode."""
+        ...
+    @property
+    def complexity(self) -> int:
+        """Function totals plus module-level complexity, regardless of script mode."""
+        ...
 
 class CodeComplexity:
-    """
-    Represents the cognitive complexity analysis of a Python code string.
+    """Source-string result returned by analysis, not constructed directly."""
 
-    This class is used when analyzing Python code provided as a string rather
-    than from a file. It's particularly useful for:
-    - Analyzing code snippets or templates
-    - Testing complexity in unit tests
-    - Analyzing dynamically generated code
-    - Integration with code editors and IDEs
-
-    The analysis works identically to file-based analysis, parsing the code
-    string to identify functions and calculate their complexity scores.
-
-    Example:
-        >>> code = '''
-        ... def complex_function(x, y):
-        ...     if x > 0:
-        ...         for i in range(y):
-        ...             if i % 2 == 0 and i > 5:
-        ...                 return i * x
-        ...     return 0
-        ... '''
-        >>> analysis = code_complexity(code)
-        >>> print(f"Code has {len(analysis.functions)} functions")
-        >>> print(f"Total complexity: {analysis.complexity}")
-    """
-
-    functions: List[FunctionComplexity]
-    """
-    List of complexity analysis results for each function found in the code.
-
-    This includes all function definitions found in the provided code string,
-    analyzed in the same way as file-based analysis. Functions are ordered
-    by their appearance in the code. When check_script is True, a '<module>'
-    record for module-level statements is appended.
-
-    Example:
-        >>> for func in analysis.functions:
-        ...     print(f"Function '{func.name}': complexity {func.complexity}")
-        ...     if func.complexity > 10:
-        ...         print("  -> Consider refactoring this function")
-    """
-
-    complexity: int
-    """
-    The total cognitive complexity of the code string.
-
-    This includes reported function scores and module-level statement
-    complexity regardless of check_script. With check_script=False, the
-    total can exceed the sum of functions. With check_script=True, functions
-    includes the '<module>' record and its sum equals this total.
-    """
-
-    def __init__(
-        self, functions: List[FunctionComplexity], complexity: int
-    ) -> None: ...
+    def __new__(cls, _token: Never, /) -> Self: ...
+    @property
+    def functions(self) -> list[FunctionComplexity]: ...
+    @property
+    def complexity(self) -> int:
+        """Function totals plus module-level complexity, regardless of script mode."""
+        ...
 
 class IgnoredLocation:
-    """
-    Represents a single '# complexipy: ignore' or '# noqa: complexipy'
-    comment found in a source file.
+    """Reported marker returned by a collector, not constructed directly."""
 
-    This class is used by --report-ignored to surface suppressed
-    complexity locations for audit and technical debt tracking.
-
-    Example:
-        >>> loc = IgnoredLocation(
-        ...     path="src/utils/parser.py",
-        ...     line=42,
-        ...     comment="# complexipy: ignore"
-        ... )
-        >>> print(f"{loc.path}:{loc.line}  {loc.comment}")
-    """
-
-    path: str
-    """Relative path to the file containing the ignore comment."""
-
-    line: int
-    """Line number (1-indexed) where the ignore comment was found."""
-
-    comment: str
-    """The canonical ignore marker (e.g. '# complexipy: ignore' or '# noqa: complexipy')."""
-
-    def __init__(self, path: str, line: int, comment: str) -> None: ...
+    def __new__(cls, _token: Never, /) -> Self: ...
+    @property
+    def path(self) -> str: ...
+    @property
+    def line(self) -> int: ...
+    @property
+    def comment(self) -> str: ...
 
 class RemovableIgnore:
-    """
-    Represents an ignore comment that is no longer necessary because the
-    suppressed function's complexity is within the allowed limit.
+    """Marker returned by the removable-ignore collector, not constructed directly."""
 
-    This class backs the automatic report of stale ignore comments shown
-    at the end of every analysis run, and the
-    `collect_removable_ignored_locations()` API.
-
-    Example:
-        >>> rem = RemovableIgnore(
-        ...     path="src/legacy.py",
-        ...     line=42,
-        ...     comment="# complexipy: ignore",
-        ...     function="parse_legacy_config",
-        ...     complexity=8
-        ... )
-        >>> print(f"{rem.path}:{rem.line}  {rem.comment} can be removed")
-    """
-
-    path: str
-    """Relative path to the file containing the ignore comment."""
-
-    line: int
-    """Line number (1-indexed) of the function the ignore comment suppresses."""
-
-    comment: str
-    """The canonical ignore marker (e.g. '# complexipy: ignore' or '# noqa: complexipy')."""
-
-    function: str
-    """Name of the function the ignore comment suppresses."""
-
-    complexity: int
-    """The function's cognitive complexity measured without the ignore comment."""
-
-    def __init__(
-        self, path: str, line: int, comment: str, function: str, complexity: int
-    ) -> None: ...
+    def __new__(cls, _token: Never, /) -> Self: ...
+    @property
+    def path(self) -> str: ...
+    @property
+    def line(self) -> int: ...
+    @property
+    def comment(self) -> str: ...
+    @property
+    def function(self) -> str: ...
+    @property
+    def complexity(self) -> int: ...
 
 def code_complexity(
     code: str, check_script: bool = False, no_ignore: bool = False
 ) -> CodeComplexity:
-    """
-    Analyze cognitive complexity of Python code provided as a string.
-
-    This function parses and analyzes Python source code from a string,
-    identifying all function definitions and calculating their cognitive
-    complexity scores. It's ideal for analyzing code snippets, templates,
-    or dynamically generated code.
-
-    The analysis follows the same cognitive complexity rules as file-based
-    analysis, measuring control flow structures and nesting levels that
-    make code harder to understand.
+    """Analyze a source string.
 
     Args:
-        code: A string containing valid Python source code. The code should
-              be properly formatted and syntactically correct. Syntax errors
-              will cause the analysis to fail.
-
-    Returns:
-        CodeComplexity object containing the analysis results, including
-        individual function complexity scores and total complexity.
+        code: Python source to analyze.
+        check_script: Also report module-level complexity as a <module> entry.
+        no_ignore: Analyze functions even when they carry an ignore marker.
 
     Raises:
-        SyntaxError: If the provided code string contains invalid Python syntax.
-
-    Example:
-        >>> code_sample = '''
-        ... def fibonacci(n):
-        ...     if n <= 1:
-        ...         return n
-        ...     elif n == 2:
-        ...         return 1
-        ...     else:
-        ...         return fibonacci(n-1) + fibonacci(n-2)
-        ...
-        ... def factorial(n):
-        ...     result = 1
-        ...     for i in range(1, n + 1):
-        ...         result *= i
-        ...     return result
-        ... '''
-        >>> analysis = code_complexity(code_sample)
-        >>> print(f"Found {len(analysis.functions)} functions")
-        >>> print(f"Total complexity: {analysis.complexity}")
-        >>>
-        >>> # Analyze each function
-        >>> for func in analysis.functions:
-        ...     print(f"{func.name}: complexity {func.complexity}")
+        ValueError: If parsing fails.
     """
     ...
 
@@ -605,184 +243,69 @@ def file_complexity(
     check_script: bool = False,
     no_ignore: bool = False,
 ) -> FileComplexity:
-    """
-    Analyze cognitive complexity of a single Python source file.
-
-    This function reads and analyzes a Python file from the filesystem,
-    identifying all function definitions and calculating their cognitive
-    complexity scores. It's useful for analyzing individual files or
-    integrating complexity analysis into custom tools.
-
-    The function handles file reading, parsing, and complexity calculation,
-    providing detailed results for all functions found in the file.
+    """Analyze a file using an explicit base for the reported path.
 
     Args:
-        file_path: Absolute path to the Python file to analyze. The file
-                   must exist and be readable. Should point to a .py file
-                   containing valid Python source code.
-        base_path: Base directory path used for calculating relative paths
-                   in the analysis results. This is typically the project
-                   root directory and affects the 'path' field in the
-                   returned FileComplexity object.
-
-    Returns:
-        FileComplexity object containing complete analysis results for the
-        file, including all functions found and their complexity scores.
+        file_path: Path to the Python source file.
+        base_path: Prefix to strip from the reported path when possible.
+        check_script: Also report module-level complexity as a <module> entry.
+        no_ignore: Analyze functions even when they carry an ignore marker.
 
     Raises:
-        FileNotFoundError: If the specified file_path does not exist.
-        PermissionError: If the file cannot be read due to permissions.
-        SyntaxError: If the Python file contains syntax errors.
-        UnicodeDecodeError: If the file cannot be decoded as text.
-
-    Example:
-        >>> # Analyze a specific file
-        >>> result = file_complexity(
-        ...     file_path="/project/src/mymodule.py",
-        ...     base_path="/project"
-        ... )
-        >>> print(f"File: {result.file_name}")
-        >>> print(f"Total complexity: {result.complexity}")
-        >>> print(f"Functions analyzed: {len(result.functions)}")
-        >>>
-        >>> # Find the most complex function
-        >>> if result.functions:
-        ...     most_complex = max(result.functions, key=lambda f: f.complexity)
-        ...     print(f"Most complex: {most_complex.name} (score: {most_complex.complexity})")
+        ValueError: If reading, UTF-8 decoding, or parsing fails.
     """
     ...
 
-def run_cli(argv: List[str], invocation_path: Optional[str] = None) -> int:
-    """
-    Run the Rust CLI with the given arguments and return its exit code.
+def run_cli(argv: list[str], invocation_path: str | None = None) -> int:
+    """Run the CLI with argv excluding the program name and return its exit code.
 
-    This backs the `complexipy` console script; the whole CLI pipeline
-    runs in Rust. Errors and usage messages are printed to stderr.
-
-    Args:
-        argv: Command-line arguments, excluding the program name.
-        invocation_path: Working directory for the run; defaults to the
-            current working directory.
-
-    Returns:
-        Process exit code: 0 on success, 1 on gate failure, 2 on usage
-        errors.
+    invocation_path defaults to the current working directory. This is the
+    console-script bootstrap, not a public complexipy package export.
     """
     ...
 
 def compute_diff(
-    current_files: List[FileComplexity],
+    current_files: list[FileComplexity],
     git_ref: str,
-    invocation_path: Optional[str] = None,
-) -> List[DiffEntry]:
-    """
-    Compare the current complexity results against *git_ref*.
+    invocation_path: str | None = None,
+) -> list[DiffEntry]:
+    """Compare current results to a Git reference.
 
-    For each file in *current_files*, retrieves the file's content at
-    *git_ref* using ``git show`` and re-analyses it. Functions that
-    appear only in one version are marked NEW / REMOVED.
-
-    Args:
-        current_files: Complexity results of the current analysis.
-        git_ref: Git reference to compare against (branch, tag, or commit).
-        invocation_path: Working directory for git commands; defaults to
-            the current working directory.
-
-    Returns:
-        List of DiffEntry objects, one per function that changed or is
-        new/removed. Unchanged functions are included so callers can
-        choose how to filter.
+    invocation_path is the working directory for Git commands, defaulting to
+    the current working directory. A missing reference is treated as absent
+    old content, making the supplied functions NEW rather than raising.
     """
     ...
 
-def has_regressions(entries: List[DiffEntry], max_complexity: int) -> bool:
-    """
-    Return True if any entry represents a ratchet failure.
-
-    A ratchet failure is a REGRESSED function whose new complexity
-    exceeds *max_complexity*, or a NEW function whose complexity exceeds
-    *max_complexity*. Modified functions that increase in complexity but
-    stay at or below the threshold are not considered failures.
-    """
+def has_regressions(entries: list[DiffEntry], max_complexity: int) -> bool:
+    """Whether any REGRESSED or NEW function exceeds max_complexity."""
     ...
 
 def collect_all_ignored_locations(
-    paths: List[str],
-    exclude: List[str],
-    invocation_path: str = ".",
-) -> Tuple[List[IgnoredLocation], List[str]]:
-    """
-    Scan all processed Python files for ignore comments.
+    paths: list[str], exclude: list[str], invocation_path: str = "."
+) -> tuple[list[IgnoredLocation], list[str]]:
+    """Return recognized ignore locations and paths that could not be processed.
 
-    This function discovers all '# complexipy: ignore' and '# noqa: complexipy'
-    comments across the same set of files that the main analysis would process
-    (respecting --exclude and .gitignore). It returns the file path, line
-    number, and comment text for each ignore marker found.
-
-    Recognized forms:
-      - '# complexipy: ignore'
-      - '# noqa: complexipy'
-    (Bare '# noqa' is NOT recognized.)
-
-    This is the backend for the --report-ignored CLI flag.
-
-    Args:
-        paths: List of file paths or directory paths.
-        exclude: List of file/directory paths or globs to exclude from scanning.
-        invocation_path: Working directory for resolving relative paths.
-
-    Returns:
-        A tuple of (ignored_locations, failed_paths) where:
-        - ignored_locations: List of IgnoredLocation objects, sorted by (path, line).
-        - failed_paths: List of paths that could not be processed.
-
-    Example:
-        >>> locations, failed = collect_all_ignored_locations(
-        ...     paths=["/project/src"],
-        ...     exclude=["tests/"],
-        ... )
-        >>> for loc in locations:
-        ...     print(f"{loc.path}:{loc.line}  {loc.comment}")
+    paths contains local files or directories; exclude contains exclusion
+    patterns. invocation_path is accepted but ignored: relative inputs resolve
+    against the process CWD. Reporting scans def lines, so markers above the
+    first decorator and markers on async def are not reported, even when they
+    suppress analysis. A bare noqa is not recognized.
     """
     ...
 
 def collect_removable_ignored_locations(
-    paths: List[str],
-    exclude: List[str],
+    paths: list[str],
+    exclude: list[str],
     max_complexity_allowed: int,
     invocation_path: str = ".",
-) -> Tuple[List[RemovableIgnore], List[str]]:
-    """
-    Scan all processed Python files for ignore comments that are no longer
-    necessary because the suppressed function's complexity is within the
-    allowed limit.
+) -> tuple[list[RemovableIgnore], list[str]]:
+    """Return recognized markers no longer needed and paths that failed.
 
-    This is the backend for the automatic stale-ignore report shown at the
-    end of every analysis run. It discovers the same set of files as the
-    main analysis (respecting --exclude and .gitignore), computes each
-    suppressed function's complexity as if the ignore comment were absent,
-    and keeps only the markers whose function complexity is less than or
-    equal to `max_complexity_allowed`.
-
-    Args:
-        paths: List of file paths or directory paths.
-        exclude: List of file/directory paths or globs to exclude from scanning.
-        max_complexity_allowed: Complexity threshold; markers suppressing
-            functions at or below this value are reported as removable.
-        invocation_path: Working directory for resolving relative paths.
-
-    Returns:
-        A tuple of (removable_ignores, failed_paths) where:
-        - removable_ignores: List of RemovableIgnore objects, sorted by (path, line).
-        - failed_paths: List of paths that could not be processed.
-
-    Example:
-        >>> removable, failed = collect_removable_ignored_locations(
-        ...     paths=["/project/src"],
-        ...     exclude=["tests/"],
-        ...     max_complexity_allowed=15,
-        ... )
-        >>> for rem in removable:
-        ...     print(f"{rem.path}:{rem.line}  function={rem.function} complexity={rem.complexity}")
+    paths contains local files or directories; exclude contains exclusion
+    patterns. A marker is removable when its function scores at or below
+    max_complexity_allowed without suppression. invocation_path is accepted
+    but ignored: relative inputs resolve against the process CWD. Reporting
+    has the same placement limits as collect_all_ignored_locations.
     """
     ...

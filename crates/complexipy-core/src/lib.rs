@@ -9,9 +9,6 @@ pub mod runner;
 pub mod utils;
 
 pub use api::{code_complexity, file_complexity};
-/// Stable public API - mirrors `complexipy/__init__.py`'s `__all__`.
-/// Names here are a compatibility promise; do not move or rename them
-/// without a major release.
 pub use classes::{
     Applicability, CodeComplexity, CodeSuggestion, FileComplexity, FunctionComplexity,
     IgnoredLocation, LineComplexity, RefactorPlan, RemovableIgnore, RuleCategory,

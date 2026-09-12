@@ -1,5 +1,4 @@
 from pathlib import Path
-from typing import List, Tuple
 
 import pytest
 
@@ -13,15 +12,15 @@ from complexipy._complexipy import FileComplexity
 
 
 def _analyze_paths(
-    paths: List[Path], check_script: bool = False, no_ignore: bool = False
-) -> Tuple[List[FileComplexity], List[str]]:
+    paths: list[Path], check_script: bool = False, no_ignore: bool = False
+) -> tuple[list[FileComplexity], list[str]]:
     """Analyze files or directories via the public file_complexity API.
 
     Directories are walked recursively for ``.py`` files in sorted order.
     Missing paths are reported in the failed list.
     """
-    successful: List[FileComplexity] = []
-    failed: List[str] = []
+    successful: list[FileComplexity] = []
+    failed: list[str] = []
 
     for raw_path in paths:
         path = Path(raw_path).resolve()
@@ -221,8 +220,6 @@ def hello_world(s: str) -> str:
         total_complexity = sum([file.complexity for file in files])
         assert 0 == total_complexity
 
-    # ── no-ignore tests ──────────────────────────────────────────────
-
     def test_no_ignore_analyzes_ignored_function(self):
         """With no_ignore, functions with '# complexipy: ignore' are analyzed."""
         path = self.local_path / "src/test_complexipy_ignore.py"
@@ -287,8 +284,6 @@ def hello_world(s: str) -> str:
         result_with = file_complexity(str(source), no_ignore=True)
         assert result_without.complexity == 0
         assert result_with.complexity > 0
-
-    # ── collect_removable_ignored_locations API ──────────────────────
 
     def test_collect_removable_ignored_locations_api(self, tmp_path):
         """Python API: collect_removable_ignored_locations returns removable markers."""

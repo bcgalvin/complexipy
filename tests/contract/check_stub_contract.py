@@ -5,8 +5,6 @@ environment, verifies the installed stub matches the wheel, type-checks each
 case file from a neutral directory with ty, and confirms runtime agreement.
 """
 
-from __future__ import annotations
-
 import argparse
 import hashlib
 import json
@@ -24,6 +22,14 @@ CASES_DIR = Path(__file__).resolve().parent / "cases"
 
 EXPECTED_DIAGNOSTICS: dict[str, list[tuple[int, str]]] = {
     "valid_usage.py": [],
+    "result_usage.py": [],
+    "assign_results.py": [
+        (line, "invalid-assignment") for line in range(25, 68)
+    ],
+    "construct_results.py": [
+        (line, "missing-argument" if line % 2 == 0 else "invalid-argument-type")
+        for line in range(12, 28)
+    ],
     "assign_readonly.py": [
         (4, "invalid-assignment"),
         (5, "invalid-assignment"),
@@ -37,11 +43,17 @@ EXPECTED_DIAGNOSTICS: dict[str, list[tuple[int, str]]] = {
 }
 
 RUNTIME_CHECKS = """
+import ast
+from pathlib import Path
+from types import GetSetDescriptorType, UnionType
+from typing import get_args, get_origin
+
+from result_usage import objects
+
 import complexipy._complexipy as native
 from complexipy import (
     DiffEntry,
     DiffStatus,
-    LineComplexity,
     RefactorPlan,
     code_complexity,
     compute_diff,
@@ -76,12 +88,62 @@ if not hasattr(RefactorPlan, "rule_id"):
 for name in ("doc_url", "references"):
     if hasattr(RefactorPlan, name):
         raise SystemExit(f"RefactorPlan unexpectedly exposes {name}")
-try:
-    LineComplexity(1, 2)
-except TypeError:
-    pass
-else:
-    raise SystemExit("LineComplexity unexpectedly grew a constructor")
+def matches_type(value, expected):
+    if get_origin(expected) is list:
+        return type(value) is list and all(
+            matches_type(item, get_args(expected)[0]) for item in value
+        )
+    if get_origin(expected) is UnionType:
+        return any(matches_type(value, item) for item in get_args(expected))
+    return type(value) is expected
+
+
+stub = ast.parse(Path(native.__file__).with_name("_complexipy.pyi").read_text())
+namespace = dict(vars(native))
+properties = {
+    cls.name: {
+        field.name: eval(ast.unparse(field.returns), namespace)
+        for field in cls.body
+        if isinstance(field, ast.FunctionDef)
+        and any(isinstance(dec, ast.Name) and dec.id == "property" for dec in field.decorator_list)
+    }
+    for cls in stub.body
+    if isinstance(cls, ast.ClassDef)
+}
+for instance in objects:
+    cls = type(instance)
+    getters = properties[cls.__name__]
+    values = {
+        name: getattr(instance, name)
+        for name, descriptor in vars(cls).items()
+        if isinstance(descriptor, GetSetDescriptorType) and not name.startswith("_")
+    }
+    if not values or set(values) != set(getters):
+        raise SystemExit(f"{cls.__name__} getter names disagree with the installed stub")
+    for name, value in values.items():
+        if not matches_type(value, getters[name]):
+            raise SystemExit(f"{cls.__name__}.{name} runtime type disagrees with the stub")
+        if type(value) is list:
+            returned = getattr(instance, name)
+            if returned is value:
+                raise SystemExit(f"{cls.__name__}.{name} reused its Python list")
+            returned.clear()
+            if len(getattr(instance, name)) != len(value):
+                raise SystemExit(f"{cls.__name__}.{name} list mutation changed the result")
+        try:
+            setattr(instance, name, value)
+        except AttributeError:
+            pass
+        else:
+            raise SystemExit(f"{cls.__name__}.{name} was writable")
+    positional = tuple(values[name] for name in getters)
+    for args, kwargs in (((), {}), ((None,), {}), (positional, {}), ((), values)):
+        try:
+            cls(*args, **kwargs)
+        except TypeError:
+            pass
+        else:
+            raise SystemExit(f"{cls.__name__} unexpectedly grew a constructor")
 if f"{DiffStatus.REGRESSED}" != "DiffStatus.REGRESSED":
     raise SystemExit("DiffStatus no longer formats as DiffStatus.REGRESSED")
 if compute_diff([], "HEAD") != []:
@@ -273,13 +335,12 @@ def runtime_checks(
     python: Path, venv: Path, case_dir: Path
 ) -> tuple[str, list[str]]:
     problems: list[str] = []
-    valid_case = run(
-        [str(python), str(case_dir / "valid_usage.py")], cwd=case_dir
-    )
-    if valid_case.returncode:
-        problems.append(
-            f"valid_usage.py failed at runtime:\n{valid_case.stderr}"
-        )
+    for case, expected in EXPECTED_DIAGNOSTICS.items():
+        if expected:
+            continue
+        valid_case = run([str(python), str(case_dir / case)], cwd=case_dir)
+        if valid_case.returncode:
+            problems.append(f"{case} failed at runtime:\n{valid_case.stderr}")
     runtime = run([str(python), "-c", RUNTIME_CHECKS], cwd=case_dir)
     native_origin = runtime.stdout.strip()
     if runtime.returncode:

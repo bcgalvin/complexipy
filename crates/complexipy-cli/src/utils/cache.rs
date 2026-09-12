@@ -87,10 +87,6 @@ fn normalize_targets(invocation_path: &str, targets: &[String]) -> Vec<String> {
 }
 
 fn normalize_target(invocation_path: &str, target: &str) -> Option<String> {
-    if looks_like_remote(target) {
-        return Some(target.to_string());
-    }
-
     let base_path = Path::new(target);
     let base_path = if base_path.is_absolute() {
         base_path.to_path_buf()
@@ -125,20 +121,6 @@ fn to_posix(path: &Path) -> String {
     } else {
         value.into_owned()
     }
-}
-
-fn looks_like_remote(target: &str) -> bool {
-    const PREFIXES: [&str; 8] = [
-        "https://github.com",
-        "https://gitlab.com",
-        "http://github.com",
-        "http://gitlab.com",
-        "www.github.com",
-        "www.gitlab.com",
-        "git@github.com",
-        "git@gitlab.com",
-    ];
-    PREFIXES.iter().any(|prefix| target.starts_with(prefix))
 }
 
 fn collect_functions(files_complexities: &[FileComplexity]) -> Vec<Value> {
