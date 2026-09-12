@@ -356,80 +356,17 @@ both builds.
 
 ## Pre-existing defects surfaced
 
-Not realignment work. Recorded because the sweep found them and because several
-bear on how the consuming project uses this tool. These need a home outside
-`docs/realignment/` before G deletes the directory.
+The sweep found roughly a dozen live bugs that are not realignment work. They are
+recorded with their evidence and sequencing in
+[`follow-up-tooling.md`](follow-up-tooling.md#pre-existing-defects), which is the
+file that outlives this directory - one is fixed before workstream A, four fold
+into D, one into C, and the rest are deferred past the realignment.
 
-- **`--color` is completely inert.** `crates/complexipy-cli/src/output/render.rs:16,24,40`
-  computes `color_enabled` and stores it; nothing reads it except two tests at
-  `render/tests.rs:228,237` **(verified)**. Every renderer calls owo-colors
-  directly, so ANSI is emitted unconditionally. `Color::Auto` hardcodes true with
-  no `is_terminal()` check - pointedly, the same file *does* call `is_terminal()`
-  in `terminal_width()` - and `NO_COLOR`/`CLICOLOR` are not consulted. The only
-  clean-text mode is `--plain`, which discards everything but path, name, and
-  complexity. **Net effect for the parent: there is no way to obtain clean
-  machine-readable refactor output from the console surface at all; it must use
-  `--output-format json`** - which is the surface D changes twice.
-- **`--help` has no descriptive text.** No `about`/`long_about`, and no `help =` on
-  any of the 21 options. The count reconciles exactly with the 22 `CliArgs` fields
-  minus the positional. Since `AGENTS.md` bans comments in code, clap has no doc
-  comments to fall back on either - worth confirming with
-  `rg -n 'help\s*=|about|///' crates/complexipy-cli/src/args.rs` before acting.
-  With `docs/` removed, `--help` becomes the sole discovery surface.
-- **Config discovery is CWD-only, never target-relative.** Filenames are joined
-  onto `invocation_path`, which `run_cli` defaults to `"."`, with no upward search
-  and no target-root lookup **(verified)**. A target's own `[tool.complexipy]`
-  thresholds are silently ignored when the tool runs from an external working
-  directory - which is exactly the parent's mandated invocation pattern. For that
-  consumer this is the highest-consequence defect in this list.
-- **The tool writes into the tree it analyzes, in three ways, one invisible.**
-  `.complexipy_cache/` is created in the invocation directory and ships its own
-  `.gitignore` containing `*` plus a `CACHEDIR.TAG`, so a plain
-  `git status --porcelain` shows nothing after a run - which defeats a
-  git-status-based before/after target snapshot. The snapshot path is hardcoded to
-  `<invocation>/complexipy-snapshot.json` with no override flag. And
-  `crates/complexipy-cli/src/utils/paths/tests.rs:147-162` passes a relative path
-  to `resolve_output_paths`, which creates it relative to the package root:
-  `crates/complexipy-cli/rel-out/` exists on disk right now, untracked and
-  un-gitignored, recreated by every `cargo test --workspace` **(verified)**. Empty
-  directories are invisible to git, so it stays silent until an output file lands
-  in it. Together these violate the parent's read-only-input policy; `rel-out/` is
-  the only one fixable in a few lines.
-- **Snapshot rewriting on a passing check is documented behavior, not a defect.**
-  `docs/usage-guide.md` states the file is rewritten after successful checks so
-  improved functions are removed automatically, and that entries for files outside
-  the run are preserved. It is a designed ratchet and a merge. Only the
-  non-redirectable path is a real concern.
-- **`-s file_name` sorts by function name** (`output/rows.rs:65`). The sharper
-  framing: `complexipy-core`'s `export_tests.rs` proves the **CSV** path sorts
-  `file_name` by path, so console output and CSV export would disagree on what the
-  same flag value means - two sort implementations, not one misnamed flag.
-  Unverified; `rows.rs` was outside the review slice.
-- **Duplicate file headers.** Grouping is by consecutive same-path entries, so a
-  path can get two headers. Attributing this to `--top` is probably too narrow,
-  since truncation runs after row building - it likely occurs under any sort that
-  interleaves paths. Unverified.
-- **`--suggest-refactors` can degrade silently.** `read_source_lines` ends in
-  `.ok()`, so a failed read yields `None` and both the caret span and the
-  `Original:` snippet vanish with no warning. The mechanism is certain; the trigger
-  is not. It skips the join when the path starts with `/`, so an out-of-tree
-  absolute target likely takes the safe branch. The real exposure is Windows-style
-  absolute paths and relative targets like `../repos/foo`. Worth an empirical check
-  given the parent depends on this flag.
-- **CLI output is not ASCII** - emoji in `run.rs` and `render.rs`, box-drawing
-  U+2500, status glyphs, and the rule-category marks. This is *not* a style-rule
-  violation: `AGENTS.md` scopes its rule to Unicode dashes (U+2014/2013/2015), and
-  the category marks are documented and asserted as `\u{25b2}`. It matters only
-  because the parent captures this output as text, and because `render.rs` guards
-  one emoji behind `cfg!(windows)` while leaving the status glyphs unguarded -
-  which is why CI set `PYTHONIOENCODING: utf-8` on the Windows matrix.
-- **`looks_like_remote`** (`utils/cache.rs:130-142`) normalizes cache keys for
-  github.com/gitlab.com URLs, but nothing in the tree clones or fetches a URL.
-  Dead residue of the removed git-URL feature.
-- **Dead code:** `output.rs:158` `effective_sort_for_display` has no callers;
-  `utils/snapshot.rs` `SnapshotEvaluation.snapshot_result` is computed and tested
-  but never read by `run.rs`. `RuleMetadata` derives `Serialize, Deserialize` with
-  no evident consumer.
+The three that bear on how `recsys-code-quality` consumes this tool: `--color` is
+completely inert so the console surface cannot produce clean text; config discovery
+is CWD-only so a target's own thresholds are ignored when running from an external
+working directory; and the tool writes into the tree it analyzes three ways, one of
+them invisible to `git status`.
 
 ## Verified clean
 

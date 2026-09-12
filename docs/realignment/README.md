@@ -451,9 +451,9 @@ intervention.
   here rather than in deferred work: until it lands, the parent pins a tree whose
   recorded version is `8.0.1` while the working tree says `8.1.0`.
 - [ ] Delete `rcq` and `followup-batch-1` after the work lands on `main`.
-- [ ] Delete `docs/realignment/`, after rehoming what outlives it: unfinished
-  `follow-up-tooling.md` entries, and the pre-existing-defect inventory in
-  `explore-results.md`, which is not realignment work and has no other home.
+- [ ] Delete `docs/realignment/`, after rehoming what outlives it: any unfinished
+  `follow-up-tooling.md` entries, including its pre-existing-defect inventory,
+  which is not realignment work and has no other home.
 
 Do not build a vendored wheel mid-realignment. Without the `+rcq.N` segment it
 would report `8.0.1`, which is indistinguishable from upstream's release while
