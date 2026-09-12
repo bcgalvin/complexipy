@@ -189,6 +189,7 @@ mod _complexipy {
     }
 
     #[pyfunction]
+    #[pyo3(signature = (current_files, git_ref, invocation_path = None))]
     fn compute_diff(
         current_files: Vec<FileComplexity>,
         git_ref: &str,
