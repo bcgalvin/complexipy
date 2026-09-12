@@ -38,7 +38,14 @@ EXPECTED_DIAGNOSTICS: dict[str, list[tuple[int, str]]] = {
 
 RUNTIME_CHECKS = """
 import complexipy._complexipy as native
-from complexipy import DiffEntry, DiffStatus, RefactorPlan, code_complexity
+from complexipy import (
+    DiffEntry,
+    DiffStatus,
+    LineComplexity,
+    RefactorPlan,
+    code_complexity,
+    compute_diff,
+)
 
 entry = DiffEntry(
     file_path="a.py", func_name="f", old_complexity=2, new_complexity=6
@@ -69,6 +76,16 @@ if not hasattr(RefactorPlan, "rule_id"):
 for name in ("doc_url", "references"):
     if hasattr(RefactorPlan, name):
         raise SystemExit(f"RefactorPlan unexpectedly exposes {name}")
+try:
+    LineComplexity(1, 2)
+except TypeError:
+    pass
+else:
+    raise SystemExit("LineComplexity unexpectedly grew a constructor")
+if f"{DiffStatus.REGRESSED}" != "DiffStatus.REGRESSED":
+    raise SystemExit("DiffStatus no longer formats as DiffStatus.REGRESSED")
+if compute_diff([], "HEAD") != []:
+    raise SystemExit("compute_diff lost its invocation_path default")
 try:
     code_complexity(source="def f():\\n    pass\\n")
 except TypeError:

@@ -49,12 +49,14 @@ fn select_non_overlapping_never_returns_overlapping_plans() {
         plan("D", 25, 35, 2),
         plan("E", 1, 100, 1),
     ];
-    let effectiveness: HashMap<&str, u8> = [("A", 2), ("B", 2), ("C", 2), ("D", 2), ("E", 5)]
+    let effectiveness: HashMap<&str, u8> = [("A", 2), ("B", 2), ("C", 2), ("D", 2), ("E", 1)]
         .into_iter()
         .collect();
 
     let (selected, _) = select_non_overlapping(candidates, &effectiveness);
 
+    let selected_ids: Vec<&str> = selected.iter().map(|plan| plan.rule_id.as_str()).collect();
+    assert_eq!(selected_ids, vec!["A", "C"]);
     for i in 0..selected.len() {
         for j in (i + 1)..selected.len() {
             assert!(
@@ -65,6 +67,26 @@ fn select_non_overlapping_never_returns_overlapping_plans() {
             );
         }
     }
+}
+
+#[test]
+fn spliceable_plan_beats_help_only_plan_of_higher_effectiveness() {
+    let mut spliceable = plan("LOW", 1, 10, 1);
+    spliceable.suggestion = Some(CodeSuggestion {
+        replacement: "pass".to_string(),
+        applicability: Applicability::MachineApplicable,
+        description: String::new(),
+        spliceable: true,
+    });
+    let help_only = plan("HIGH", 5, 15, 5);
+    let effectiveness: HashMap<&str, u8> = [("LOW", 2), ("HIGH", 5)].into_iter().collect();
+
+    let (selected, additional) =
+        select_non_overlapping(vec![help_only, spliceable], &effectiveness);
+
+    let selected_ids: Vec<&str> = selected.iter().map(|plan| plan.rule_id.as_str()).collect();
+    assert_eq!(selected_ids, vec!["LOW"]);
+    assert_eq!(additional, 0);
 }
 
 #[test]
@@ -265,6 +287,7 @@ fn effectiveness_matches_documented_tiers() {
         ("C007", 5),
         ("C011", 2),
     ];
+    assert_eq!(registry.rules.len(), expected.len());
 
     for (rule_id, effectiveness) in expected {
         let found = registry

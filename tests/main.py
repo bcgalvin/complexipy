@@ -1,9 +1,12 @@
 from pathlib import Path
 from typing import List, Tuple
 
+import pytest
+
 from complexipy import (
     code_complexity,
     collect_removable_ignored_locations,
+    compute_diff,
     file_complexity,
 )
 from complexipy._complexipy import FileComplexity
@@ -39,12 +42,7 @@ def _analyze_paths(
                         no_ignore=no_ignore,
                     )
                 )
-            except (
-                FileNotFoundError,
-                PermissionError,
-                UnicodeDecodeError,
-                SyntaxError,
-            ):
+            except ValueError:
                 failed.append(str(file))
 
     return successful, failed
@@ -200,8 +198,9 @@ def hello_world(s: str) -> str:
         path = self.local_path / "src/test_noqa_complex.py"
         files, _ = _analyze_paths([path])
         total_complexity = sum([file.complexity for file in files])
-        # The only function has a noqa: complexipy, so it is ignored.
         assert 0 == total_complexity
+        names = [function.name for function in files[0].functions]
+        assert names == ["not_ignored_function"]
 
     def test_noqa_complexipy_ignore_with_decorator(self):
         path = self.local_path / "src/test_noqa_decorator.py"
@@ -530,3 +529,170 @@ class TestPaperConformance:
     def test_loop_else_is_not_nested(self):
         code = "def f(xs, x):\n    for i in xs:\n        pass\n    else:\n        if x:\n            pass\n"
         assert self._c(code) == 2
+
+    def test_elif_and_else_take_no_nesting_increment(self):
+        code = (
+            "def f(xs, x, y):\n"
+            "    for i in xs:\n"
+            "        if x:\n"
+            "            pass\n"
+            "        elif y:\n"
+            "            pass\n"
+            "        else:\n"
+            "            pass\n"
+        )
+        assert self._c(code) == 5
+
+    def test_while_increments_and_nests(self):
+        code = "def f(x, y):\n    while x:\n        if y:\n            pass\n"
+        assert self._c(code) == 3
+
+    def test_except_handler_body_is_nested(self):
+        code = (
+            "def f(x):\n"
+            "    try:\n"
+            "        pass\n"
+            "    except Exception:\n"
+            "        if x:\n"
+            "            pass\n"
+        )
+        assert self._c(code) == 3
+
+    def test_match_case_body_is_nested(self):
+        code = (
+            "def f(x, y):\n"
+            "    match x:\n"
+            "        case 1:\n"
+            "            if y:\n"
+            "                pass\n"
+        )
+        assert self._c(code) == 3
+
+    def test_nested_function_raises_nesting(self):
+        code = (
+            "def f(x):\n"
+            "    y = 0\n"
+            "    def g():\n"
+            "        if x:\n"
+            "            pass\n"
+            "    return g\n"
+        )
+        result = code_complexity(code)
+        assert result.complexity == 2
+        assert [func.name for func in result.functions] == ["f"]
+
+
+class TestScorerContract:
+    """Rules this scorer applies that the paper does not prescribe. Each pins
+    the current behavior that docs/scoring.md describes.
+    """
+
+    def _c(self, code: str) -> int:
+        return code_complexity(code).complexity
+
+    def test_try_else_is_not_nested(self):
+        code = (
+            "def f(x):\n"
+            "    try:\n"
+            "        pass\n"
+            "    except Exception:\n"
+            "        pass\n"
+            "    else:\n"
+            "        if x:\n"
+            "            pass\n"
+        )
+        assert self._c(code) == 2
+
+    def test_decorator_shaped_function_is_scored_as_its_inner_function(self):
+        code = (
+            "def d(a):\n"
+            "    def inner(f):\n"
+            "        if f:\n"
+            "            pass\n"
+            "        return f\n"
+            "    return inner\n"
+        )
+        assert self._c(code) == 1
+
+    def test_comprehension_element_nests_but_generators_do_not(self):
+        assert (
+            self._c("def f(xs):\n    return [1 if x else 2 for x in xs]\n") == 3
+        )
+        assert (
+            self._c("def f(xs):\n    return [y for x in xs for y in x]\n") == 2
+        )
+
+    def test_comprehension_filter_is_never_nesting_scaled(self):
+        code = "def f(xs, y):\n    if y:\n        return [x for x in xs if x]\n"
+        assert self._c(code) == 4
+
+    def test_comprehension_filter_contents_are_nested(self):
+        code = "def f(xs, a):\n    return [x for x in xs if (1 if a else 2)]\n"
+        assert self._c(code) == 4
+
+    def test_raise_counts_boolean_runs_in_its_expression(self):
+        assert self._c("def f(a, b):\n    raise ValueError(a and b)\n") == 1
+
+    def test_ignore_marker_placements_that_suppress(self):
+        body = "def f(a):\n    if a:\n        return a\n    return 0\n"
+        assert self._c("# complexipy: ignore\n@deco\n" + body) == 0
+        assert self._c("@deco  # complexipy: ignore\n" + body) == 0
+        assert self._c("# complexipy: ignore\n" + body) == 0
+        multiline = (
+            "def f(\n"
+            "    # complexipy: ignore\n"
+            "    a,\n"
+            "):\n"
+            "    if a:\n"
+            "        return a\n"
+            "    return 0\n"
+        )
+        assert self._c(multiline) == 0
+
+    def test_with_and_assert_count_only_boolean_runs(self):
+        assert self._c("def f(a, b):\n    with (a and b):\n        pass\n") == 1
+        assert self._c("def f(a, b):\n    assert a and b\n") == 1
+
+    def test_module_level_code_counts_without_check_script(self):
+        result = code_complexity("for i in x:\n    if i:\n        pass\n")
+        assert result.complexity == 3
+        assert result.functions == []
+
+    def test_file_total_includes_module_level_code(self, tmp_path):
+        source = tmp_path / "script.py"
+        source.write_text(
+            "for i in x:\n    if i:\n        pass\n", encoding="utf-8"
+        )
+        result = file_complexity(str(source))
+        assert result.complexity == 3
+        assert result.functions == []
+
+    def test_methods_are_named_class_method(self):
+        code = (
+            "class A:\n    def m(self):\n        pass\n\ndef f():\n    pass\n"
+        )
+        names = [func.name for func in code_complexity(code).functions]
+        assert names == ["A::m", "f"]
+
+
+class TestErrors:
+    def test_code_complexity_raises_value_error_on_syntax_error(self):
+        with pytest.raises(ValueError):
+            code_complexity("def f(:\n")
+
+    def test_file_complexity_raises_value_error_on_missing_file(self, tmp_path):
+        with pytest.raises(ValueError) as caught:
+            file_complexity(str(tmp_path / "missing.py"))
+        assert type(caught.value) is ValueError
+
+    def test_file_complexity_raises_value_error_on_unreadable_path(
+        self, tmp_path
+    ):
+        with pytest.raises(ValueError) as caught:
+            file_complexity(str(tmp_path))
+        assert type(caught.value) is ValueError
+
+
+class TestDiff:
+    def test_compute_diff_defaults_the_invocation_path(self):
+        assert compute_diff([], "HEAD") == []

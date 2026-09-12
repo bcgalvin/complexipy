@@ -4,14 +4,14 @@ Local reference for this fork. There is no published site; these are plain
 markdown files read from the repository.
 
 - [Scoring contract](scoring.md) - how cognitive complexity is computed, and what
-  does and does not increment. Derived from `tests/main.py::TestPaperConformance`,
-  which is authoritative.
+  does and does not increment. Derived from `TestPaperConformance` and
+  `TestScorerContract` in `tests/main.py`, which are authoritative.
 - [Refactor rules](rules.md) - the seven `--suggest-refactors` rules, how plans
   are ranked and capped, and what `reduction_is_measured` means.
 - [CLI](cli.md) - configuration discovery and precedence, output paths, exit
   codes, inline ignores, and where the tool writes.
-- [Python API](python-api.md) - the `__all__` surface, the types it exposes, and
-  two places where the type stubs disagree with the runtime.
+- [Python API](python-api.md) - the `__all__` surface, the types it exposes, the
+  exceptions it raises, and where the type stubs still disagree with the runtime.
 - [Diff and snapshots](diff-and-snapshots.md) - the two ratchets, and the
   `DiffStatus` comparison contract.
 

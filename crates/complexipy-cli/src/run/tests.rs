@@ -133,6 +133,21 @@ fn diff_clean_exits_success() {
 }
 
 #[test]
+fn diff_only_leaves_the_threshold_gate_in_place() {
+    let dir = tempdir().expect("tempdir should work");
+    let file = dir.path().join("a.py");
+    fs::write(&file, COMPLEX).expect("should write");
+    init_repo(dir.path());
+
+    let exit = run_at(
+        parse(&[file.to_str().unwrap(), "--diff-only", "HEAD"]),
+        dir.path().to_str().unwrap(),
+    );
+
+    assert_eq!(exit, std::process::ExitCode::FAILURE);
+}
+
+#[test]
 fn plain_flag_accepted() {
     let dir = tempdir().expect("tempdir should work");
     let file = dir.path().join("simple.py");

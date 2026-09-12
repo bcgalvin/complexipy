@@ -18,9 +18,12 @@ file_complexity(file_path: str, check_script: bool = False,
                 no_ignore: bool = False) -> FileComplexity
 ```
 
-Analyze one file. This is a Python wrapper over the native entry point, and it
-resolves `path` relative to the current working directory, or to the basename.
-The native `_complexipy.file_complexity` accepts an explicit base path instead.
+Analyze one file. This is a Python wrapper over the native entry point. The
+result's `path` field is relative to the current working directory when the file
+lies beneath it, and is the bare file name otherwise. The native
+`_complexipy.file_complexity(file_path, base_path, check_script, no_ignore)`
+takes the base directory explicitly instead. (Source read of
+`complexipy/__init__.py` and `runner.rs` `file_complexity_shared`.)
 
 ```python
 collect_all_ignored_locations(
@@ -38,14 +41,36 @@ function no longer exceeds the threshold. A bare `# noqa` is **not** recognized.
 
 Both return a **two-tuple**: the results, and a list of paths that could not be
 processed. Per-file failures are reported rather than aborting the walk, so
-ignoring the second element silently discards them.
+ignoring the second element silently discards them. `invocation_path` is
+accepted and ignored: `runner.rs` binds it as `_invocation_path`, relative
+`paths` resolve against the process working directory, and each result's `path`
+is relative to the parent of the directory you passed, or to a file's own parent
+(source read; the stub's description of the parameter is wrong).
 
 ```python
-compute_diff(current: list[FileComplexity], reference: str) -> list[DiffEntry]
+compute_diff(
+    current_files: list[FileComplexity], git_ref: str,
+    invocation_path: str | None = None,
+) -> list[DiffEntry]
 has_regressions(entries: list[DiffEntry], max_complexity: int) -> bool
 ```
 
-See [Diff and snapshots](diff-and-snapshots.md).
+`invocation_path` is the directory git runs in; it defaults to the current
+working directory (`TestDiff` in `tests/main.py` and `RUNTIME_CHECKS` in the
+contract harness pin the two-argument call). See
+[Diff and snapshots](diff-and-snapshots.md).
+
+## Exceptions
+
+Every failure inside the extension is a plain `ValueError` carrying the Rust
+error string: `code_complexity` on a syntax error, `file_complexity` on a missing
+file or a path that is not a readable file (`TestErrors` in `tests/main.py`). The collectors do not raise for
+a missing path - it lands in the second tuple element
+(`tests/test_collector_failures.py`) - and `compute_diff` never raises; an
+unknown reference makes every function `NEW` (`compute_diff_git_error_skips_file`
+in `crates/complexipy-core/src/diff/tests.rs`). The stub and the wrapper
+docstring promise `SyntaxError`, `FileNotFoundError`, `PermissionError` and
+`UnicodeDecodeError`; none of those is ever raised.
 
 ## Types
 
@@ -92,10 +117,18 @@ and the suggestion's in the body. Check `suggestion is not None` first, then rea
 **Still wrong: the constructors do not exist.** The stub declares `__init__` for
 `CodeSuggestion`, `LineComplexity`, `RefactorPlan`, `FunctionComplexity`,
 `FileComplexity`, `CodeComplexity`, `IgnoredLocation` and `RemovableIgnore`. None
-of those types has one - constructing any of them raises `TypeError`. `DiffEntry`
-is the exception and is genuinely constructible. Every attribute on every type is
-read-only, though the stub declares them writable. Do not write consumer code that
-depends on either.
+of those types has one - constructing any of them raises `TypeError`
+(`tests/contract/check_stub_contract.py` `RUNTIME_CHECKS` pins `LineComplexity`;
+the others follow from the absence of any `#[new]` in `classes.rs`). `DiffEntry` is the
+exception and is genuinely constructible. Every attribute on every type is
+read-only, though the stub declares them writable; the contract case
+`assign_readonly.py` pins this for `DiffEntry` only. Do not write consumer code
+that depends on either.
+
+**Also wrong: the exception docstrings** (see [Exceptions](#exceptions)), the
+collectors' `invocation_path` description (see above), and the
+`additional_refactor_plans` docstring, which mentions only the cap - see
+[Refactor rules](rules.md#how-plans-are-selected).
 
 ## Serialization surfaces
 

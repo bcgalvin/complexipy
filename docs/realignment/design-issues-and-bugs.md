@@ -80,6 +80,39 @@ file is the one that stays actionable after `docs/realignment/` is deleted.
   made `sarif/tests.rs` assert their absence. The pattern - an emitted key
   nothing checks - is worth remembering.
 
+- **Six `--help` strings described behavior the code does not have.** `--diff`
+  and `--diff-only` were backwards: `--diff` replaces the threshold gate with the
+  regression ratchet and `--diff-only` never touches the exit code
+  (`run/tests.rs` `diff_clean_exits_success`,
+  `diff_only_leaves_the_threshold_gate_in_place`). `--sort` claimed to accept
+  `name`; the value is `file_name`. `--max-complexity-allowed` claimed `0`
+  disables the gate; `rows.rs` `is_function_passing` has no special case, so `0`
+  is the strictest setting. `--suggest-refactors` claimed plans only for
+  functions above the threshold; `render.rs` `output_file_entries` renders them
+  for every listed row. `--report-ignored` claimed to report markers whose
+  function no longer needs them; `handle_report_ignored` lists every marker, and
+  the removable report is the automatic one. All six were written in C
+  (`2020084`); `docs/cli.md` and this catalog's exit-code design issue repeated
+  the `--diff` inversion. **Fixed in the review of C's pages**, which also
+  corrected the documents.
+
+- **`compute_diff` required `invocation_path` at runtime.** The one
+  `#[pyfunction]` in `crates/complexipy-python/src/lib.rs` without a
+  `#[pyo3(signature = ...)]`; PyO3 no longer defaults a trailing `Option`
+  argument, so `compute_diff(current, "main")` raised `TypeError` while the
+  stub, both docs pages and the upstream guide showed the two-argument call.
+  Nothing called it in any test. **Fixed in the review of C's pages** with the
+  signature attribute; `TestDiff` in `tests/main.py` and `RUNTIME_CHECKS` in the
+  contract harness pin the two-argument call.
+
+- **A third test that could not fail the way it claimed.**
+  `select_non_overlapping_never_returns_overlapping_plans` in
+  `rules/registry/tests.rs` gave its widest plan the highest effectiveness, so
+  the selection collapsed to one plan and the pairwise assertion loop ran zero
+  times. **Fixed in the review of C's pages**: the fixture now yields two
+  survivors, asserted by id, and a sibling test pins that a spliceable plan
+  beats a help-only plan of higher effectiveness, which nothing had pinned.
+
 ### Assigned to a workstream
 
 - **Eight phantom constructors in the stub.** `classes.rs` has zero
@@ -130,6 +163,22 @@ file is the one that stays actionable after `docs/realignment/` is deleted.
   machine-readable record of D's schema changes - must survive whatever strips
   the trailer. **G**.
 
+- **The stub and the wrapper docstring promise exceptions the runtime never
+  raises.** Every native failure is a `ValueError` carrying the Rust error
+  string: `code_complexity` on a syntax error, `file_complexity` on a missing or
+  unreadable file. `_complexipy.pyi` documents `SyntaxError`, `FileNotFoundError`,
+  `PermissionError` and `UnicodeDecodeError`, and `complexipy/__init__.py`
+  `file_complexity` repeats three of them. `tests/main.py` `_analyze_paths`
+  caught the same four and would have let a `ValueError` propagate; the page
+  review changed it to catch `ValueError`, and `TestErrors` pins the runtime.
+  Whether the binding should map to those types is a design choice; the
+  docstrings are wrong either way. Two more stub claims in the same family: the
+  collectors' `invocation_path` is documented as "working directory for
+  resolving relative paths" and is never read (see Dead code), and the
+  `additional_refactor_plans` docstring names only the cap where `registry.rs`
+  `analyze` also counts plans whose measured reduction fell below one. **E**,
+  with the other stub entries.
+
 - **The doc comment on `crates/complexipy-core/src/lib.rs`'s `classes`
   re-export block** claims it "mirrors `complexipy/__init__.py`'s `__all__`". It
   also exports
@@ -147,9 +196,10 @@ file is the one that stays actionable after `docs/realignment/` is deleted.
   `cognitive_complexity.rs` iterates a `ClassDef` body matching only
   `Stmt::FunctionDef`, and the module accumulator never sees a `ClassDef`.
   `class A:` containing `if x: pass` scores 0; the same `if` at module level
-  scores 1. Found while deriving `docs/scoring.md`. Whether class-body control
-  flow *should* count is a scoring-contract question, which is why this is
-  open rather than fixed.
+  scores 1, and a class nested in a class body is dropped together with its
+  methods, which are never reported. Found while deriving `docs/scoring.md`.
+  Whether class-body control flow *should* count is a scoring-contract
+  question, which is why this is open rather than fixed.
 
 - **`-s file_name` sorts by function name in the console, by path in CSV.**
   `output/rows.rs` `sort_functions` sorts `function.name` for `Sort::FileName`;
@@ -179,8 +229,99 @@ file is the one that stays actionable after `docs/realignment/` is deleted.
 - **Dead code.** `crates/complexipy-cli/src/output.rs`
   `effective_sort_for_display` has no callers; `utils/snapshot.rs`
   `SnapshotEvaluation.snapshot_result` is computed and tested but never read by
-  `run.rs`; `RuleMetadata` derives `Serialize, Deserialize` with no consumer.
+  `run.rs`; `RuleMetadata` derives `Serialize, Deserialize` with no consumer;
+  `runner.rs` binds both collectors' `invocation_path` as `_invocation_path`
+  and `utils/ignored.rs` `handle_report_ignored` takes `_no_ignore`, so the
+  Python collectors and `run.rs` pass values that nothing reads.
   Behavior-neutral cleanups with no owning workstream.
+
+- **The ratchet gate fails open.** With `--diff`, or a bare `--staged` (which
+  `resolve_diff_flags` turns into `--diff HEAD`), `run.rs` sets `enforce_diff`
+  so `ExitReport::success` ignores the threshold check, then computes `diff_ok`
+  only when it has entries. `compute_staged_diff` returns `None` outside a git
+  repository and an empty list for a reference git cannot resolve, so in both
+  cases `diff_ok` stays true and an over-threshold tree exits 0 having applied
+  neither gate. The non-staged path is safer only by accident: an unresolvable
+  reference makes every function `NEW`, which the ratchet does catch.
+  Documented in `docs/cli.md`; not pinned, since a passing test would ratify
+  the hole.
+
+- **A config file without `paths` analyzes nothing and exits 0.**
+  `resolve_config` returns `MissingPaths` only when no config file loaded at
+  all; `Config.paths` is `#[serde(default)]`, so a file that parses but has no
+  `paths` key yields an empty path list, a run over nothing, and
+  `ExitCode::SUCCESS`. The error string ("You need to define paths ...") and
+  `docs/cli.md`'s exit-code list both promised otherwise until the page review
+  narrowed the claim. Not pinned.
+
+- **A malformed config file is skipped, not rejected.** `load_toml_config` and
+  `load_pyproject_config` print the parse error and return `None`, so
+  `get_complexipy_toml_config` falls through to the next candidate and then to
+  the built-in defaults. A typo in `complexipy.toml` silently changes the
+  threshold. Pinned as current behavior by
+  `a_malformed_complexipy_toml_falls_through_to_the_next_candidate`, because
+  `docs/cli.md` now documents it; failing closed is the better design and would
+  invert that test.
+
+- **The `--diff-only` warning fires on every `--diff-only` run.** `run.rs`
+  checks `diff_only.is_some() && diff.is_none()` after `resolve_diff_flags`,
+  which always clears `diff` when `diff_only` is set, so
+  `diff_flags_warning` ("--diff and --diff-only both set") prints for a bare
+  `--diff-only`. The check has to run on the pre-resolution flags. Also
+  undocumented until the page review: with both flags set, `--diff`'s
+  reference is discarded.
+
+- **Suppression and the marker report disagree.** `is_ignored` runs
+  `find_noqa_comment` from the function's range start, which includes
+  decorators, so a marker on the line above the first decorator suppresses.
+  `collect_ignored_locations` is a separate line scanner that only starts from
+  `def ` lines, so that placement is never reported, and neither is any marker
+  on an `async def`. Two placements suppress nothing: a marker between two
+  decorators (the `@` branch stops at the first non-decorator line) and a marker
+  after an annotated parameter in a multi-line signature
+  (`signature_has_marker` stops at the first line containing any colon).
+  `docs/cli.md` documents the reachable behavior; the working placements are
+  pinned by `test_ignore_marker_placements_that_suppress`, the gaps are not.
+
+- **`--diff` compares against a reference analyzed with fixed flags.**
+  `analyse_content_to_map` in `diff.rs` always runs with `check_script` and
+  `no_ignore` off, while the current side uses the run's flags. Under
+  `--check-script` every file gains a `NEW` `<module>` entry; under
+  `--no-ignore` every suppressed function is `NEW`. Either can fail the ratchet
+  on an untouched tree. `compute_staged_diff` is immune because both sides go
+  through the same function. Documented in `docs/diff-and-snapshots.md`; not
+  pinned.
+
+- **`--quiet` drops `--ignore-complexity`.** `handle_display` in
+  `crates/complexipy-cli/src/output.rs` returns `has_success_functions(...)` on
+  the quiet path without consulting `ignore_complexity`, while the non-quiet path
+  computes `all_pass || ignore_complexity` in `render.rs` `output_summary`.
+  `--quiet --ignore-complexity` therefore exits 1 on an over-threshold function
+  that the same run without `--quiet` passes. Documented as a rough edge in
+  `docs/cli.md`; deliberately not pinned, since the fix is a one-line behavior
+  change.
+
+- **The boolean-run walker does not descend through every expression.**
+  `utils.rs` `count_bool_ops` recurses into comparisons, positional call
+  arguments, tuples, lists, sets, dict values, ternaries, lambdas and
+  comprehensions, and nothing else; `not` goes through
+  `count_different_childs_type`, which follows only a directly nested `and`,
+  `or` or `not`, so `not g(a and b)` scores 0 for the run and
+  `not (1 if a else 2)` loses the ternary's structural increment too.
+  `(a and b) + 1`, `d[a and b]`, `g(k=a and b)`, `g(*(a and b))`, an f-string
+  and a walrus target (`if (n := a and b):`) all score 0 for the run, and the
+  `Stmt::Match` arm in `cognitive_complexity.rs` never walks the subject or a
+  `case` guard, so `match a and b:` and `case 1 if a and b:` score nothing for
+  theirs. The paper charges every operator sequence. Documented as current
+  behavior in `docs/scoring.md` ("Expression walker limits") and deliberately
+  not pinned.
+
+- **Recursion detection sees bare-name calls only.** `cognitive_complexity.rs`
+  `RecursionFinder` matches an `Expr::Call` whose callee is an `Expr::Name` equal
+  to the function name, and does not descend into lambdas or nested scopes, so
+  `self.m()` inside method `m`, and a self-call inside a `lambda`, are not
+  recursion. Whether method recursion should count is a scoring-contract
+  question, like the class-body item above; documented, not pinned.
 
 - **Plain `//` comments in Rust against the no-comments rule.** `AGENTS.md`
   (Code Style, Anti-Patterns) bans comments in code, and nothing enforces it. 35
@@ -228,7 +369,7 @@ stance. Each changes what existing invocations mean.
 
 ### The tool writes into the tree it analyzes
 
-Three write locations, two of them not redirectable:
+Three write locations, one of them not redirectable:
 
 - `.complexipy_cache/` in the invocation directory, shipping its own
   `.gitignore` containing `*` and a `CACHEDIR.TAG`. `git status --porcelain`
@@ -277,12 +418,16 @@ accretion.
 ### The exit code means different things under different flags
 
 `ExitReport::success()` in `crates/complexipy-cli/src/types.rs` is normally the
-conjunction of the threshold, path and snapshot checks. `--diff-only` drops
-the threshold check entirely, so a run exits 0 with functions over the limit
-as long as nothing regressed. `--ignore-complexity` forces the threshold check
-to pass but keeps the others. Neither is wrong, but a consumer scripting on the
-exit code has to know which gate set the flags selected, and nothing in the
-output says.
+conjunction of the threshold, path and snapshot checks. `--diff <ref>` replaces
+the threshold check with the regression ratchet (`diff_ok && paths_ok && snapshot_ok`), so a run exits 0 with functions over the limit as long as none
+regressed or appeared above it (`run/tests.rs` `diff_clean_exits_success`).
+`--diff-only` prints the comparison and leaves the gates alone
+(`diff_only_leaves_the_threshold_gate_in_place`). `--ignore-complexity` forces
+the threshold check to pass but keeps the others - except under `--quiet`, where
+it is not read at all (bug above). Neither is wrong, but a consumer scripting on
+the exit code has to know which gate set the flags selected, and nothing in the
+output says. This entry, `docs/cli.md`, and C's `--help` text all had `--diff`
+and `--diff-only` the wrong way round until the review of C's pages.
 
 ### The scoring contract lived only in prose, and the prose drifted
 
@@ -299,6 +444,16 @@ A related note that is intended behavior, recorded so nobody files it as a
 bug: `elif` and `else:` followed by `if` are the same AST shape (`orelse=[If]`)
 and score 2 and 4 respectively. The scorer treats an `elif` chain as sibling
 clauses, which is what the paper prescribes.
+
+### Every non-quiet run walks and parses the tree twice
+
+`run.rs` calls `handle_removable_ignores` whenever `--quiet` is off, which
+re-runs `get_paths_to_process` and re-parses every file to build the
+removable-marker report; `--report-ignored` adds a third walk. The report is
+unconditional and unsuppressible, so on a large tree the default invocation
+costs roughly twice the analysis it displays. Documented in `docs/cli.md`;
+whether it should be a flag, or reuse the analysis results, is a design
+choice.
 
 ### Local verification lost an isolation property
 

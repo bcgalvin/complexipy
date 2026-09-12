@@ -34,6 +34,21 @@ def plan_kinds(func) -> set[str]:
     return {plan.kind for plan in func.refactor_plans}
 
 
+def test_extract_predicate_needs_two_operator_runs() -> None:
+    single_run = first_func(
+        "def f(a, b, c):\n    if a and b and c:\n        pass\n"
+    )
+    assert "extract_predicate" not in plan_kinds(single_run)
+
+    two_runs = first_func(
+        "def f(a, b, c):\n    if a and b or c:\n        pass\n"
+    )
+    plan = next(
+        p for p in two_runs.refactor_plans if p.kind == "extract_predicate"
+    )
+    assert plan.suggestion is not None
+
+
 def test_nested_if_creates_flatten_condition_plan() -> None:
     func = first_func(load_source("collapsible_if_simple.py"))
 

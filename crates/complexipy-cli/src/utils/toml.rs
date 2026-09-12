@@ -60,3 +60,6 @@ fn load_pyproject_config(invocation_path: &Path) -> Option<Config> {
         }
     }
 }
+
+#[cfg(test)]
+mod tests;
