@@ -297,7 +297,7 @@ def hello_world(s: str) -> str:
         )
         assert failed == []
         assert len(removable) == 1
-        assert removable[0].path == "app.py"
+        assert removable[0].path == source.resolve().as_posix()
         assert removable[0].line == 1
         assert removable[0].function == "simple"
         assert removable[0].complexity == 0

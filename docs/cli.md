@@ -54,6 +54,27 @@ CLI-only with no config key: `--plain`, `--suggest-refactors`, `--top` and
 `--diff-only`; `--staged` is the `staged` key of the `[diff]` table. (Source read
 of `Config` in `types.rs` against `CliArgs` in `args.rs`.)
 
+## Path resolution and population
+
+Relative targets resolve from the invocation directory, normally the process
+working directory. The directory must exist; an invalid invocation root fails
+the run. Roots and existing input paths are canonicalized, including symlinks.
+Analysis and marker reports use the same file identity: paths beneath the root
+are root-relative, and outside-root paths are absolute. Failed targets are
+reported as absolute resolved paths, canonical when they exist.
+
+Directory discovery selects `.py` files that survive hidden-file, `.ignore`,
+`.gitignore` (inside a Git repository) and `--exclude` filtering. Exclusion globs
+are relative to each walked directory, not the invocation root. **Explicit file
+arguments bypass all those discovery filters**, including the `.py` extension
+filter. Overlapping inputs are not deduplicated.
+
+Core `tests/runner_paths.rs` pins these populations and failure paths;
+`run/tests.rs` pins relative-directory lookup, an exclusion changing the
+threshold gate's result, and matching analysis/marker JSON identities for
+in-root and outside-root targets (including symlink aliases). Traversal
+failures remain a limitation below.
+
 ## Machine-readable output
 
 `--output-format` takes any of `csv`, `json`, `gitlab`, `sarif`, comma-separated.
@@ -75,8 +96,9 @@ the [Python API](python-api.md).
 
 - **0** - analysis ran and every gate passed.
 - **1** - a gate failed, or the run itself failed: no paths and no config file,
-  a `cache-dir` that is not a non-empty string, an unwritable output. `run_at`
-  returns the same failure code for both (source read of `run.rs`;
+  a `cache-dir` that is not a non-empty string, an unwritable output, or an
+  invocation root that is not an existing directory. `run_at` returns the same
+  failure code for both (source read of `run.rs`;
   `run/tests.rs` pins `missing_paths_exits_failure`).
 - **2** - a usage error rejected the arguments before anything ran. This is
   clap's code; the console script forwards it.
@@ -149,6 +171,12 @@ Three paths; only the snapshot has no override:
 - Whatever `--output` resolves to.
 
 ## Known rough edges
+
+- Directory discovery drops entry-level errors from both underlying walkers
+  (`helpers/exclude.rs`); those entries appear in neither results nor
+  `failed_paths`. Per-file read/parse failures after discovery are reported.
+  This is separate from root validation and is not a complete-readability
+  guarantee.
 
 - `--color` is currently inert. Output is always colored; only `--plain` produces
   clean text, and it drops everything but path, name and score.

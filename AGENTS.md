@@ -12,6 +12,9 @@ This is local-only work by one developer on one machine: macOS arm64 with
 CPython 3.14+. The parent project consumes locally built wheels on that same
 machine. There is no external distribution, sharing or portability requirement.
 
+- Backward compatibility is not required. Change contracts directly when the
+  task calls for it, update documentation and tests, and coordinate adoption
+  with the parent. Do not add legacy modes or shims to preserve old behavior.
 - Prefer a direct command, existing local tool and small config over a wrapper,
   installer or framework. For git-cliff, a local `--version` check is sufficient.
 - Do not add artifact manifests, download/checksum machinery, cross-platform
@@ -247,13 +250,25 @@ specify a Python default.
 `complexipy/__init__.py` is the public Python API surface: `code_complexity`,
 `file_complexity`, `collect_all_ignored_locations`,
 `collect_removable_ignored_locations`, `compute_diff`, `has_regressions`, and the
-`DiffEntry` / `DiffStatus` types. Those exports, their signatures, and the
-`DiffStatus` values are a compatibility promise - internal refactors must keep them
-stable, and new exports belong in `__init__.py` + `__all__` and on `docs/python-api.md`.
-The stable Rust re-exports in `crates/complexipy-core/src/lib.rs` have their own
-contract in `crates/complexipy-core/tests/lib_surface.rs`; they include Rust-only
-entry points and core diff types, so they are not a copy of Python's `__all__`.
-Do not move or rename those stable Rust exports without a major release.
+`DiffEntry` / `DiffStatus` types. Keep the implementation, exports, documentation
+and tests aligned when deliberately changing a contract. New exports belong in
+`__init__.py` + `__all__` and on `docs/python-api.md`. The Rust re-exports in
+`crates/complexipy-core/src/lib.rs` have their own contract tests in
+`crates/complexipy-core/tests/lib_surface.rs`; they include Rust-only entry
+points and core diff types, so they are not a copy of Python's `__all__`.
+Neither surface requires backward-compatibility shims or a major-release
+ceremony; report changed behavior and coordinate the parent's wheel adoption.
+
+File analysis and both ignored-location collectors use a canonical existing
+root for relative input lookup and result identity. Public `file_complexity`
+accepts keyword-only `base_path="."`; the native function requires `base_path`.
+Collectors and `run_analysis_shared` use `invocation_path`. Files inside the
+root have root-relative paths; files outside it have canonical absolute paths.
+Failed inputs have absolute resolved paths, canonical when they exist; an
+invalid root fails the call. Directory inputs apply discovery/exclusion filters;
+explicit files bypass those filters. Keep this shared contract covered by
+`tests/test_path_roots.py`, `crates/complexipy-core/tests/runner_paths.rs` and
+CLI JSON path-identity tests.
 
 ### Rust core
 
@@ -379,7 +394,7 @@ dependency means adding it to the crate that uses it.
 - `crates/complexipy-cli/src/output.rs` - Console display, `handle_display`, `handle_results_storage`
 - `crates/complexipy-cli/src/utils/paths.rs` - Output path resolution for CSV/JSON/GitLab/SARIF exports
 - `crates/complexipy-cli/src/utils/snapshot.rs` - `evaluate_snapshot()`, `SnapshotEvaluation`, watermark logic
-- `complexipy/__init__.py` - Public Python API surface (`__all__` compatibility promise)
+- `complexipy/__init__.py` - Public Python API surface (`__all__` and file wrapper)
 - `complexipy/_complexipy.pyi` - Type stubs for the Rust extension module
 - `tests/main.py` - Core test suite including SonarSource paper conformance tests
 

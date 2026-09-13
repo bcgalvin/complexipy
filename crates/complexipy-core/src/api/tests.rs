@@ -59,7 +59,7 @@ fn code_complexity_syntax_error() {
 }
 
 #[test]
-fn file_complexity_analyzes_file_in_cwd() {
+fn file_complexity_accepts_an_absolute_path() {
     let dir = tempdir().expect("tempdir should work");
     let file = dir.path().join("mymodule.py");
     fs::write(&file, SIMPLE).expect("should write");
@@ -72,15 +72,14 @@ fn file_complexity_analyzes_file_in_cwd() {
 }
 
 #[test]
-fn file_complexity_outside_cwd_uses_parent_base() {
+fn file_complexity_outside_cwd_keeps_absolute_path() {
     let dir = tempdir().expect("tempdir should work");
     let file = dir.path().join("outside.py");
     fs::write(&file, SIMPLE).expect("should write");
 
-    // The tempdir is not the cwd, so base_path becomes the file's parent;
-    // the returned path is the file path itself (strip_prefix fails).
     let result = file_complexity(file.to_str().unwrap(), false, false).expect("should analyze");
 
+    assert_eq!(result.path, file.canonicalize().unwrap().to_str().unwrap());
     assert_eq!(result.file_name, "outside.py");
     assert_eq!(result.functions[0].name, "simple");
 }

@@ -162,6 +162,78 @@ fn plain_flag_accepted() {
 }
 
 #[test]
+fn relative_directory_is_resolved_from_invocation_root() {
+    let dir = tempdir().unwrap();
+    fs::create_dir(dir.path().join("pkg")).unwrap();
+    fs::write(dir.path().join("pkg/simple.py"), SIMPLE).unwrap();
+    let exit = run_at(
+        parse(&["pkg", "--quiet", "--snapshot-ignore"]),
+        dir.path().to_str().unwrap(),
+    );
+    assert_eq!(exit, std::process::ExitCode::SUCCESS);
+}
+
+#[test]
+fn directory_exclusion_changes_the_threshold_gate_population() {
+    let dir = tempdir().unwrap();
+    fs::create_dir(dir.path().join("pkg")).unwrap();
+    fs::write(dir.path().join("pkg/simple.py"), SIMPLE).unwrap();
+    fs::write(dir.path().join("pkg/complex.py"), COMPLEX).unwrap();
+    let invocation = dir.path().to_str().unwrap();
+    let exit = run_at(parse(&["pkg", "--quiet", "--snapshot-ignore"]), invocation);
+    assert_eq!(exit, std::process::ExitCode::FAILURE);
+    let exit = run_at(
+        parse(&[
+            "pkg",
+            "--quiet",
+            "--snapshot-ignore",
+            "--exclude",
+            "complex.py",
+        ]),
+        invocation,
+    );
+    assert_eq!(exit, std::process::ExitCode::SUCCESS);
+}
+
+#[test]
+fn analysis_and_marker_json_share_canonical_paths() {
+    let invocation = tempdir().unwrap();
+    let target = tempdir().unwrap();
+    let source = "def marked(a):  # complexipy: ignore\n    return a\n";
+    fs::write(target.path().join("source.py"), source).unwrap();
+    std::os::unix::fs::symlink(target.path(), invocation.path().join("alias")).unwrap();
+    let target_file = target.path().join("source.py").canonicalize().unwrap();
+    for (root, expected) in [
+        (target.path(), "source.py"),
+        (invocation.path(), target_file.to_str().unwrap()),
+    ] {
+        let input = if root == target.path() { "." } else { "alias" };
+        let exit = run_at(
+            parse(&[
+                input,
+                "--quiet",
+                "--snapshot-ignore",
+                "--no-ignore",
+                "--report-ignored",
+                "--output-format",
+                "json",
+                "--output",
+                "output/",
+            ]),
+            root.to_str().unwrap(),
+        );
+        assert_eq!(exit, std::process::ExitCode::SUCCESS);
+        for name in ["complexipy-results.json", "complexipy-ignored.json"] {
+            let rows: Vec<serde_json::Value> =
+                serde_json::from_str(&fs::read_to_string(root.join("output").join(name)).unwrap())
+                    .unwrap();
+            assert_eq!(rows.len(), 1);
+            assert_eq!(rows[0]["path"], expected);
+        }
+    }
+}
+
+#[test]
 fn version_flag_handled_by_clap() {
     let error = CliArgs::try_parse_from(["complexipy", "--version"]).unwrap_err();
     assert_eq!(error.kind(), clap::error::ErrorKind::DisplayVersion);

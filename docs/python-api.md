@@ -1,8 +1,9 @@
 # Python API
 
-`complexipy/__init__.py` re-exports the extension module. Its `__all__` is a
-compatibility promise: internal refactors keep these names and signatures stable,
-and new exports belong in `__all__` and on this page.
+`complexipy/__init__.py` defines the public package surface over the extension.
+Keep `__all__`, callable signatures and this page aligned. Interface changes
+are coordinated with the local parent consumer rather than hidden behind
+compatibility layers.
 
 ## Functions
 
@@ -15,15 +16,26 @@ Analyze a source string.
 
 ```python
 file_complexity(file_path: str, check_script: bool = False,
-                no_ignore: bool = False) -> FileComplexity
+                no_ignore: bool = False, *,
+                base_path: str = ".") -> FileComplexity
 ```
 
-Analyze one file. This is a Python wrapper over the native entry point. The
-result's `path` field is relative to the current working directory when the file
-lies beneath it, and is the bare file name otherwise. The native
+Analyze one file relative to `base_path`, an existing directory resolved from
+the process working directory. Relative `file_path` values are looked up under
+that root; absolute inputs remain absolute. Existing roots and inputs are
+canonicalized, including symlinks. Results beneath the root have root-relative
+paths; results outside it keep their canonical absolute paths. The default
+root is the working directory, not an outside file's parent. Both `file_path`
+and `base_path` must be strings; `pathlib.Path` objects are not accepted.
+
+For an external-CWD survey, use
+`file_complexity("src/example.py", base_path="/absolute/target")`. The native
 `_complexipy.file_complexity(file_path, base_path, check_script, no_ignore)`
-takes the base directory explicitly instead. (Source read of
-`complexipy/__init__.py` and `runner.rs` `file_complexity_shared`.)
+uses the same root semantics; the package wrapper makes `base_path` optional
+and keyword-only. `tests/test_path_roots.py` pins public/native agreement and
+root handling; core `tests/runner_paths.rs` pins explicit native roots and
+`api/tests.rs` pins the Rust convenience API's outside-CWD absolute result.
+The installed-wheel contract pins the public signature and result labels.
 
 ```python
 collect_all_ignored_locations(
@@ -41,11 +53,19 @@ function no longer exceeds the threshold. A bare `# noqa` is **not** recognized.
 
 Both return a **two-tuple**: the results, and a list of paths that could not be
 processed. Per-file failures are reported rather than aborting the walk, so
-ignoring the second element silently discards them. `invocation_path` is
-accepted and ignored: `runner.rs` binds it as `_invocation_path`, relative
-`paths` resolve against the process working directory, and each result's `path`
-is relative to the parent of the directory you passed, or to a file's own parent
-(source read; the stub describes the same behavior).
+ignoring the second element silently discards them. `invocation_path` is the
+existing-directory root for both input lookup and result labels, using the
+same rules as `file_complexity`'s `base_path`. Explicit and directory-discovered
+results identify a file the same way. Failed paths are absolute resolved paths
+(canonical when the file exists); directory setup failures may append an error
+message to the absolute directory path.
+
+Directory discovery applies Python-extension, hidden/ignore-file and exclusion
+filters. Explicit files bypass those discovery filters. These rules, mixed
+success/failure results and root-relative lookup are pinned in core
+`tests/runner_paths.rs` and `tests/test_path_roots.py`. Traversal-entry errors
+can still be dropped by the underlying walkers; a successful return is not
+proof that every entry was readable. See [CLI rough edges](cli.md#known-rough-edges).
 
 ```python
 compute_diff(
@@ -66,8 +86,9 @@ Native analysis reports reading, UTF-8 decoding and parsing failures as
 `ValueError` carrying the Rust error string: `code_complexity` on a syntax error,
 `file_complexity` on a missing file or a path that is not a readable file
 (`TestErrors` in `tests/main.py`). The stub and wrapper document this mapping.
-This is not a promise that every invalid API call raises `ValueError`: argument
-conversion can fail before analysis, and the Python wrapper resolves paths first.
+Invalid file/collector roots also raise `ValueError`, including a missing root
+or one that names a file. This is not a promise that every invalid API call
+raises `ValueError`: argument conversion can fail before analysis.
 
 The collectors return a missing path in the second tuple element rather than
 raising (`tests/test_collector_failures.py`). `compute_diff` does not report Git

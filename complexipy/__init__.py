@@ -5,8 +5,6 @@ implemented in Rust and exposed through the ``complexipy._complexipy``
 extension module. This package is a thin re-export layer only.
 """
 
-from pathlib import Path
-
 import complexipy._complexipy as _complexipy
 from complexipy._complexipy import (
     Applicability,
@@ -54,12 +52,17 @@ def file_complexity(
     file_path: str,
     check_script: bool = False,
     no_ignore: bool = False,
+    *,
+    base_path: str = ".",
 ) -> FileComplexity:
     """Analyze the cognitive complexity of a single Python source file.
 
     Args:
-        file_path: Path to the Python file to analyze. Can be relative or
-            absolute. The file must exist and be readable.
+        file_path: Absolute path or a path relative to base_path. The file
+            must exist and be readable.
+        base_path: Existing directory for resolving inputs and reporting
+            paths, relative to the process working directory. Defaults to
+            that working directory. Results outside it have absolute paths.
         check_script: If True, also report cognitive complexity of
             module-level (script) code as a '<module>' entry.
         no_ignore: If True, disregard all '# complexipy: ignore' and
@@ -70,19 +73,9 @@ def file_complexity(
         file, including all functions found and their complexity scores.
 
     Raises:
-        ValueError: If reading, UTF-8 decoding, or parsing the file fails.
+        ValueError: If the base is not an existing directory, or if reading,
+            UTF-8 decoding, or parsing the file fails.
     """
-    path = Path(file_path).resolve()
-    cwd = Path.cwd().resolve()
-    try:
-        path.relative_to(cwd)
-    except ValueError:
-        base_path = path.parent
-    else:
-        base_path = cwd
     return _complexipy.file_complexity(
-        path.as_posix(),
-        base_path.as_posix(),
-        check_script,
-        no_ignore,
+        file_path, base_path, check_script, no_ignore
     )

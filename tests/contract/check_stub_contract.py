@@ -46,6 +46,7 @@ EXPECTED_DIAGNOSTICS: dict[str, list[tuple[int, str]]] = {
         (5, "invalid-assignment"),
     ],
     "bad_keyword.py": [(3, "missing-argument"), (3, "unknown-argument")],
+    "positional_base_path.py": [(3, "too-many-positional-arguments")],
     "phantom_import.py": [(1, "unresolved-import")],
     "phantom_plan_fields.py": [
         (9, "unresolved-attribute"),
@@ -202,6 +203,12 @@ if f"{DiffStatus.REGRESSED}" != "DiffStatus.REGRESSED":
     raise SystemExit("DiffStatus no longer formats as DiffStatus.REGRESSED")
 if compute_diff([], "HEAD") != []:
     raise SystemExit("compute_diff lost its invocation_path default")
+try:
+    complexipy.file_complexity("file.py", False, False, ".")
+except TypeError:
+    pass
+else:
+    raise SystemExit("file_complexity accepted a positional base_path")
 try:
     code_complexity(source="def f():\\n    pass\\n")
 except TypeError:

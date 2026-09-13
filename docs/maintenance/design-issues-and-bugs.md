@@ -45,14 +45,16 @@ all of it:
    Address expression-walker omissions with deliberate scorer-contract changes;
    keep help-only plans distinct from applicable replacements. The parent owns
    source review and semantic judgments, not this analyzer.
-1. **Make external-CWD surveys reliable.** Prioritize collector path resolution
-   and suppression parity, and analysis-walk / exclusion coverage. A caller
-   running a survey needs to distinguish a filtered or failed population from
-   a complete inventory. Include the empty-path config and quiet/ignore-complexity
-   defects when working on CLI population or gates.
+1. **Make external-CWD surveys reliable.** Path resolution and analysis-walk /
+   exclusion coverage are addressed by the path-root batch below; suppression
+   parity and silent walker-entry failures remain. A caller running a survey
+   needs to distinguish a filtered or failed population from a complete
+   inventory. Include the empty-path config and quiet/ignore-complexity defects
+   in the next CLI population/gate batch.
 1. **Before trusting native comparisons, make failures explicit.** Cover path
    pairing, missing refs, reference parse failures, staged scope and matching
-   analysis flags; decide whether a public path base is needed for them. An
+   analysis flags. Public `file_complexity(base_path=...)` now preserves
+   repository-relative identity, but does not repair diff error handling. An
    empty comparison or all-`NEW` is not proof of a valid comparison. This is a
    prerequisite for reliable use of the optional diff surface, not a claim that
    the parent runner uses it today.
@@ -70,8 +72,23 @@ scheduled by this list. The removed-tooling inventory is not a competing roadmap
 
 ### Fixed
 
-The enum/subclass and test fixes immediately below landed with the local build
-and verification contract change.
+- **Collector roots were ignored and file labels lost repository identity.**
+  Fixed in the path-root batch: `runner.rs` `resolve_root` / `resolve_input`
+  now give `run_analysis_shared`, `file_complexity_shared` and both collectors
+  one canonical existing-directory root for relative lookup and result labels.
+  Collectors previously resolved through process CWD and labeled against each
+  input's parent; public file analysis collapsed out-of-CWD files to basenames.
+  Public `file_complexity` now accepts keyword-only `base_path="."`, with the
+  same semantics as the required native base. Files inside the root are
+  root-relative, outside files canonical absolute; failures are absolute
+  resolved paths and invalid roots fail the call. No legacy basename fallback
+  remains. `tests/test_path_roots.py`, `runner_paths.rs`, Rust API tests and
+  the installed-wheel cases pin defaults, explicit bases and failures.
+  `run/tests.rs` `analysis_and_marker_json_share_canonical_paths` pins matching
+  CLI JSON identities. This source change does not update the parent's wheel.
+
+The enum/subclass and test fixes below landed with the local build and
+verification contract change.
 
 - **Enum construction and subclassing were over-promised by the stub.**
   `RuleCategory()`, `Applicability()` and `DiffStatus()` passed ty but raised
@@ -331,20 +348,17 @@ Recorded by `chore(tooling): remove the pre-commit stack`.
   `SnapshotEvaluation.snapshot_result` is computed and tested but never read by
   `run.rs`; `RuleMetadata` derives `Serialize, Deserialize` with no consumer;
   `utils/ignored.rs` `handle_report_ignored` takes `_no_ignore`. The collectors'
-  ignored `invocation_path` is a separate consumer-visible issue below, not a
-  behavior-neutral cleanup. Removing an unused public parameter would itself
-  change the API contract.
+  `invocation_path` is now used for path resolution; it is not dead code.
 
-- **Ignored-location collectors ignore their invocation path.** In
-  `crates/complexipy-core/src/runner.rs`,
-  `collect_all_ignored_locations_shared` and
-  `collect_removable_ignored_locations_shared` accept `_invocation_path` but
-  `collect_locations` resolves input paths through the process CWD instead.
-  From the parent's external working directory, passing target-relative paths
-  plus the target root as `invocation_path` does not analyze those target paths.
-  Absolute input paths are the current workaround; inspect the returned
-  `failed_paths`. Choosing consistent resolution and output-path semantics
-  needs public API and collector regression tests, not just deleting a parameter.
+- **Directory walker entry errors disappear from the population.**
+  `crates/complexipy-core/src/helpers/exclude.rs` `get_paths_to_process` drops
+  `ignore::Walk` errors with `Err(_) => None` and wax entry errors via
+  `entry.ok()`. An unreadable subtree can therefore vanish without a failed
+  path in analysis or either collector. The path-root batch covers missing
+  inputs, invalid globs and read/parse failures after discovery, not this
+  discovery-time failure. Carry walker errors into the shared result contract
+  before treating an empty `failed_paths` list as proof of a complete survey;
+  do not pin silent omission as desirable behavior.
 
 - **Library diff failures are indistinguishable from valid results.**
   `crates/complexipy-core/src/diff.rs` `compute_diff` emits all current functions
@@ -458,13 +472,15 @@ Recorded by `chore(tooling): remove the pre-commit stack`.
   question, like the class-body item above; documented, not pinned.
 
 - **Plain `//` comments in Rust against the no-comments rule.** `AGENTS.md`
-  (Code Style, Anti-Patterns) bans comments in code, and nothing enforces it. 35
-  lines across five files carry them: `rules/complexity.rs` (9, production code,
+  (Code Style, Anti-Patterns) bans comments in code, and nothing enforces it. 33
+  lines across four files carry them: `rules/complexity.rs` (9, production code,
   two blocks in `generate_loop_guard_suggestion`), `rules/complexity/tests.rs`
   (19), `rules/registry/tests.rs` (3, above the `checked == 7` assertion in
   `every_registered_rule_produces_a_plan_consistent_with_its_own_metadata`,
-  reading "if a 9th rule is added" while seven are registered), `api/tests.rs`
-  (2), and `output/render/tests.rs` (2). Doc comments (`///`) are not counted.
+  reading "if a 9th rule is added" while seven are registered), and
+  `output/render/tests.rs` (2). The path-root batch removed the two stale
+  `api/tests.rs` comments with their old basename assertion. Doc comments
+  (`///` and `//!`) are not counted.
   H's `add-refactor-rule` skill now cites that registry test as one of its
   explicit gates and warns against copying the comment pattern. Removing the
   comments remains a code change outside H; the defect is not closed by guidance.
@@ -486,25 +502,18 @@ Recorded by `chore(tooling): remove the pre-commit stack`.
 
 ## Design issues
 
-### Public file paths lose repository identity outside CWD
+### Diff path pairing is heuristic
 
-`complexipy/__init__.py` `file_complexity` uses CWD as the native `base_path`
-for files beneath CWD and the file's parent otherwise. From the parent's required
-external CWD, separate `a/utils.py` and `b/utils.py` therefore both report
-`utils.py`. The reduced-record helper preserves its caller's target-relative
-path separately, but that does not repair native `FileComplexity.path` when
-passing records to `compute_diff`.
+The public-file identity loss is fixed by the path-root batch (see Fixed).
+From an external CWD, use `file_complexity("a/utils.py", base_path=repo_root)`
+for repository-relative identity. No private binding workaround is required.
 
-`diff.rs` `resolve_git_path` first tries suffixes at the reference, then a unique
-tracked basename. Missing or ambiguous identity can become an all-`NEW` result
-or pair a record with a different same-named file. Explicit `invocation_path`
-alone cannot restore the lost identity. Native `_complexipy.file_complexity`
-already accepts `base_path`; pass the absolute file path and the absolute
-repository root as `base_path`, then check the resulting repository-relative
-`FileComplexity.path`. This is a private-API workaround. A supported public
-path-base option is the smaller candidate fix, preserving existing defaults
-and adding external-CWD / duplicate-basename regression coverage. It would not
-fix silent diff failures.
+`diff.rs` `resolve_git_path` still tries suffixes at the reference, then a
+unique tracked basename. A malformed or mismatched caller-supplied path can
+become an all-`NEW` result or pair a record with a different same-named file.
+The explicit public base avoids losing identity before comparison; it does not
+make this heuristic or the silent diff failures safe. Exact path pairing and
+failure reporting remain part of the diff batch.
 
 ### Explicit configuration selection is unavailable
 
@@ -621,7 +630,7 @@ deliberately *not* installed, and asserted that through `importlib.metadata`,
 so ty always read the stub. The standing gate's `uv run ty check .` runs with
 the editable project installed, so ty reads the native module. The contract
 harness (`tests/contract/check_stub_contract.py`) checks stub/runtime parity from
-a neutral directory. It has ten diagnostic cases, including positive getter
+a neutral directory. It has eleven diagnostic cases, including positive getter
 and enum-member types, negative assignment/construction for all eight result
 types, construction rejection for three enums and subclass rejection for all
 twelve native types, plus separate runtime checks. These are selected promises,
@@ -660,13 +669,15 @@ exact installed wheel; it is not an exhaustive cache-behavior test suite.
 
 ### Test coverage has structural holes
 
-- Nothing exercises the analysis walk through `run_analysis_shared`.
-  `tests/main.py` reimplements the walk with `rglob` and calls
-  `file_complexity` per file; every `run/tests.rs` case passes a single file.
-  The collector walk is covered; the analysis walk is not.
-- Exclusion has no analysis-path coverage. The CI checks that appeared to
-  cover it passed `--ignore-complexity`, so their exit code could not fail on a
-  non-matching glob.
+- **Analysis-walk and exclusion gaps closed in the path-root batch.**
+  `crates/complexipy-core/tests/runner_paths.rs` calls `run_analysis_shared`
+  and both collectors on directories and explicit files. It pins canonical
+  identities, walk-root-relative exclusions, hidden/ignore/extension filters,
+  explicit-file bypass, invalid globs, mixed valid/failed files and forwarded
+  scoring flags. CLI `run/tests.rs` pins an exclusion changing the threshold
+  gate and matching analysis/marker JSON paths. `tests/main.py` still uses its
+  own fixture walk; it is no longer the only analysis-population exercise.
+  Silent walker-entry errors remain open, as recorded above.
 - The installed-wheel cases now touch all eighteen public exports, but cover
   selected signatures, getter types and failure modes rather than every input
   combination or runtime behavior.

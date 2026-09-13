@@ -16,7 +16,11 @@ const INVALID_UTF8: &[u8] = b"def f():  # complexipy: ignore\n    return '\xff'\
 fn write(dir: &TempDir, name: &str, content: &[u8]) -> String {
     let path = dir.path().join(name);
     fs::write(&path, content).expect("should write fixture");
-    path.to_str().expect("utf-8 path").to_string()
+    path.canonicalize()
+        .unwrap()
+        .to_str()
+        .expect("utf-8 path")
+        .to_string()
 }
 
 fn sorted(mut values: Vec<String>) -> Vec<String> {
@@ -126,11 +130,16 @@ fn excluded_invalid_files_are_omitted_rather_than_failed() {
 }
 
 #[test]
-fn missing_path_reporting_is_preserved() {
+fn missing_path_reporting_is_absolute() {
     let missing = "definitely/not/here.py".to_string();
 
     let (locations, failed) =
         collect_all_ignored_locations(slice::from_ref(&missing), &[], ".").expect("should run");
     assert!(locations.is_empty());
-    assert_eq!(failed, vec![missing]);
+    let expected = std::env::current_dir()
+        .unwrap()
+        .canonicalize()
+        .unwrap()
+        .join(missing);
+    assert_eq!(failed, vec![expected.to_str().unwrap()]);
 }

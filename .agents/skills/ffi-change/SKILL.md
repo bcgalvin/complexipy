@@ -7,7 +7,9 @@ description: Change complexipy's Python/native API or stubs with matching Rust d
 
 Read `AGENTS.md`'s FFI contract and `docs/python-api.md`. Identify whether this is
 a type, field, function or export change; do not apply a type-addition checklist
-blindly to every edit.
+blindly to every edit. Backward compatibility is not required: update the
+contract directly instead of adding a legacy mode or shim. Check the real
+parent consumer and coordinate its adoption of the new wheel.
 
 - **Shared type:** definitions live in `crates/complexipy-core/src/classes.rs`.
   A new Python-visible type needs the `#[pymodule]` export in
@@ -25,7 +27,7 @@ blindly to every edit.
   wrapper/exports synchronized. Use explicit `#[pyo3(signature = ...)]` for
   defaults. Test omitted arguments and keyword calls at runtime; `Option` alone
   does not make an argument optional in Python.
-- **Stable Rust surface:** inspect `crates/complexipy-core/src/lib.rs` and
+- **Rust surface:** inspect `crates/complexipy-core/src/lib.rs` and
   `crates/complexipy-core/tests/lib_surface.rs` when changing public Rust
   re-exports. They have their own contract, not a copy of Python's `__all__`.
 

@@ -179,11 +179,11 @@ class FileComplexity:
     def __new__(cls, _token: Never, /) -> Self: ...
     @property
     def path(self) -> str:
-        """Path relative to the analysis base where possible.
+        """Canonical file path, relative to the analysis root when inside it.
 
-        The public wrapper uses the CWD for files beneath it and the file's
-        parent otherwise, so out-of-tree files use their basename. The native
-        binding retains file_path if it cannot strip base_path.
+        Files outside the root keep their absolute path. Public file_complexity
+        uses base_path (default CWD); collectors and directory analysis use
+        invocation_path. Symlinks resolve before path labeling.
         """
         ...
     @property
@@ -258,16 +258,19 @@ def file_complexity(
     check_script: bool = False,
     no_ignore: bool = False,
 ) -> FileComplexity:
-    """Analyze a file using an explicit base for the reported path.
+    """Analyze a file relative to an existing directory root.
 
     Args:
-        file_path: Path to the Python source file.
-        base_path: Prefix to strip from the reported path when possible.
+        file_path: Absolute path or path relative to base_path.
+        base_path: Existing directory resolved from the process CWD. Results
+            inside it have root-relative paths; outside results have absolute
+            paths. Existing paths are canonicalized, including symlinks.
         check_script: Also report module-level complexity as a <module> entry.
         no_ignore: Analyze functions even when they carry an ignore marker.
 
     Raises:
-        ValueError: If reading, UTF-8 decoding, or parsing fails.
+        ValueError: If the base is not an existing directory, or if reading,
+            UTF-8 decoding, or parsing fails.
     """
     ...
 
@@ -301,11 +304,15 @@ def collect_all_ignored_locations(
 ) -> tuple[list[IgnoredLocation], list[str]]:
     """Return recognized ignore locations and paths that could not be processed.
 
-    paths contains local files or directories; exclude contains exclusion
-    patterns. invocation_path is accepted but ignored: relative inputs resolve
-    against the process CWD. Reporting scans def lines, so markers above the
-    first decorator and markers on async def are not reported, even when they
-    suppress analysis. A bare noqa is not recognized.
+    Relative inputs resolve against invocation_path, an existing directory
+    resolved from the process CWD. Successful paths are root-relative inside
+    it and absolute outside it; failed paths are absolute. Directory discovery
+    applies excludes and ignore rules; explicit files bypass those filters.
+    An invalid invocation root raises ValueError.
+
+    Reporting scans def lines, so markers above the first decorator and markers
+    on async def are not reported, even when they suppress analysis. A bare
+    noqa is not recognized.
     """
     ...
 
@@ -317,10 +324,9 @@ def collect_removable_ignored_locations(
 ) -> tuple[list[RemovableIgnore], list[str]]:
     """Return recognized markers no longer needed and paths that failed.
 
-    paths contains local files or directories; exclude contains exclusion
-    patterns. A marker is removable when its function scores at or below
-    max_complexity_allowed without suppression. invocation_path is accepted
-    but ignored: relative inputs resolve against the process CWD. Reporting
-    has the same placement limits as collect_all_ignored_locations.
+    A marker is removable when its function scores at or below
+    max_complexity_allowed without suppression. Input resolution, result paths,
+    failures, directory filtering and marker placement limits are the same as
+    collect_all_ignored_locations. An invalid invocation root raises ValueError.
     """
     ...

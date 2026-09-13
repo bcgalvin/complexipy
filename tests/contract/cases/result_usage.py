@@ -65,26 +65,34 @@ with TemporaryDirectory() as directory:
         source + "\n# complexipy: ignore\ndef ignored():\n    pass\n",
         encoding="utf-8",
     )
-    file = file_complexity(str(path), check_script=False, no_ignore=False)
+    file = file_complexity(
+        "example.py", check_script=False, no_ignore=False, base_path=directory
+    )
+    assert file.path == "example.py"
+    assert file_complexity(str(path)).path == path.resolve().as_posix()
     assert_type(file, FileComplexity)
     assert_type(file.path, str)
     assert_type(file.file_name, str)
     assert_type(file.functions, list[FunctionComplexity])
     assert_type(file.complexity, int)
-    ignored, failures = collect_all_ignored_locations([str(path)], [])
+    ignored, failures = collect_all_ignored_locations(
+        ["example.py"], [], invocation_path=directory
+    )
     assert_type(ignored, list[IgnoredLocation])
     assert_type(failures, list[str])
     assert not failures
     location = ignored[0]
+    assert location.path == "example.py"
     assert_type(location.path, str)
     assert_type(location.line, int)
     assert_type(location.comment, str)
     removable, failures = collect_removable_ignored_locations(
-        [str(path)], [], 15
+        ["example.py"], [], 15, invocation_path=directory
     )
     assert_type(removable, list[RemovableIgnore])
     assert not failures
     marker = removable[0]
+    assert marker.path == "example.py"
     assert_type(marker.path, str)
     assert_type(marker.line, int)
     assert_type(marker.comment, str)
