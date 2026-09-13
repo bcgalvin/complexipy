@@ -5,15 +5,19 @@ Two kinds of entry:
 
 - **Bugs** - scoped behavior defects. Address them when the requested work
   covers them, or defer with a stated reason.
-- **Design issues** - tension, friction, or debt that is not clearly a bug. Not
-  scheduled. Recorded with enough context to find and evaluate later without
-  rediscovering it.
+- **Design issues** - tension, friction, or debt that is not clearly a bug.
+  Recorded with enough context to find and evaluate later without rediscovering
+  it; an entry alone does not schedule implementation.
 
 Every entry names where the evidence is: source by path and enclosing symbol
 (function, test, struct field, constant), markdown by section heading, never by
 line number. This file outlives the realignment, and a line reference goes stale
 silently while a symbol reference fails loudly. Status values: **fixed** (with
 the commit or named change), **open**, **deferred** (with why).
+
+[Current work](../current-work.md) owns the active sequence, fork/parent
+responsibilities, dependencies and acceptance criteria. This catalog owns the
+underlying issue details; update both when a planned issue is resolved.
 
 [`follow-up-tooling.md`](follow-up-tooling.md) records removed capabilities and
 possible replacements, not an implementation checklist. The completed tracker
@@ -37,8 +41,9 @@ nor installs it in a provider environment. On a requested refresh, check the
 exact wheel contract and the real native-plan serializer together. Synthetic
 parent tests do not establish native API compatibility on their own.
 
-Use this order when choosing follow-up work, not as authorization to implement
-all of it:
+These are prioritization principles, not a second execution order. Follow
+[the current work plan](../current-work.md#fork-sequence) for the selected
+batches; neither document authorizes unrelated implementation:
 
 1. **Protect current file/plan consumption.** Preserve exact scoring and line
    attribution, complete native plan fields and explicit analysis failures.
@@ -338,10 +343,13 @@ Recorded by `chore(tooling): remove the pre-commit stack`.
   Unverified; reproduce first.
 
 - **`--suggest-refactors` degrades silently on a failed source read.**
-  `read_source_lines` ends in `.ok()`, so the caret span and `Original:` snippet
-  vanish with no warning. The trigger is narrow - it skips the join for paths
-  starting with `/`, so absolute out-of-tree targets are safe - but relative
-  targets like `../repos/foo` and Windows-style absolutes are exposed.
+  `crates/complexipy-cli/src/output/refactor.rs` `read_source_lines` ends in
+  `.ok()`, so the caret span and `Original:` snippet vanish with no warning if
+  the file cannot be read after analysis. The path-root contract now gives it
+  in-root relative or outside-root absolute file labels, so the reconstruction
+  is correct for this local workflow. The former raw `../repos/foo` and
+  Windows-path explanations are not current triggers; the unreported read
+  failure remains. This conclusion is a source read, not a runtime reproduction.
 
 - **Dead code.** `crates/complexipy-cli/src/output.rs`
   `effective_sort_for_display` has no callers; `utils/snapshot.rs`
@@ -359,6 +367,48 @@ Recorded by `chore(tooling): remove the pre-commit stack`.
   discovery-time failure. Carry walker errors into the shared result contract
   before treating an empty `failed_paths` list as proof of a complete survey;
   do not pin silent omission as desirable behavior.
+
+- **CLI marker reports discard collection failures.**
+  `crates/complexipy-cli/src/utils/ignored.rs` `handle_report_ignored` drops
+  the collector's failed-path vector, although it propagates a top-level
+  error. `handle_removable_ignores` drops the vector and converts a top-level
+  error to an empty report with `unwrap_or_default`. The core collector
+  contract therefore does not reach the CLI intact. The latter report only
+  runs outside quiet mode in `run.rs` `run_at`; adding its failures to the exit
+  gate without choosing a consistent check set would create a new
+  quiet-dependent outcome. Source-confirmed; add end-to-end regression tests
+  in the population/CLI batch.
+
+- **An empty marker report can leave stale JSON behind.**
+  `utils/ignored.rs` `handle_report_ignored` writes `complexipy-ignored.json`
+  only for nonempty locations. Reusing the output directory after markers
+  disappear leaves the preceding report intact. The sibling
+  `report_without_comments_writes_no_file` test pins fresh-directory omission,
+  not safe reuse. A complete requested JSON report should overwrite with `[]`;
+  failed or partial collection must remain distinguishable from a successful
+  empty inventory. Source/test-read finding; add nonempty-to-empty and failed
+  collection reuse cases.
+
+- **Incomplete analysis can advance persistent comparison state.**
+  `run.rs` `run_at` calls `evaluate_snapshot` and `handle_display` before
+  evaluating `failed_paths`. `utils/snapshot.rs` can create or watermark a
+  snapshot; `output.rs` `handle_display` calls
+  `utils/cache.rs` `remember_previous_functions`, which replaces the stored
+  function population for the target key. Successful files from a partial
+  analysis can therefore advance state before the run reports failure.
+  Snapshot merging retains absent files; this is not a claim that failed
+  files are deleted from the snapshot. The population batch must prevent
+  state advancement on incomplete analysis while keeping useful partial
+  results and diagnostics. Source-confirmed; pin unchanged snapshot/cache
+  bytes on failure before closing this issue.
+
+- **Snapshot diagnostics duplicate the filename.**
+  `utils/snapshot.rs` `format_function_location` joins `file_name` onto `path`,
+  even though `FileComplexity.path` already identifies the file. Sibling tests
+  explicitly expect `a.py/a.py:f` in watermark messages. Correct presentation
+  and those expectations without changing `build_function_key` or the stored
+  snapshot schema. This is a source/test-confirmed defect, not a new path-root
+  regression.
 
 - **Library diff failures are indistinguishable from valid results.**
   `crates/complexipy-core/src/diff.rs` `compute_diff` emits all current functions

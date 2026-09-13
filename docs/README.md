@@ -20,8 +20,10 @@ markdown files read from the repository.
 `AGENTS.md` at the repository root covers commands, architecture, and
 conventions. Ongoing maintenance records:
 
+- [Current work](current-work.md) - active fork/parent sequence, ownership,
+  dependencies and acceptance criteria.
 - [Design issues and bugs](maintenance/design-issues-and-bugs.md) - the full
-  catalog, including parent-consumer priorities and open/deferred issues.
+  catalog of defect details, parent-consumer context and open/deferred issues.
 - [Removed tooling](maintenance/follow-up-tooling.md) - what was removed and
   what a future replacement would need; not a commitment to rebuild it.
 - [git-cliff research](maintenance/changelog-git-cliff.md) - research evidence
