@@ -24,6 +24,54 @@ fn paths(files: &[FileComplexity]) -> Vec<String> {
 }
 
 #[test]
+fn unreadable_subdirectory_keeps_good_rows_and_reports_failure() {
+    use std::os::unix::fs::PermissionsExt;
+
+    let dir = tempdir().unwrap();
+    write(dir.path(), "good.py", MARKED.as_bytes());
+    write(dir.path(), "blocked/hidden.py", MARKED.as_bytes());
+    let root = dir.path().canonicalize().unwrap();
+    let blocked = root.join("blocked");
+    fs::set_permissions(&blocked, fs::Permissions::from_mode(0o000)).unwrap();
+    let unreadable = fs::read_dir(&blocked).is_err();
+    let inputs = [".".to_string()];
+    let invocation = root.to_str().unwrap();
+    let analysis = run_analysis_shared(&inputs, &[], false, false, invocation);
+    let ignored = collect_all_ignored_locations(&inputs, &[], invocation);
+    let removable = collect_removable_ignored_locations(&inputs, &[], 15, invocation);
+    fs::set_permissions(&blocked, fs::Permissions::from_mode(0o700)).unwrap();
+
+    assert!(unreadable, "fixture must emit a real directory-read error");
+    let (files, analysis_failed) = analysis.unwrap();
+    let (ignored, ignored_failed) = ignored.unwrap();
+    let (removable, removable_failed) = removable.unwrap();
+    assert_eq!(paths(&files), ["good.py"]);
+    assert_eq!(ignored.len(), 1);
+    assert_eq!(removable.len(), 1);
+    for failed in [analysis_failed, ignored_failed, removable_failed] {
+        assert_eq!(failed, [blocked.to_str().unwrap()]);
+    }
+}
+
+#[test]
+fn malformed_ignore_rules_keep_good_rows_and_report_the_rule_file() {
+    let dir = tempdir().unwrap();
+    write(dir.path(), "good.py", MARKED.as_bytes());
+    write(dir.path(), ".ignore", b"{invalid\n");
+    let root = dir.path().canonicalize().unwrap();
+    let (files, failed) = run_analysis_shared(
+        &[".".to_string()],
+        &[],
+        false,
+        false,
+        root.to_str().unwrap(),
+    )
+    .unwrap();
+    assert_eq!(paths(&files), ["good.py"]);
+    assert_eq!(failed, [root.join(".ignore").to_str().unwrap().to_string()]);
+}
+
+#[test]
 fn directory_exclusions_match_relative_to_an_absolute_walk_root() {
     let dir = tempdir().unwrap();
     write(dir.path(), "sub/a.py", MARKED.as_bytes());
@@ -341,11 +389,9 @@ fn invalid_excludes_report_the_absolute_directory_as_failed() {
     let (removable, removable_failed) =
         collect_removable_ignored_locations(&inputs, &excludes, 15, invocation).unwrap();
     assert!(removable.is_empty());
-    let prefix = format!("{}: ", root.join("pkg").display());
+    let expected = root.join("pkg").to_str().unwrap().to_string();
     for failed in [analysis_failed, ignored_failed, removable_failed] {
-        assert_eq!(failed.len(), 1);
-        assert!(failed[0].starts_with(&prefix));
-        assert!(failed[0].len() > prefix.len());
+        assert_eq!(failed, [expected.as_str()]);
     }
 }
 

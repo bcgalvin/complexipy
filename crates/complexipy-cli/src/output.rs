@@ -18,6 +18,7 @@ use complexipy_core::utils::{ExportError, output_csv_shared, output_json_shared}
 
 pub struct DisplayOptions<'a> {
     pub files_complexities: &'a [FileComplexity],
+    pub population_complete: bool,
     pub paths: &'a [String],
     pub failed: bool,
     pub sort: Sort,
@@ -35,6 +36,7 @@ pub struct DisplayOptions<'a> {
 pub fn handle_display(options: DisplayOptions) -> (bool, String) {
     let DisplayOptions {
         files_complexities,
+        population_complete,
         paths,
         failed,
         sort,
@@ -49,7 +51,7 @@ pub fn handle_display(options: DisplayOptions) -> (bool, String) {
         suggest_refactors,
     } = options;
 
-    let previous_functions = if !files_complexities.is_empty() {
+    let previous_functions = if population_complete && !files_complexities.is_empty() {
         remember_previous_functions(invocation_path, paths, files_complexities, cache_dir)
     } else {
         None
@@ -61,7 +63,7 @@ pub fn handle_display(options: DisplayOptions) -> (bool, String) {
             max_complexity_allowed,
             active_snapshot_map,
         );
-        return (has_success, String::new());
+        return (has_success || ignore_complexity, String::new());
     }
 
     let effective_sort = if top.is_some() { Sort::Desc } else { sort };

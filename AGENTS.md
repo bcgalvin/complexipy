@@ -264,11 +264,28 @@ root for relative input lookup and result identity. Public `file_complexity`
 accepts keyword-only `base_path="."`; the native function requires `base_path`.
 Collectors and `run_analysis_shared` use `invocation_path`. Files inside the
 root have root-relative paths; files outside it have canonical absolute paths.
-Failed inputs have absolute resolved paths, canonical when they exist; an
-invalid root fails the call. Directory inputs apply discovery/exclusion filters;
-explicit files bypass those filters. Keep this shared contract covered by
-`tests/test_path_roots.py`, `crates/complexipy-core/tests/runner_paths.rs` and
-CLI JSON path-identity tests.
+Failed entries are plain absolute resolved paths, canonical when they exist,
+never `path: message` strings. A failed exclusion setup identifies its directory;
+a walker error without a path identifies the walk root. Emitted traversal and
+ignore-rule errors join read/parse failures without discarding successful rows.
+An invalid root fails the call. Directory inputs apply discovery/exclusion
+filters; explicit files bypass those filters. Keep this shared contract covered
+by `tests/test_path_roots.py`, `tests/test_population_failures.py`,
+`crates/complexipy-core/tests/runner_paths.rs` and the installed-wheel harness.
+Do not equate reported walker errors with complete filter validation: the
+`ignore` dependency suppresses ignore-file I/O errors internally; see the catalog.
+
+CLI analysis, requested marker collection and automatic removable-marker
+collection contribute to one failure gate in both quiet and normal modes.
+Deduplicate failure diagnostics, not successful input rows. Any incomplete
+collection prevents snapshot creation/watermark updates and cache replacement;
+partial rows may still be exported with a nonzero exit and stderr diagnostics.
+Partial runs do not load cached deltas or evaluate snapshots. Complete requested
+marker JSON writes even an empty array; a failed marker collection invalidates
+the requested marker JSON file instead of leaving a stale complete inventory.
+Missing/empty resolved CLI path lists and malformed/unreadable discovered TOML
+candidates fail before analysis; absent config and valid filtered-empty targets
+are not errors.
 
 ### Rust core
 

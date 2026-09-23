@@ -12,7 +12,7 @@ use crate::output::{DisplayOptions, StorageOptions, handle_display, handle_resul
 use crate::types::ExitReport;
 use crate::utils::config::resolve_config;
 use crate::utils::ignored::{handle_removable_ignores, handle_report_ignored};
-use crate::utils::snapshot::evaluate_snapshot;
+use crate::utils::snapshot::{SnapshotEvaluation, evaluate_snapshot};
 use crate::utils::toml::get_complexipy_toml_config;
 use complexipy_core::diff::{
     compute_diff, compute_staged_diff, has_regressions, resolve_diff_flags,
@@ -20,7 +20,13 @@ use complexipy_core::diff::{
 use complexipy_core::runner::run_analysis_shared;
 
 pub fn run_at(cli: CliArgs, invocation_path: &str) -> ExitCode {
-    let toml_config = get_complexipy_toml_config(invocation_path);
+    let toml_config = match get_complexipy_toml_config(invocation_path) {
+        Ok(config) => config,
+        Err(error) => {
+            eprintln!("{}", error);
+            return ExitCode::FAILURE;
+        }
+    };
 
     let config = match resolve_config(toml_config, cli) {
         Ok(config) => config,
@@ -40,7 +46,7 @@ pub fn run_at(cli: CliArgs, invocation_path: &str) -> ExitCode {
         println!("{} {}", "Warning:".yellow(), diff_flags_warning());
     }
 
-    let (files_complexities, failed_paths) = match run_analysis_shared(
+    let (files_complexities, mut failed_paths) = match run_analysis_shared(
         &config.paths,
         &config.exclude,
         config.check_script,
@@ -54,18 +60,64 @@ pub fn run_at(cli: CliArgs, invocation_path: &str) -> ExitCode {
         }
     };
 
-    let output_snapshot_path = format!("{}/complexipy-snapshot.json", invocation_path);
-    let snap = match evaluate_snapshot(
-        config.snapshot_create,
-        config.snapshot_ignore,
-        &output_snapshot_path,
-        config.max_complexity_allowed,
-        &files_complexities,
+    let ignored_report = match handle_report_ignored(
+        config.report_ignored,
+        &config.paths,
+        &config.exclude,
+        &config.output_format,
+        config.output.as_deref(),
+        invocation_path,
     ) {
-        Ok(snap) => snap,
+        Ok(report) => report,
         Err(error) => {
             eprintln!("{}", error);
             return ExitCode::FAILURE;
+        }
+    };
+    let (removable, removable_failed) = match handle_removable_ignores(
+        &config.paths,
+        &config.exclude,
+        config.max_complexity_allowed,
+        invocation_path,
+    ) {
+        Ok(result) => result,
+        Err(error) => {
+            eprintln!("{}", error);
+            return ExitCode::FAILURE;
+        }
+    };
+    failed_paths.extend(ignored_report.failed_paths.iter().cloned());
+    failed_paths.extend(removable_failed);
+    failed_paths.sort();
+    failed_paths.dedup();
+    let (paths_ok, invalid_paths_output) = print_invalid_paths(&failed_paths);
+    if !invalid_paths_output.is_empty() {
+        eprintln!("{}", invalid_paths_output);
+        eprintln!("Incomplete collection; snapshot and previous-function cache updates skipped.");
+    }
+
+    let output_snapshot_path = format!("{}/complexipy-snapshot.json", invocation_path);
+    let snap = if paths_ok {
+        match evaluate_snapshot(
+            config.snapshot_create,
+            config.snapshot_ignore,
+            &output_snapshot_path,
+            config.max_complexity_allowed,
+            &files_complexities,
+        ) {
+            Ok(snap) => snap,
+            Err(error) => {
+                eprintln!("{}", error);
+                return ExitCode::FAILURE;
+            }
+        }
+    } else {
+        SnapshotEvaluation {
+            should_run: false,
+            active_snapshot_map: None,
+            watermark_success: true,
+            watermark_messages: Vec::new(),
+            snapshot_result: true,
         }
     };
 
@@ -92,6 +144,7 @@ pub fn run_at(cli: CliArgs, invocation_path: &str) -> ExitCode {
 
     let (display_ok, display_output) = handle_display(DisplayOptions {
         files_complexities: &files_complexities,
+        population_complete: paths_ok,
         paths: &config.paths,
         failed: config.failed,
         sort: config.sort.clone(),
@@ -109,63 +162,39 @@ pub fn run_at(cli: CliArgs, invocation_path: &str) -> ExitCode {
         println!("{}", display_output);
     }
 
-    let (ignored_locations, ignored_json_path) = match handle_report_ignored(
-        config.report_ignored,
-        &config.paths,
-        &config.exclude,
-        &config.output_format,
-        config.output.as_deref(),
-        config.no_ignore,
-        invocation_path,
-    ) {
-        Ok(result) => result,
-        Err(error) => {
-            eprintln!("{}", error);
-            return ExitCode::FAILURE;
-        }
-    };
     if config.report_ignored {
-        if !config.quiet {
+        if !ignored_report.failed_paths.is_empty() {
+            eprintln!("Ignore-marker collection incomplete.");
+            if config
+                .output_format
+                .contains(&crate::types::OutputFormat::Json)
+            {
+                eprintln!("No complete ignored-marker JSON report was written.");
+            }
+        } else if !config.quiet {
             println!(
                 "{}",
-                ignored_summary_output(ignored_locations.len(), config.no_ignore)
+                ignored_summary_output(ignored_report.locations.len(), config.no_ignore)
             );
         }
-        if let Some(path) = ignored_json_path {
+        if let Some(path) = ignored_report.json_path {
             println!("{}", ignored_saved_output(&path));
         }
     }
 
     if !config.quiet {
-        let removable = handle_removable_ignores(
-            &config.paths,
-            &config.exclude,
-            config.max_complexity_allowed,
-            invocation_path,
-        );
         let removable_output = removable_ignores_output(&removable);
         if !removable_output.is_empty() {
             println!("{}", removable_output);
         }
     }
 
-    let snapshot_ok = if config.quiet {
-        if snap.should_run {
-            snap.watermark_success
-        } else {
-            true
-        }
-    } else {
+    let snapshot_ok = snap.snapshot_result;
+    if !config.quiet {
         let snapshot_output = handle_snapshot_console(&snap, &output_snapshot_path);
         if !snapshot_output.is_empty() {
             println!("{}", snapshot_output);
         }
-        snap.watermark_success
-    };
-
-    let (paths_ok, invalid_paths_output) = print_invalid_paths(&failed_paths);
-    if !invalid_paths_output.is_empty() {
-        println!("{}", invalid_paths_output);
     }
 
     let diff_ref = diff.clone().or_else(|| diff_only.clone());

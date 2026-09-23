@@ -99,19 +99,20 @@ fn evaluate_dir_shared(
     opts: &ProcessOptions,
     invocation_path: &path::Path,
 ) -> ComplexitiesAndFailedPaths {
-    let files_paths_to_process = match get_paths_to_process(path, opts.exclude.clone()) {
+    let discovered = match get_paths_to_process(path, opts.exclude.clone()) {
         Ok(paths) => paths,
-        Err(e) => return (vec![], vec![format!("{}: {}", path, e)]),
+        Err(_) => return (vec![], vec![path.to_string()]),
     };
 
-    let results: Vec<Result<FileComplexity, String>> = files_paths_to_process
+    let results: Vec<Result<FileComplexity, String>> = discovered
+        .files
         .par_iter()
         .map(|file_path| analyze_file_shared(file_path, opts, invocation_path))
         .collect();
 
     let mut complexities = Vec::new();
-    let mut failed_paths = Vec::new();
-    for (file_path, result) in files_paths_to_process.into_iter().zip(results) {
+    let mut failed_paths = discovered.failed_paths;
+    for (file_path, result) in discovered.files.into_iter().zip(results) {
         match result {
             Ok(file_complexity) => complexities.push(file_complexity),
             Err(_) => failed_paths.push(file_path),
@@ -238,18 +239,20 @@ where
         let path_str = path_string(&path_obj);
 
         if path_obj.is_dir() {
-            let files = match get_paths_to_process(&path_str, exclude.to_vec()) {
+            let discovered = match get_paths_to_process(&path_str, exclude.to_vec()) {
                 Ok(paths) => paths,
-                Err(e) => {
-                    failed_paths.push(format!("{}: {}", path_str, e));
+                Err(_) => {
+                    failed_paths.push(path_str);
                     continue;
                 }
             };
-            let results: Vec<Result<Vec<T>, String>> = files
+            failed_paths.extend(discovered.failed_paths);
+            let results: Vec<Result<Vec<T>, String>> = discovered
+                .files
                 .par_iter()
                 .map(|file_path| collect_file(file_path, &root))
                 .collect();
-            for (file_path, result) in files.into_iter().zip(results) {
+            for (file_path, result) in discovered.files.into_iter().zip(results) {
                 match result {
                     Ok(locs) => all_locations.extend(locs),
                     Err(_) => failed_paths.push(file_path),

@@ -1,4 +1,4 @@
-use std::fs;
+use std::{fs, io::ErrorKind, path::Path};
 
 use crate::types::OutputFormat;
 use crate::utils::paths::resolve_output_paths;
@@ -8,38 +8,61 @@ use complexipy_core::runner::{
 };
 use complexipy_core::utils::ExportError;
 
+#[derive(Default)]
+pub struct IgnoredReport {
+    pub locations: Vec<IgnoredLocation>,
+    pub failed_paths: Vec<String>,
+    pub json_path: Option<String>,
+}
+
 pub fn handle_report_ignored(
     report_ignored: bool,
     paths: &[String],
     exclude: &[String],
     output_formats: &[OutputFormat],
     output: Option<&str>,
-    _no_ignore: bool,
     invocation_path: &str,
-) -> Result<(Vec<IgnoredLocation>, Option<String>), ExportError> {
+) -> Result<IgnoredReport, ExportError> {
     if !report_ignored {
-        return Ok((Vec::new(), None));
+        return Ok(IgnoredReport::default());
     }
 
-    let (ignored_locations, _) =
-        collect_all_ignored_locations_shared(paths, exclude, invocation_path)
-            .map_err(ExportError::Io)?;
+    let collected = collect_all_ignored_locations_shared(paths, exclude, invocation_path);
+    let json_path = if output_formats.contains(&OutputFormat::Json) {
+        let output_paths = resolve_output_paths(output_formats, output, Path::new(invocation_path))
+            .map_err(|error| ExportError::Io(error.to_string()))?;
+        let (_, result_path) = output_paths
+            .iter()
+            .find(|(format, _)| format == &OutputFormat::Json)
+            .expect("JSON format was requested");
+        let dir = Path::new(result_path).parent().unwrap_or(Path::new("."));
+        let path = dir.join("complexipy-ignored.json");
+        if Path::new(result_path) == path {
+            return Err(ExportError::Io(
+                "Analysis JSON and ignored-marker JSON must have different output paths"
+                    .to_string(),
+            ));
+        }
+        match fs::remove_file(&path) {
+            Ok(()) => {}
+            Err(error) if error.kind() == ErrorKind::NotFound => {}
+            Err(error) => {
+                return Err(ExportError::Io(format!(
+                    "Failed to invalidate ignored report {}: {}",
+                    path.display(),
+                    error
+                )));
+            }
+        }
+        Some(path)
+    } else {
+        None
+    };
 
-    let ignored_json_path =
-        if output_formats.contains(&OutputFormat::Json) && !ignored_locations.is_empty() {
-            let ignored_output_paths = resolve_output_paths(
-                &[OutputFormat::Json],
-                output,
-                std::path::Path::new(invocation_path),
-            )
-            .map_err(|e| ExportError::Io(e.to_string()))?;
-            let ignored_output_path = &ignored_output_paths[0].1;
-            let ignored_dir = std::path::Path::new(ignored_output_path)
-                .parent()
-                .unwrap_or(std::path::Path::new("."));
-            let ignored_json_path = ignored_dir.join("complexipy-ignored.json");
-
-            let ignored_data: Vec<serde_json::Value> = ignored_locations
+    let (locations, failed_paths) = collected.map_err(ExportError::Io)?;
+    let json_path = if failed_paths.is_empty() {
+        if let Some(path) = json_path {
+            let data: Vec<serde_json::Value> = locations
                 .iter()
                 .map(|location| {
                     serde_json::json!({
@@ -49,23 +72,29 @@ pub fn handle_report_ignored(
                     })
                 })
                 .collect();
-            let serialized = serde_json::to_string_pretty(&ignored_data).map_err(|e| {
-                ExportError::Serialize(format!("Failed to serialize ignored locations: {}", e))
+            let serialized = serde_json::to_string_pretty(&data).map_err(|error| {
+                ExportError::Serialize(format!("Failed to serialize ignored locations: {}", error))
             })?;
-            fs::write(&ignored_json_path, format!("{}\n", serialized)).map_err(|e| {
+            fs::write(&path, format!("{}\n", serialized)).map_err(|error| {
                 ExportError::Io(format!(
                     "Failed to write ignored locations to {}: {}",
-                    ignored_json_path.display(),
-                    e
+                    path.display(),
+                    error
                 ))
             })?;
-
-            Some(ignored_json_path.to_string_lossy().into_owned())
+            Some(path.to_string_lossy().into_owned())
         } else {
             None
-        };
+        }
+    } else {
+        None
+    };
 
-    Ok((ignored_locations, ignored_json_path))
+    Ok(IgnoredReport {
+        locations,
+        failed_paths,
+        json_path,
+    })
 }
 
 pub fn handle_removable_ignores(
@@ -73,15 +102,13 @@ pub fn handle_removable_ignores(
     exclude: &[String],
     max_complexity_allowed: u64,
     invocation_path: &str,
-) -> Vec<RemovableIgnore> {
+) -> Result<(Vec<RemovableIgnore>, Vec<String>), String> {
     collect_removable_ignored_locations_shared(
         paths,
         exclude,
         max_complexity_allowed,
         invocation_path,
     )
-    .map(|(removable_ignores, _)| removable_ignores)
-    .unwrap_or_default()
 }
 
 #[cfg(test)]

@@ -57,15 +57,24 @@ ignoring the second element silently discards them. `invocation_path` is the
 existing-directory root for both input lookup and result labels, using the
 same rules as `file_complexity`'s `base_path`. Explicit and directory-discovered
 results identify a file the same way. Failed paths are absolute resolved paths
-(canonical when the file exists); directory setup failures may append an error
-message to the absolute directory path.
+(canonical when the path exists), with no appended error text. An invalid
+exclusion pattern reports the walked directory; emitted traversal errors report
+the failing path, or the walk root if the walker supplies no path. Results from
+successfully processed files survive those failures. Successful duplicate inputs
+remain duplicated, and overlapping requests may repeat failed paths too; callers
+must not assume either list has set semantics.
 
 Directory discovery applies Python-extension, hidden/ignore-file and exclusion
 filters. Explicit files bypass those discovery filters. These rules, mixed
 success/failure results and root-relative lookup are pinned in core
-`tests/runner_paths.rs` and `tests/test_path_roots.py`. Traversal-entry errors
-can still be dropped by the underlying walkers; a successful return is not
-proof that every entry was readable. See [CLI rough edges](cli.md#known-rough-edges).
+`tests/runner_paths.rs` and `tests/test_path_roots.py`. Real unreadable-directory
+failures and plain failure-path strings are pinned in
+`tests/test_population_failures.py` and the installed-wheel runtime contract.
+Both walkers' emitted errors, including malformed ignore-rule errors attached
+to successful entries, are reported. The `ignore` dependency still suppresses
+ignore-file I/O errors internally; an empty failure list does not prove every
+filter file was read. Marker-recognition gaps are also separate from traversal
+completeness. See [CLI rough edges](cli.md#known-rough-edges).
 
 ```python
 compute_diff(

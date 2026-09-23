@@ -56,7 +56,9 @@ EXPECTED_DIAGNOSTICS: dict[str, list[tuple[int, str]]] = {
 
 RUNTIME_CHECKS = """
 import ast
+from functools import partial
 from pathlib import Path
+from tempfile import TemporaryDirectory
 from types import GetSetDescriptorType, UnionType
 from typing import get_args, get_origin
 
@@ -215,6 +217,28 @@ except TypeError:
     pass
 else:
     raise SystemExit("code_complexity accepted an unknown keyword")
+with TemporaryDirectory() as directory:
+    root = Path(directory).resolve()
+    (root / "good.py").write_text("def f():  # complexipy: ignore\\n    pass\\n")
+    blocked = root / "blocked"
+    blocked.mkdir()
+    (blocked / "hidden.py").write_text("def hidden():\\n    pass\\n")
+    collectors = (
+        complexipy.collect_all_ignored_locations,
+        partial(complexipy.collect_removable_ignored_locations, max_complexity_allowed=15),
+    )
+    blocked.chmod(0)
+    try:
+        for collector in collectors:
+            rows, failed = collector(["."], [], invocation_path=str(root))
+            assert [row.path for row in rows] == ["good.py"]
+            assert failed == [blocked.as_posix()]
+    finally:
+        blocked.chmod(0o700)
+    for collector in collectors:
+        rows, failed = collector(["."], ["["], invocation_path=str(root))
+        assert not rows
+        assert failed == [root.as_posix()]
 print(native.__file__)
 """
 

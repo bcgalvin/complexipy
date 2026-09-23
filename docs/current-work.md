@@ -14,12 +14,17 @@ Update it as work lands and remove completed tasks rather than building a log.
   No further public-base, collector-root or basename-compatibility work is due.
 - The parent's adopted wheel is still 8.1.0 from `7f27ffb`, not current fork
   source. Source commits do not refresh its wheel, gitlink or environments.
-- The batches below are not implemented. Parent reassessment is complete;
+- The population/CLI batch now preserves emitted discovery and collector
+  failures, rejects empty paths and bad TOML, aligns quiet gates, protects
+  comparison state on incomplete collections and invalidates failed marker JSON.
+  Its behavior is covered by real permission-error, state-reuse and collector
+  contract tests; see the maintenance catalog's Fixed section.
+- Remaining batches below are not implemented. Parent reassessment is complete;
   parent edits still await confirmation in that session. Coordination messages
   do not answer another session's approval prompt.
-- The latest scope additions were checked against source and existing tests,
-  not reproduced at runtime. Implementation must establish failing regression
-  cases before calling those defects fixed.
+- A new runtime probe found that `ignore` suppresses ignore-file I/O errors
+  internally. Emitted-error propagation is fixed, but complete filter validation
+  remains open. Keep this limitation separate from suppression-marker parity.
 
 ## Engineering boundaries
 
@@ -35,69 +40,7 @@ because they exercise the actual consumer route.
 
 ## Fork sequence
 
-### 1. Population failures and CLI integrity - next
-
-Make incomplete work observable from discovery through the CLI exit code.
-
-- Return discovered files and traversal failures from
-  `crates/complexipy-core/src/helpers/exclude.rs` `get_paths_to_process`.
-  Capture errors from both existing walkers, preserving their successful
-  discovery/exclusion behavior; do not rewrite them merely to introduce an
-  abstraction. Preserve successful rows and propagate failures through analysis
-  and both collectors in `runner.rs`; a small internal result is sufficient.
-- Stop dropping collector failures in
-  `crates/complexipy-cli/src/utils/ignored.rs` `handle_report_ignored` and
-  `handle_removable_ignores`. Aggregate every failure source; decide separately
-  whether identical diagnostics are merged for presentation. Never deduplicate
-  successful input results: input multiplicity remains intentional.
-- Choose a consistent failed-entry shape: current collectors mix bare paths and
-  `path: error` strings. Preserve absolute resolved failure-path identity,
-  canonical when the path exists. Update `AGENTS.md`, `docs/python-api.md`,
-  binding/stub docstrings and installed-wheel cases for the chosen contract,
-  following `ffi-change` if the public contract changes.
-- Reject a final empty configured `paths` list in `utils/config.rs`
-  `resolve_config`. Distinguish an absent configuration from a malformed or
-  unreadable candidate in `utils/toml.rs`. Do not reject a valid requested
-  directory merely because discovery filters select no files.
-- Make `--quiet` affect presentation, not required checks or exit status.
-  Fix its `--ignore-complexity` discrepancy. Resolve the removable-report
-  check set deliberately: it currently runs only outside quiet mode, so simply
-  adding its failures to the gate would create another quiet-dependent result.
-- Prevent snapshot creation/watermark rewrite and previous-function cache
-  advancement when the analysis population is incomplete. `run.rs` `run_at`
-  currently invokes these writes regardless of `failed_paths`. Cache loading
-  and replacement are coupled in `remember_previous_functions`; choose a
-  load-only path or omit cached deltas on partial runs. Useful partial
-  console/export results may remain available, but must retain clear failure
-  diagnostics and a nonzero outcome.
-- A successful, complete requested marker JSON report must overwrite its file
-  with `[]` when empty. `handle_report_ignored` currently leaves an earlier
-  `complexipy-ignored.json` untouched. Define and test failed/partial-report
-  output behavior too; neither stale data nor an unsuccessful empty scan may
-  masquerade as a new complete inventory.
-
-Update `docs/cli.md` and the relevant API/report documentation in the same
-change. Replace tests that intentionally pin superseded behavior, including
-`a_malformed_complexipy_toml_falls_through_to_the_next_candidate`, with assertions
-for the chosen failure contract.
-
-Acceptance:
-
-- Reproduce an emitted walker error on this machine and retain good files from
-  the same request. Check core analysis, both core collectors, both public
-  Python collector bindings and CLI orchestration. This does not require a new
-  Python directory-analysis API.
-- Cover failures from both CLI collector routes, repeated diagnostics,
-  malformed/unreadable config, empty requested paths, and a valid empty
-  filtered population.
-- Check quiet/non-quiet gate agreement and unchanged snapshot/cache bytes
-  after incomplete analysis. Do not freeze those stores merely because a
-  complete analysis exceeds the complexity threshold.
-- Cover nonempty-to-empty marker JSON reuse and failed collection in a reused
-  output directory. Keep existing canonical-path, exclusion and multiplicity
-  regressions passing.
-
-### 2. Output precision
+### 1. Output precision - next
 
 - Correct `utils/snapshot.rs` `format_function_location`: `path` already
   includes the filename. Replace the tests that expect `a.py/a.py:f` with the
@@ -107,13 +50,13 @@ Acceptance:
   caret and original snippet through `.ok()`. Canonical labels already solve
   the former path-base ambiguity; do not reintroduce path compatibility logic.
 - Address the catalog's console sort/header discrepancies with behavioral
-  tests. Their output work is not a prerequisite for the next population fix.
+  tests. Do not change scoring or snapshot identity as part of output cleanup.
 
-### 3. Suppression and marker parity
+### 2. Suppression and marker parity
 
 Unify the recognition and location rules used by scoring, the all-markers
 collector and the removable-marker collector. This is marker discovery inside
-successfully read files, distinct from batch 1's file-discovery failures.
+successfully read files, distinct from the now-reported file-discovery failures.
 
 Anchor: `crates/complexipy-core/src/utils.rs` `find_noqa_comment`,
 `collect_ignored_locations`, `filter_removable_ignores`, and the scorer's
@@ -129,7 +72,7 @@ above-decorator marker lies inside the function range. Pin the threshold and
 `no_ignore` behavior without claiming that matching file labels proves complete
 marker detection.
 
-### 4. Deliberate scoring corrections
+### 3. Deliberate scoring corrections
 
 Address the catalog's expression-walker omissions in `utils.rs`
 `count_bool_ops` and the relevant scorer arms. Derive each desired score and
@@ -142,7 +85,7 @@ explicit scoring-contract decisions; they are not automatic extensions of the
 boolean-walker fix. Record the chosen behavior and test it. Keep scoring work
 separate from discovery and output changes so score differences remain clear.
 
-### 5. Exact, fail-closed comparisons
+### 4. Exact, fail-closed comparisons
 
 The public file base exists; do not schedule it again. The remaining work is
 in `crates/complexipy-core/src/diff.rs`, its CLI orchestration and Python API.
@@ -177,6 +120,13 @@ matching flags, valid no-change comparisons and nonzero outcomes on failures.
 Use the `ffi-change` procedure for any binding/stub/error-contract changes.
 
 ### Remaining catalog work
+
+Resolve the newly identified ignore-file I/O validation question before claiming
+complete filter coverage. The dependency suppresses these errors before the
+fork's discovery code sees them. Reproduce unreadable local and inherited/Git
+ignore inputs, decide the supported validation boundary and test it; do not
+silently replace the existing two-walker selection behavior with a new framework.
+This is separate from the completed emitted-error propagation work.
 
 No open issue is silently removed by this sequence. Continue through the
 [open bugs](maintenance/design-issues-and-bugs.md#open) and
@@ -244,10 +194,12 @@ Minimum acceptance for adoption:
 - Update the current wheel metadata and parent gitlink together. Installation
   into a provider environment remains explicit, not implied by wheel creation.
 
-Complete file-population claims await batch 1; complete suppression inventories
-await batch 3; trustworthy native comparisons await batch 5. Current bounded
-direct use can adopt earlier with those limitations still documented. No parent
-runner integration or historical evidence archive is required.
+Emitted file-discovery/processing failures now reach the CLI gate, but complete
+filter validation still needs the ignore-file I/O decision above. Complete
+suppression inventories await marker parity; trustworthy native comparisons
+await the diff batch. Current bounded direct use can adopt earlier with those
+limitations still documented. No parent runner integration or historical
+evidence archive is required.
 
 ## Verification and completion
 

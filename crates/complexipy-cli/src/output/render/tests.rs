@@ -191,7 +191,7 @@ fn invalid_paths_rendering() {
     assert!(!has_success);
     assert!(output.contains("error"));
     assert!(output.contains("Failed to process nope.py"));
-    assert!(output.contains("Please check file/folder exists or check syntax"));
+    assert!(output.contains("Check paths, permissions, ignore/exclusion rules and Python syntax"));
 
     let (has_success, output) = print_invalid_paths(&[]);
     assert!(has_success);

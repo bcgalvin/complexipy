@@ -1,63 +1,46 @@
-use std::{fs, path::Path};
-
-use toml;
+use std::{fs, io::ErrorKind, path::Path};
 
 use crate::types::Config;
 
-pub fn get_complexipy_toml_config(invocation_path: &str) -> Option<Config> {
+pub fn get_complexipy_toml_config(invocation_path: &str) -> Result<Option<Config>, String> {
     let invocation_path = Path::new(invocation_path);
 
-    if let Some(toml) = load_toml_config(invocation_path, "complexipy.toml") {
-        return Some(toml);
-    } else if let Some(toml) = load_toml_config(invocation_path, ".complexipy.toml") {
-        return Some(toml);
-    }
-    load_pyproject_config(invocation_path)
-}
-
-fn load_toml_config(invocation_path: &Path, file_name: &str) -> Option<Config> {
-    let config_file_path = invocation_path.join(file_name);
-
-    if !config_file_path.exists() {
-        return None;
-    }
-
-    let content = fs::read_to_string(&config_file_path).ok()?;
-
-    match toml::from_str(&content) {
-        Ok(config) => Some(config),
-        Err(e) => {
-            eprintln!("Failed to parse {}: {}", config_file_path.display(), e);
-            None
+    for name in ["complexipy.toml", ".complexipy.toml"] {
+        if let Some(content) = read_candidate(invocation_path, name)? {
+            return toml::from_str(&content).map(Some).map_err(|error| {
+                format!(
+                    "Failed to parse {}: {}",
+                    invocation_path.join(name).display(),
+                    error
+                )
+            });
         }
     }
-}
 
-fn load_pyproject_config(invocation_path: &Path) -> Option<Config> {
-    let config_file_path = invocation_path.join("pyproject.toml");
-
-    if !config_file_path.exists() {
-        return None;
-    }
-
-    let content = fs::read_to_string(&config_file_path).ok()?;
-
-    let value: toml::Value = match toml::from_str(&content) {
-        Ok(v) => v,
-        Err(e) => {
-            eprintln!("Failed to parse {}: {}", config_file_path.display(), e);
-            return None;
-        }
+    let Some(content) = read_candidate(invocation_path, "pyproject.toml")? else {
+        return Ok(None);
     };
+    let config_path = invocation_path.join("pyproject.toml");
+    let value: toml::Value = toml::from_str(&content)
+        .map_err(|error| format!("Failed to parse {}: {}", config_path.display(), error))?;
+    match value.get("tool").and_then(|tool| tool.get("complexipy")) {
+        Some(section) => section
+            .clone()
+            .try_into()
+            .map(Some)
+            .map_err(|error| format!("Invalid config in {}: {}", config_path.display(), error)),
+        None => Ok(None),
+    }
+}
 
-    let section = value.get("tool")?.get("complexipy")?;
-
-    match section.clone().try_into() {
-        Ok(config) => Some(config),
-        Err(e) => {
-            eprintln!("Invalid config in {}: {}", config_file_path.display(), e);
-            None
-        }
+fn read_candidate(invocation_path: &Path, name: &str) -> Result<Option<String>, String> {
+    let path = invocation_path.join(name);
+    match fs::symlink_metadata(&path) {
+        Ok(_) => fs::read_to_string(&path)
+            .map(Some)
+            .map_err(|error| format!("Failed to read {}: {}", path.display(), error)),
+        Err(error) if error.kind() == ErrorKind::NotFound => Ok(None),
+        Err(error) => Err(format!("Failed to inspect {}: {}", path.display(), error)),
     }
 }
 

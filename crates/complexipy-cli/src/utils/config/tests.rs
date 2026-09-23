@@ -59,16 +59,17 @@ fn toml_paths_used_when_cli_absent() {
 }
 
 #[test]
-fn toml_without_paths_allows_empty() {
-    let config = resolve(&[], Some("max-complexity-allowed = 10")).expect("resolve should succeed");
-
-    assert_eq!(config.paths, Vec::<String>::new());
+fn toml_empty_or_missing_paths_requires_cli_paths() {
+    for source in ["max-complexity-allowed = 10", "paths = []"] {
+        assert_eq!(resolve(&[], Some(source)), Err(ConfigError::MissingPaths));
+        assert_eq!(resolve(&["src"], Some(source)).unwrap().paths, ["src"]);
+    }
 }
 
 #[test]
 fn cli_overrides_toml() {
     let config = resolve(
-        &["--max-complexity-allowed", "20"],
+        &["src", "--max-complexity-allowed", "20"],
         Some("max-complexity-allowed = 10"),
     )
     .expect("resolve should succeed");

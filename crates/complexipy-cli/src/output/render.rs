@@ -277,7 +277,7 @@ pub fn print_invalid_paths(invalid_paths: &[String]) -> (bool, String) {
     let mut lines = Vec::new();
     for failed_path in invalid_paths {
         lines.push(format!(
-            "{}: Failed to process {} - Please check file/folder exists or check syntax",
+            "{}: Failed to process {} - Check paths, permissions, ignore/exclusion rules and Python syntax",
             "error".bold().red(),
             failed_path.bold().white()
         ));

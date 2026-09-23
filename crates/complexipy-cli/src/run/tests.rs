@@ -234,6 +234,175 @@ fn analysis_and_marker_json_share_canonical_paths() {
 }
 
 #[test]
+fn quiet_and_normal_runs_honor_ignore_complexity() {
+    for quiet in [false, true] {
+        let dir = tempdir().unwrap();
+        fs::write(dir.path().join("complex.py"), COMPLEX).unwrap();
+        let mut args = vec!["complex.py", "--snapshot-ignore", "--ignore-complexity"];
+        if quiet {
+            args.push("--quiet");
+        }
+        assert_eq!(
+            run_at(parse(&args), dir.path().to_str().unwrap()),
+            std::process::ExitCode::SUCCESS
+        );
+    }
+}
+
+#[test]
+fn configured_empty_paths_and_malformed_candidates_fail_closed() {
+    for config in ["quiet = true\n", "paths = []\n", "invalid ["] {
+        let dir = tempdir().unwrap();
+        fs::write(dir.path().join("complexipy.toml"), config).unwrap();
+        fs::write(dir.path().join(".complexipy.toml"), "paths = ['.']\n").unwrap();
+        assert_eq!(
+            run_at(parse(&[]), dir.path().to_str().unwrap()),
+            std::process::ExitCode::FAILURE
+        );
+        assert!(!dir.path().join("complexipy-snapshot.json").exists());
+        assert!(!dir.path().join(".complexipy_cache").exists());
+    }
+}
+
+#[test]
+fn incomplete_analysis_never_creates_snapshot_or_cache() {
+    for quiet in [false, true] {
+        let dir = tempdir().unwrap();
+        fs::write(dir.path().join("good.py"), SIMPLE).unwrap();
+        let mut args = vec!["good.py", "missing.py", "--snapshot-create"];
+        if quiet {
+            args.push("--quiet");
+        }
+        assert_eq!(
+            run_at(parse(&args), dir.path().to_str().unwrap()),
+            std::process::ExitCode::FAILURE
+        );
+        assert!(!dir.path().join("complexipy-snapshot.json").exists());
+        assert!(!dir.path().join(".complexipy_cache").exists());
+    }
+}
+
+#[test]
+fn incomplete_analysis_preserves_existing_state_and_exports_good_rows() {
+    for quiet in [false, true] {
+        for create in [false, true] {
+            let dir = tempdir().unwrap();
+            fs::create_dir(dir.path().join("pkg")).unwrap();
+            let good = dir.path().join("pkg/good.py");
+            let bad = dir.path().join("pkg/bad.py");
+            fs::write(&good, COMPLEX).unwrap();
+            fs::write(&bad, COMPLEX).unwrap();
+            let root = dir.path().to_str().unwrap();
+            assert_eq!(
+                run_at(parse(&["pkg", "--snapshot-create"]), root),
+                std::process::ExitCode::SUCCESS
+            );
+            let snapshot_path = dir.path().join("complexipy-snapshot.json");
+            let cache_path = dir.path().join(".complexipy_cache/v/cache/functions");
+            let snapshot = fs::read(&snapshot_path).unwrap();
+            let cache = fs::read(&cache_path).unwrap();
+            fs::write(&good, SIMPLE).unwrap();
+            fs::write(&bad, "def broken(:\n").unwrap();
+            let mut args = vec!["pkg", "--output-format", "json"];
+            if quiet {
+                args.push("--quiet");
+            }
+            if create {
+                args.push("--snapshot-create");
+            }
+            assert_eq!(run_at(parse(&args), root), std::process::ExitCode::FAILURE);
+            assert_eq!(fs::read(&snapshot_path).unwrap(), snapshot);
+            assert_eq!(fs::read(&cache_path).unwrap(), cache);
+            let rows: Vec<serde_json::Value> = serde_json::from_slice(
+                &fs::read(dir.path().join("complexipy-results.json")).unwrap(),
+            )
+            .unwrap();
+            assert_eq!(rows.len(), 1);
+            assert_eq!(rows[0]["path"], "pkg/good.py");
+        }
+    }
+}
+
+#[test]
+fn complete_over_threshold_analysis_still_updates_cache() {
+    let dir = tempdir().unwrap();
+    fs::write(dir.path().join("a.py"), SIMPLE).unwrap();
+    let root = dir.path().to_str().unwrap();
+    assert_eq!(
+        run_at(parse(&["a.py", "--quiet"]), root),
+        std::process::ExitCode::SUCCESS
+    );
+    let cache_path = dir.path().join(".complexipy_cache/v/cache/functions");
+    let before = fs::read(&cache_path).unwrap();
+    fs::write(dir.path().join("a.py"), COMPLEX).unwrap();
+    assert_eq!(
+        run_at(parse(&["a.py", "--quiet"]), root),
+        std::process::ExitCode::FAILURE
+    );
+    assert_ne!(fs::read(&cache_path).unwrap(), before);
+}
+
+#[test]
+fn a_valid_filtered_empty_population_succeeds() {
+    let dir = tempdir().unwrap();
+    fs::create_dir(dir.path().join("pkg")).unwrap();
+    fs::write(dir.path().join("pkg/a.py"), COMPLEX).unwrap();
+    assert_eq!(
+        run_at(
+            parse(&[
+                "pkg",
+                "--exclude",
+                "a.py",
+                "--quiet",
+                "--report-ignored",
+                "--output-format",
+                "json"
+            ]),
+            dir.path().to_str().unwrap(),
+        ),
+        std::process::ExitCode::SUCCESS
+    );
+    assert_eq!(
+        fs::read_to_string(dir.path().join("complexipy-ignored.json")).unwrap(),
+        "[]\n"
+    );
+}
+
+#[test]
+fn invalid_or_colliding_outputs_do_not_touch_marker_json_or_state() {
+    for (formats, output) in [
+        ("json", "complexipy-ignored.json"),
+        ("csv,json", "results.json"),
+    ] {
+        let dir = tempdir().unwrap();
+        fs::write(
+            dir.path().join("a.py"),
+            "def f():  # complexipy: ignore\n    pass\n",
+        )
+        .unwrap();
+        let report = dir.path().join("complexipy-ignored.json");
+        fs::write(&report, "sentinel").unwrap();
+        let exit = run_at(
+            parse(&[
+                "a.py",
+                "--report-ignored",
+                "--output-format",
+                formats,
+                "--output",
+                output,
+                "--snapshot-create",
+            ]),
+            dir.path().to_str().unwrap(),
+        );
+        assert_eq!(exit, std::process::ExitCode::FAILURE);
+        assert_eq!(fs::read_to_string(&report).unwrap(), "sentinel");
+        assert!(!dir.path().join("results.json").exists());
+        assert!(!dir.path().join("complexipy-snapshot.json").exists());
+        assert!(!dir.path().join(".complexipy_cache").exists());
+    }
+}
+
+#[test]
 fn version_flag_handled_by_clap() {
     let error = CliArgs::try_parse_from(["complexipy", "--version"]).unwrap_err();
     assert_eq!(error.kind(), clap::error::ErrorKind::DisplayVersion);

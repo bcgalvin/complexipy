@@ -9,8 +9,7 @@ convey.
 
 ## Configuration discovery
 
-Config is read from the **first** of these that is found *and parses* in the
-invocation directory:
+Config is read from the **first existing candidate** in the invocation directory:
 
 1. `complexipy.toml`
 1. `.complexipy.toml`
@@ -18,9 +17,12 @@ invocation directory:
 
 **First hit wins outright - the files are not merged, and there is no upward
 search** (`crates/complexipy-cli/src/utils/toml/tests.rs`). A candidate that
-fails to parse is not fatal: the error goes to stderr and discovery moves on to
-the next candidate, then to the built-in defaults
-(`a_malformed_complexipy_toml_falls_through_to_the_next_candidate`). Three
+cannot be read or parsed is fatal, even when CLI paths/options are supplied:
+the error goes to stderr and analysis does not start. A valid `pyproject.toml`
+without `[tool.complexipy]` means no config. The tests
+`a_malformed_complexipy_toml_stops_discovery`,
+`unreadable_candidates_fail_instead_of_falling_through` and
+`malformed_later_candidates_fail_closed` pin these distinctions. Three
 consequences worth internalizing:
 
 - If a `complexipy.toml` exists, a `[tool.complexipy]` block in the same
@@ -29,11 +31,12 @@ consequences worth internalizing:
 - Discovery is relative to the **invocation directory**, not the analyzed path.
   Running the tool from outside a target means the target's own thresholds are
   silently ignored.
-- A typo that breaks `complexipy.toml` changes the threshold to the next
-  candidate's, or to 15, with only a stderr line to show for it - and a config
-  file that parses but has no `paths` key makes a bare `complexipy` analyze
-  nothing and exit 0 (`resolve_config` only errors on missing paths when no
-  config file loaded at all).
+- A typo that breaks `complexipy.toml` cannot silently select another threshold.
+  A final missing or empty path list is also an error, regardless of whether a
+  config loaded. CLI paths can supply a list omitted by valid config
+  (`toml_empty_or_missing_paths_requires_cli_paths`). A nonempty requested
+  directory with no files selected by filters remains a valid empty analysis
+  (`a_valid_filtered_empty_population_succeeds` in `run/tests.rs`).
 
 Keys are kebab-case and mirror the flag names. `paths`, `exclude` and
 `output-format` accept a bare string or a list. `diff` is a **table**, not the
@@ -61,7 +64,9 @@ working directory. The directory must exist; an invalid invocation root fails
 the run. Roots and existing input paths are canonicalized, including symlinks.
 Analysis and marker reports use the same file identity: paths beneath the root
 are root-relative, and outside-root paths are absolute. Failed targets are
-reported as absolute resolved paths, canonical when they exist.
+reported as plain absolute resolved paths, canonical when they exist. Failure
+entries never append diagnostic text; an invalid exclusion pattern identifies
+the walked directory, and a walker error without a path identifies its root.
 
 Directory discovery selects `.py` files that survive hidden-file, `.ignore`,
 `.gitignore` (inside a Git repository) and `--exclude` filtering. Exclusion globs
@@ -72,8 +77,12 @@ filter. Overlapping inputs are not deduplicated.
 Core `tests/runner_paths.rs` pins these populations and failure paths;
 `run/tests.rs` pins relative-directory lookup, an exclusion changing the
 threshold gate's result, and matching analysis/marker JSON identities for
-in-root and outside-root targets (including symlink aliases). Traversal
-failures remain a limitation below.
+in-root and outside-root targets (including symlink aliases). Emitted errors
+from both walkers, including ignore-rule errors attached to directory entries,
+are retained alongside good rows. `tests/test_population_failures.py` pins real
+unreadable-directory errors through both Python collectors and CLI execution.
+Failure paths are deduplicated for CLI diagnostics, never successful rows.
+The dependency's silent ignore-file I/O failures remain a limitation below.
 
 ## Machine-readable output
 
@@ -95,8 +104,9 @@ the [Python API](python-api.md).
 ## Exit codes
 
 - **0** - analysis ran and every gate passed.
-- **1** - a gate failed, or the run itself failed: no paths and no config file,
-  a `cache-dir` that is not a non-empty string, an unwritable output, or an
+- **1** - a gate failed, or the run itself failed: a missing/empty path list,
+  malformed/unreadable discovered config, a `cache-dir` that is not a non-empty
+  string, an unwritable output, or an
   invocation root that is not an existing directory. `run_at` returns the same
   failure code for both (source read of `run.rs`;
   `run/tests.rs` pins `missing_paths_exits_failure`).
@@ -114,8 +124,10 @@ the visual-only form, not the stricter one. **`--staged` on its own selects the
 same ratchet gate as `--diff HEAD`** (`resolve_diff_flags` supplies the
 reference; `resolve_diff_flags_staged_defaults_to_head`), so a bare
 `complexipy --staged` never enforces the threshold either. `--ignore-complexity`
-forces the threshold check to pass while leaving the others intact - except under
-`--quiet`, where it is not consulted at all; see the rough edges below.
+forces the threshold check to pass while leaving the others intact, in both
+quiet and normal modes (`quiet_and_normal_runs_honor_ignore_complexity`).
+The path gate includes analysis and both requested/automatic collector failures;
+quiet mode changes presentation, not the set of checks.
 
 The ratchet gate fails open. When the comparison cannot be made - `--staged`
 outside a git repository, or a staged reference git cannot resolve - `run.rs`
@@ -148,15 +160,26 @@ same thing:
 
 - **`--report-ignored`** lists recognized markers. With `--output-format json` it
   also writes them to `complexipy-ignored.json` beside the resolved JSON output
-  path (`utils/ignored.rs`; `utils/ignored/tests.rs`). Its scanner
+  path (`utils/ignored.rs`; `utils/ignored/tests.rs`). A complete empty collection
+  writes `[]`, replacing any preceding report. Failed/partial collection removes
+  that requested JSON file and reports failure, rather than presenting stale or
+  partial data as a complete inventory. This completeness check belongs to the
+  marker collector: an analysis-only parse failure still fails the run but does
+  not invalidate a completed marker inventory. The full output-format selection
+  is validated before marker output; analysis JSON cannot use the same path as
+  `complexipy-ignored.json`. No marker JSON file is touched when the report or
+  JSON output is not requested. Its scanner
   (`collect_ignored_locations`) is a separate line-based pass that looks for
   `def ` lines only, so two placements that do suppress are never listed: a
   marker above the first decorator, and any marker on an `async def` (source
   read; recorded in the realignment catalog).
 - **The removable-marker report** - markers whose function no longer exceeds the
-  threshold - runs automatically at the end of every run that is not `--quiet`,
-  with no flag to request or suppress it, and costs a second full walk and parse
-  of the path set (source read of `run.rs`).
+  threshold - is collected automatically in both normal and quiet runs, but
+  displayed only outside quiet mode. It has no flag to disable it, and costs a
+  second walk of the path set plus parsing of files containing recognized
+  markers (`run.rs`, `collect_removable_ignores_from_file` in core `runner.rs`).
+  Its failures contribute to the same path gate as analysis and the all-marker
+  report; a top-level collection error is fatal rather than an empty report.
 
 ## Where the tool writes
 
@@ -170,21 +193,27 @@ Three paths; only the snapshot has no override:
   [Diff and snapshots](diff-and-snapshots.md).
 - Whatever `--output` resolves to.
 
+On an incomplete analysis or collector result, snapshot creation/watermark
+updates and previous-function cache replacement are skipped, in both display
+modes. Existing state stays byte-identical; no snapshot baseline or cached delta
+is used for that partial display. Good rows may still be exported, accompanied
+by stderr failure diagnostics and exit 1. Analysis exports have no embedded
+completeness flag: consumers must check the exit code. A complete over-threshold
+analysis is not frozen merely because its threshold gate fails. `run/tests.rs` pins new
+state prevention, existing-state byte preservation and complete-run cache updates.
+
 ## Known rough edges
 
-- Directory discovery drops entry-level errors from both underlying walkers
-  (`helpers/exclude.rs`); those entries appear in neither results nor
-  `failed_paths`. Per-file read/parse failures after discovery are reported.
-  This is separate from root validation and is not a complete-readability
-  guarantee.
+- The `ignore` dependency suppresses I/O errors reading ignore files internally.
+  An unreadable `.ignore` can therefore leave its rules unapplied without a
+  failed-path entry, even though emitted traversal/ignore-rule errors are now
+  reported. Failure reporting is not yet proof of complete filter validation;
+  this is recorded separately in the maintenance catalog.
 
 - `--color` is currently inert. Output is always colored; only `--plain` produces
   clean text, and it drops everything but path, name and score.
 - `-s file_name` orders by function name in the console while the CSV export
   orders by path.
-- `--quiet --ignore-complexity` exits 1 on an over-threshold function that the
-  same run without `--quiet` passes: the quiet path in `output.rs`
-  `handle_display` never reads `ignore_complexity`.
 - Every non-quiet `--diff-only` run prints "--diff and --diff-only both set",
   because `run.rs` tests the flags after `resolve_diff_flags` has already
   cleared `--diff`. When both really are set, `--diff`'s reference is dropped in

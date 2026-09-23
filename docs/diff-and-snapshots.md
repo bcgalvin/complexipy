@@ -85,11 +85,19 @@ cases).
 
 `--snapshot-ignore` skips the comparison. The file is meant to be committed.
 
+An incomplete analysis or marker collection skips snapshot creation, comparison
+and watermark rewrites, including an explicit `--snapshot-create`. Existing
+snapshot and previous-function cache bytes remain unchanged; partial output uses
+neither snapshot allowances nor cached deltas. The CLI still exports good rows
+with failure diagnostics and a nonzero exit. `run/tests.rs` pins both prevention
+of new state and preservation of existing state on incomplete runs.
+
 Two behaviors worth knowing before wiring this into anything:
 
-- **A passing run rewrites the file.** The rewrite is the ratchet - improved
-  functions are removed automatically - and it merges, preserving entries for
-  files outside the current run. It is not gated behind `--snapshot-create`.
+- **A complete run with a passing snapshot check rewrites the file.** The
+  rewrite records improved scores and removes functions at or below the
+  threshold. It merges, preserving entries for files outside the requested
+  scope. It is not gated behind `--snapshot-create`.
 - **The path is fixed.** It is always `complexipy-snapshot.json` in the
   invocation directory, with no flag to redirect it. Combined with the point
   above, running the tool in a directory that already holds a snapshot will

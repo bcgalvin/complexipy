@@ -52,10 +52,10 @@ batches; neither document authorizes unrelated implementation:
    source review and semantic judgments, not this analyzer.
 1. **Make external-CWD surveys reliable.** Path resolution and analysis-walk /
    exclusion coverage are addressed by the path-root batch below; suppression
-   parity and silent walker-entry failures remain. A caller running a survey
-   needs to distinguish a filtered or failed population from a complete
-   inventory. Include the empty-path config and quiet/ignore-complexity defects
-   in the next CLI population/gate batch.
+   parity and the dependency's silent ignore-file I/O failures remain. Emitted
+   walker errors, empty-path config and quiet/ignore-complexity are addressed by
+   the population/CLI batch. A caller must still distinguish a filtered or
+   failed population from a complete inventory.
 1. **Before trusting native comparisons, make failures explicit.** Cover path
    pairing, missing refs, reference parse failures, staged scope and matching
    analysis flags. Public `file_complexity(base_path=...)` now preserves
@@ -76,6 +76,37 @@ scheduled by this list. The removed-tooling inventory is not a competing roadmap
 ## Bugs
 
 ### Fixed
+
+- **Population and CLI integrity failures.** Fixed in the population/CLI batch:
+  - `helpers/exclude.rs` `get_paths_to_process` retains both walkers' emitted
+    errors and ignore-rule errors on successful entries alongside good files.
+    Core analysis and both collectors return plain absolute failed paths,
+    including the directory for invalid exclusion setup. No diagnostic text is
+    appended to paths. Real unreadable directories, malformed ignore rules,
+    exclusions and successful-row multiplicity are pinned in `runner_paths.rs`;
+    Python collectors and CLI propagation in `tests/test_population_failures.py`,
+    plus collector runtime cases in the installed-wheel harness.
+  - `utils/ignored.rs` preserves both collectors' failed paths and top-level
+    errors. `run.rs` runs the automatic removable check in quiet mode too,
+    merges failures before snapshot/cache comparison-state writes and
+    deduplicates diagnostics only.
+    Quiet mode now honors `--ignore-complexity`; `run/tests.rs` pins parity.
+  - Complete requested marker JSON overwrites with `[]` when empty. Failed or
+    partial marker collection removes the requested JSON file, preserving good
+    rows in the return value but not publishing an incomplete inventory.
+    `utils/ignored/tests.rs` pins stale-file reuse and top-level failure.
+  - Incomplete collections skip snapshots and cached deltas entirely and cannot
+    create/watermark snapshots or replace the previous-function cache. Good
+    analysis rows remain exportable with failure diagnostics. `run/tests.rs`
+    pins no new state, byte-identical existing state and complete over-threshold
+    cache advancement; snapshot schema and keys are unchanged.
+  - `resolve_config` rejects final missing/empty paths even with loaded config;
+    CLI paths may supply them and filtered-empty requested directories succeed.
+    `get_complexipy_toml_config` distinguishes absence from read/parse failure:
+    bad candidates fail instead of selecting another threshold. Config/TOML
+    unit tests and CLI tests pin these choices.
+  This closes emitted-error loss, not the dependency's internally suppressed
+  ignore-file I/O errors described under Open, nor marker-recognition gaps.
 
 - **Collector roots were ignored and file labels lost repository identity.**
   Fixed in the path-root batch: `runner.rs` `resolve_root` / `resolve_input`
@@ -352,55 +383,24 @@ Recorded by `chore(tooling): remove the pre-commit stack`.
   failure remains. This conclusion is a source read, not a runtime reproduction.
 
 - **Dead code.** `crates/complexipy-cli/src/output.rs`
-  `effective_sort_for_display` has no callers; `utils/snapshot.rs`
-  `SnapshotEvaluation.snapshot_result` is computed and tested but never read by
-  `run.rs`; `RuleMetadata` derives `Serialize, Deserialize` with no consumer;
-  `utils/ignored.rs` `handle_report_ignored` takes `_no_ignore`. The collectors'
-  `invocation_path` is now used for path resolution; it is not dead code.
+  `effective_sort_for_display` has no callers; `RuleMetadata` derives
+  `Serialize, Deserialize` with no consumer. The unused `handle_report_ignored`
+  parameter was removed in the population batch; `run.rs` now reads
+  `SnapshotEvaluation.snapshot_result` for both display modes. The collectors' `invocation_path` is used for path resolution; it is
+  not dead code.
 
-- **Directory walker entry errors disappear from the population.**
-  `crates/complexipy-core/src/helpers/exclude.rs` `get_paths_to_process` drops
-  `ignore::Walk` errors with `Err(_) => None` and wax entry errors via
-  `entry.ok()`. An unreadable subtree can therefore vanish without a failed
-  path in analysis or either collector. The path-root batch covers missing
-  inputs, invalid globs and read/parse failures after discovery, not this
-  discovery-time failure. Carry walker errors into the shared result contract
-  before treating an empty `failed_paths` list as proof of a complete survey;
-  do not pin silent omission as desirable behavior.
-
-- **CLI marker reports discard collection failures.**
-  `crates/complexipy-cli/src/utils/ignored.rs` `handle_report_ignored` drops
-  the collector's failed-path vector, although it propagates a top-level
-  error. `handle_removable_ignores` drops the vector and converts a top-level
-  error to an empty report with `unwrap_or_default`. The core collector
-  contract therefore does not reach the CLI intact. The latter report only
-  runs outside quiet mode in `run.rs` `run_at`; adding its failures to the exit
-  gate without choosing a consistent check set would create a new
-  quiet-dependent outcome. Source-confirmed; add end-to-end regression tests
-  in the population/CLI batch.
-
-- **An empty marker report can leave stale JSON behind.**
-  `utils/ignored.rs` `handle_report_ignored` writes `complexipy-ignored.json`
-  only for nonempty locations. Reusing the output directory after markers
-  disappear leaves the preceding report intact. The sibling
-  `report_without_comments_writes_no_file` test pins fresh-directory omission,
-  not safe reuse. A complete requested JSON report should overwrite with `[]`;
-  failed or partial collection must remain distinguishable from a successful
-  empty inventory. Source/test-read finding; add nonempty-to-empty and failed
-  collection reuse cases.
-
-- **Incomplete analysis can advance persistent comparison state.**
-  `run.rs` `run_at` calls `evaluate_snapshot` and `handle_display` before
-  evaluating `failed_paths`. `utils/snapshot.rs` can create or watermark a
-  snapshot; `output.rs` `handle_display` calls
-  `utils/cache.rs` `remember_previous_functions`, which replaces the stored
-  function population for the target key. Successful files from a partial
-  analysis can therefore advance state before the run reports failure.
-  Snapshot merging retains absent files; this is not a claim that failed
-  files are deleted from the snapshot. The population batch must prevent
-  state advancement on incomplete analysis while keeping useful partial
-  results and diagnostics. Source-confirmed; pin unchanged snapshot/cache
-  bytes on failure before closing this issue.
+- **Ignore-file I/O errors are suppressed inside the dependency.**
+  The locked `ignore` 0.4.25 dependency's `dir.rs` `create_gitignore` calls
+  `PartialErrorBuilder::maybe_push_ignore_io` in `lib.rs`, intentionally dropping
+  I/O errors while reading ignore files. An implementation-time probe on this
+  macOS machine made `.ignore` unreadable with mode `000`: analysis kept the
+  readable Python file and returned an empty failed-path list. Unlike malformed
+  ignore rules, this error is never emitted to `get_paths_to_process`.
+  Reporting both walkers' exposed errors does not fix this. Decide how to
+  validate the ignore inputs actually used (including inherited/Git rules)
+  before claiming complete filter validation; do not rewrite discovery or add
+  a partial preflight that falsely promises that coverage. This remains open,
+  distinct from marker placement and emitted traversal-error handling.
 
 - **Snapshot diagnostics duplicate the filename.**
   `utils/snapshot.rs` `format_function_location` joins `file_name` onto `path`,
@@ -433,23 +433,6 @@ Recorded by `chore(tooling): remove the pre-commit stack`.
   reference makes every function `NEW`, which the ratchet does catch.
   Documented in `docs/cli.md`; not pinned, since a passing test would ratify
   the hole.
-
-- **A config file without `paths` analyzes nothing and exits 0.**
-  `resolve_config` returns `MissingPaths` only when no config file loaded at
-  all; `Config.paths` is `#[serde(default)]`, so a file that parses but has no
-  `paths` key yields an empty path list, a run over nothing, and
-  `ExitCode::SUCCESS`. The error string ("You need to define paths ...") and
-  `docs/cli.md`'s exit-code list both promised otherwise until the page review
-  narrowed the claim. Not pinned.
-
-- **A malformed config file is skipped, not rejected.** `load_toml_config` and
-  `load_pyproject_config` print the parse error and return `None`, so
-  `get_complexipy_toml_config` falls through to the next candidate and then to
-  the built-in defaults. A typo in `complexipy.toml` silently changes the
-  threshold. Pinned as current behavior by
-  `a_malformed_complexipy_toml_falls_through_to_the_next_candidate`, because
-  `docs/cli.md` now documents it; failing closed is the better design and would
-  invert that test.
 
 - **The `--diff-only` warning fires on every `--diff-only` run.** `run.rs`
   checks `diff_only.is_some() && diff.is_none()` after `resolve_diff_flags`,
@@ -489,15 +472,6 @@ Recorded by `chore(tooling): remove the pre-commit stack`.
   on an untouched tree. `compute_staged_diff` is immune because both sides go
   through the same function. Documented in `docs/diff-and-snapshots.md`; not
   pinned.
-
-- **`--quiet` drops `--ignore-complexity`.** `handle_display` in
-  `crates/complexipy-cli/src/output.rs` returns `has_success_functions(...)` on
-  the quiet path without consulting `ignore_complexity`, while the non-quiet path
-  computes `all_pass || ignore_complexity` in `render.rs` `output_summary`.
-  `--quiet --ignore-complexity` therefore exits 1 on an over-threshold function
-  that the same run without `--quiet` passes. Documented as a rough edge in
-  `docs/cli.md`; deliberately not pinned, since the fix is a one-line behavior
-  change.
 
 - **The boolean-run walker does not descend through every expression.**
   `utils.rs` `count_bool_ops` recurses into comparisons, positional call
@@ -641,8 +615,9 @@ the threshold check with the regression ratchet (`diff_ok && paths_ok && snapsho
 regressed or appeared above it (`run/tests.rs` `diff_clean_exits_success`).
 `--diff-only` prints the comparison and leaves the gates alone
 (`diff_only_leaves_the_threshold_gate_in_place`). `--ignore-complexity` forces
-the threshold check to pass but keeps the others - except under `--quiet`, where
-it is not read at all (bug above). Neither is wrong, but a consumer scripting on
+the threshold check to pass but keeps the others, including under `--quiet`.
+The population batch made the analysis/collector check set independent of quiet
+mode. A consumer scripting on
 the exit code has to know which gate set the flags selected, and nothing in the
 output says. This entry, `docs/cli.md`, and C's `--help` text all had `--diff`
 and `--diff-only` the wrong way round until the review of C's pages.
@@ -663,13 +638,14 @@ bug: `elif` and `else:` followed by `if` are the same AST shape (`orelse=[If]`)
 and score 2 and 4 respectively. The scorer treats an `elif` chain as sibling
 clauses, which is what the paper prescribes.
 
-### Every non-quiet run walks and parses the tree twice
+### Every run walks the tree at least twice
 
-`run.rs` calls `handle_removable_ignores` whenever `--quiet` is off, which
-re-runs `get_paths_to_process` and re-parses every file to build the
-removable-marker report; `--report-ignored` adds a third walk. The report is
-unconditional and unsuppressible, so on a large tree the default invocation
-costs roughly twice the analysis it displays. Documented in `docs/cli.md`;
+`run.rs` calls `handle_removable_ignores` in both display modes so quiet cannot
+bypass its failure checks. This re-runs discovery and reads the selected files;
+files containing recognized markers are parsed again to build the report.
+`--report-ignored` adds a third walk. The report is unconditional and
+unsuppressible. Its scan cost depends on marker density and file sizes, not a
+fixed two-times parsing cost. Documented in `docs/cli.md`;
 whether it should be a flag, or reuse the analysis results, is a design
 choice.
 
@@ -727,7 +703,9 @@ exact installed wheel; it is not an exhaustive cache-behavior test suite.
   scoring flags. CLI `run/tests.rs` pins an exclusion changing the threshold
   gate and matching analysis/marker JSON paths. `tests/main.py` still uses its
   own fixture walk; it is no longer the only analysis-population exercise.
-  Silent walker-entry errors remain open, as recorded above.
+  Emitted walker errors are now covered by real unreadable-directory tests in
+  core, Python/CLI and the wheel contract. The dependency's internally suppressed
+  ignore-file I/O errors remain open, as recorded above.
 - The installed-wheel cases now touch all eighteen public exports, but cover
   selected signatures, getter types and failure modes rather than every input
   combination or runtime behavior.

@@ -306,9 +306,15 @@ def collect_all_ignored_locations(
 
     Relative inputs resolve against invocation_path, an existing directory
     resolved from the process CWD. Successful paths are root-relative inside
-    it and absolute outside it; failed paths are absolute. Directory discovery
-    applies excludes and ignore rules; explicit files bypass those filters.
-    An invalid invocation root raises ValueError.
+    it and absolute outside it. Failed entries are plain absolute paths with
+    no appended error text. Invalid exclusions identify the walked directory;
+    emitted traversal errors identify their path or fall back to the walk root.
+    Successful rows survive failures and retain repeated input multiplicity.
+    Overlapping requests may repeat failed paths; the lists are not sets.
+    Directory discovery applies excludes and ignore rules; explicit files bypass
+    those filters. An invalid invocation root raises ValueError.
+    The ignore walker suppresses ignore-file I/O errors internally; an empty
+    failed-path list does not prove complete filter-file readability.
 
     Reporting scans def lines, so markers above the first decorator and markers
     on async def are not reported, even when they suppress analysis. A bare

@@ -65,6 +65,10 @@ pub fn resolve_config(toml_config: Option<Config>, cli: CliArgs) -> Result<RunCo
         return Err(ConfigError::MissingPaths);
     };
 
+    if paths.is_empty() {
+        return Err(ConfigError::MissingPaths);
+    }
+
     let max_complexity_allowed = cli
         .max_complexity_allowed
         .or_else(|| toml.map(|toml| toml.max_complexity_allowed))
