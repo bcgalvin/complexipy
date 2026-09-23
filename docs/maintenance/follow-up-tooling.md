@@ -269,11 +269,9 @@ field; a repository-path value would need no such check.
   surface means re-adding a thin crate over that function, not reimplementing
   analysis.
 - **Merge-surface divergence.** Removing the crate also let workstream A collapse
-  core's `runner` feature, which upstream still has. A future `sync-upstream` will
-  therefore conflict in `crates/complexipy-core/Cargo.toml`,
-  `crates/complexipy-core/src/lib.rs`, `src/helpers.rs`, and
-  `tests/collector_failures.rs`. The resolution is always to keep this fork's
-  unconditional form.
+  core's `runner` feature, which upstream still has. Upstream changes gated on
+  that feature, or on its later `config` feature, are ported onto this fork's
+  unconditional form rather than merged, as in the `5c52836` sync.
 - The core `wasm` feature gated exactly one thing: `CodeComplexity.version`.
   Neither consumer read it.
 - `build-wasm.sh` - `wasm-pack build --target web --out-name complexipy_wasm`, then

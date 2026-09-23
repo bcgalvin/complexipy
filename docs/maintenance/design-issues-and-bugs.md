@@ -36,7 +36,8 @@ through direct exploration in
 paths in this section are relative to `recsys-code-quality`, not this fork.
 
 The parent pins the 8.1.0 release and its current wheel; its serializer no longer
-reads `doc_url` or `references`. A source change alone neither updates that wheel
+reads `doc_url` or `references`. A verified 9.0.0 wheel awaits parent adoption;
+see [current work](../current-work.md#new-wheel-adoption). A source change alone neither updates that wheel
 nor installs it in a provider environment. On a requested refresh, check the
 exact wheel contract and the real native-plan serializer together. Synthetic
 parent tests do not establish native API compatibility on their own.
@@ -660,10 +661,11 @@ deliberately *not* installed, and asserted that through `importlib.metadata`,
 so ty always read the stub. The standing gate's `uv run ty check .` runs with
 the editable project installed, so ty reads the native module. The contract
 harness (`tests/contract/check_stub_contract.py`) checks stub/runtime parity from
-a neutral directory. It has eleven diagnostic cases, including positive getter
+a neutral directory. It has twelve diagnostic cases, including positive getter
 and enum-member types, negative assignment/construction for all eight result
-types, member-reassignment rejection for three enums and subclass rejection for
-all twelve native types, plus separate runtime checks. These are selected promises,
+types, member-reassignment rejection for three enums, subclass rejection for
+all twelve native types and a rejected `run_lsp` call, plus separate runtime
+checks. These are selected promises,
 not exhaustive API coverage. H's `verify` skill distinguishes these checks.
 No CI rebuild is planned under the single-machine mandate; a separate root-lint
 environment remains an unadopted option, not a prerequisite for the existing
@@ -732,9 +734,12 @@ The moment upstream ships its own `8.1.0`, a fork build and an upstream build
 report the same version with different behavior, and there is no
 `__version__` attribute or other runtime marker to tell them apart
 (`importlib.metadata.version` and `--version` both report only the number).
-`sync-upstream` will also conflict in four files because A collapsed a feature
-upstream still has. Both are known and accepted; both will need attention the
-first time upstream is pulled.
+Release 9.0.0 moved the fork off the 8.x line upstream is likely to use next,
+but nothing prevents a later collision; the version number remains the only
+marker. The first upstream sync (`5c52836`) avoided the collapsed-feature
+conflicts by porting adopted changes onto this fork's unconditional form and
+recording the sync with an `ours` merge; the `sync-upstream` skill describes
+that procedure.
 
 ### Output formats without consumers
 

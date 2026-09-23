@@ -12,8 +12,12 @@ Update it as work lands and remove completed tasks rather than building a log.
 - Fork branch `rcq` includes `13a779b`: public `file_complexity(..., base_path=".")`,
   shared canonical roots for analysis and collectors, and path/population tests.
   No further public-base, collector-root or basename-compatibility work is due.
-- The parent's adopted wheel is still 8.1.0 from `7f27ffb`, not current fork
-  source. Source commits do not refresh its wheel, gitlink or environments.
+- The parent's adopted wheel is still 8.1.0 from `7f27ffb`. Release 9.0.0
+  (tag `9.0.0`, `cdfda9b`) is built and verified but not yet adopted: the wheel
+  and its evidence are in
+  `~/Desktop/recsys-code-quality-runs/20260922-complexipy-9.0.0-pJzFy2/`, SHA-256
+  `38ad3b47b6cbacd280c552f1782dc184bf378b90e610ed42aaec7f60cae8362e`. Source
+  commits do not refresh the parent's wheel, gitlink or environments.
 - The population/CLI batch now preserves emitted discovery and collector
   failures, rejects empty paths and bad TOML, aligns quiet gates, protects
   comparison state on incomplete collections and invalidates failed marker JSON.
@@ -171,10 +175,11 @@ resolved; adopting changed runtime behavior requires a new release wheel.
 
 ### New-wheel adoption
 
-This depends on a requested clean, committed fork release and validated wheel,
-not on resolving every backlog issue. Use the `release` procedure for a new
-workspace version reflecting the breaking path/API changes; do not rebuild
-current source under the existing 8.1.0 artifact identity.
+The fork side is done: release 9.0.0 and its validated wheel exist (see
+Current position). What remains is parent work: copy that wheel into the
+wheelhouse, update its record and the parent's `main`/8.1.0/`7f27ffb`
+references to `rcq`/9.0.0/`cdfda9b`, and commit the gitlink at `cdfda9b` in the
+same change. Do not rebuild different source under the 9.0.0 identity.
 
 - Update current capability/API guidance in `docs/tools/complexipy.md` and the
   explore skill to use public `file_complexity(..., base_path=...)`; remove the

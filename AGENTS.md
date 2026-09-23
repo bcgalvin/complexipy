@@ -160,7 +160,7 @@ and formatting; `force-exclude` also protects explicitly supplied fixture paths.
 Excluded explicit paths are skipped, so a successful command does not mean those
 files were checked.
 
-All three crates inherit workspace Clippy warnings for `exit`, `dbg_macro`,
+All five crates inherit workspace Clippy warnings for `exit`, `dbg_macro`,
 `todo`, and `unimplemented`. They are declared as warnings, so promotion to
 errors comes from the `-D warnings` flag in the Clippy command above and nothing
 else enforces it automatically. The full Clippy restriction group is not enabled.
