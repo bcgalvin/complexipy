@@ -1,6 +1,7 @@
 pub mod api;
 pub mod classes;
 pub mod cognitive_complexity;
+pub mod config;
 pub mod diff;
 pub(crate) mod helpers;
 mod refactor_plans;
@@ -14,6 +15,7 @@ pub use classes::{
     IgnoredLocation, LineComplexity, RefactorPlan, RemovableIgnore, RuleCategory,
 };
 pub use diff::{DiffEntry, DiffStatus, compute_diff, compute_staged_diff, has_regressions};
+pub use helpers::exclude::{exclude_list_overflows, invalid_exclude_patterns, is_path_excluded};
 pub use runner::{
     collect_all_ignored_locations_shared as collect_all_ignored_locations,
     collect_removable_ignored_locations_shared as collect_removable_ignored_locations,

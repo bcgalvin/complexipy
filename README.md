@@ -7,8 +7,9 @@ This repository is a hard fork of
 [`rohaquinlop/complexipy`](https://github.com/rohaquinlop/complexipy), maintained
 for `recsys-code-quality`. It is consumed from source as a locally built wheel,
 not published to PyPI. There is no documentation site, editor extension, or
-upstream contribution workflow. This is local-only work by one developer on one
-machine, with no external distribution, sharing or portability requirement.
+upstream contribution workflow; editors can run the `complexipy lsp` language
+server. This is local-only work by one developer on one machine, with no
+external distribution, sharing or portability requirement.
 Maintenance favors direct local commands and small configuration over tooling
 frameworks; [AGENTS.md](AGENTS.md#scope-and-engineering-defaults) records that scope.
 
@@ -48,6 +49,7 @@ surface and its limitations.
 - [Refactor rules](docs/rules.md)
 - [CLI and configuration](docs/cli.md)
 - [Diff and snapshots](docs/diff-and-snapshots.md)
+- [Editor integration](docs/editors.md)
 
 Scoring follows G. Ann Campbell's cognitive complexity model. This project is
 independent of SonarSource and is not endorsed by it.

@@ -1,6 +1,9 @@
 # CLI
 
-`complexipy [OPTIONS] [PATHS]...`. Every option carries help text, so
+`complexipy [OPTIONS] [PATHS]...`. In the Python console script, a first
+argument of `lsp` starts the [language server](editors.md) instead of an
+analysis and `complexipy -- lsp` analyzes a path named `lsp`; `--help` does not
+list it. Every option carries help text, so
 `complexipy --help` is authoritative for flag names and accepted values. It
 prints no defaults: every option is optional there and the defaults are applied
 in `resolve_config` (`utils/config.rs`) - threshold 15, `sort` `asc`, `color`
@@ -16,13 +19,17 @@ Config is read from the **first existing candidate** in the invocation directory
 1. `pyproject.toml`, `[tool.complexipy]`
 
 **First hit wins outright - the files are not merged, and there is no upward
-search** (`crates/complexipy-cli/src/utils/toml/tests.rs`). A candidate that
-cannot be read or parsed is fatal, even when CLI paths/options are supplied:
-the error goes to stderr and analysis does not start. A valid `pyproject.toml`
-without `[tool.complexipy]` means no config. The tests
+search.** The loader is `read_complexipy_config` in
+`crates/complexipy-core/src/config.rs`, shared with the language server. A
+candidate that cannot be read or parsed is fatal, even when CLI paths/options
+are supplied: the error goes to stderr and analysis does not start. Keys that
+fail validation are fatal too, reported as `Invalid config in <path>`. A valid
+`pyproject.toml` without `[tool.complexipy]` means no config. The core tests in
+`crates/complexipy-core/tests/config.rs` and the CLI tests
 `a_malformed_complexipy_toml_stops_discovery`,
 `unreadable_candidates_fail_instead_of_falling_through` and
-`malformed_later_candidates_fail_closed` pin these distinctions. Three
+`malformed_later_candidates_fail_closed` in
+`crates/complexipy-cli/src/utils/toml/tests.rs` pin these distinctions. Three
 consequences worth internalizing:
 
 - If a `complexipy.toml` exists, a `[tool.complexipy]` block in the same

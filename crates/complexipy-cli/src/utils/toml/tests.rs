@@ -83,6 +83,15 @@ fn a_malformed_complexipy_toml_stops_discovery() {
     fs::write(dir.path().join("pyproject.toml"), PYPROJECT_TOML).expect("should write");
 
     let error = get_complexipy_toml_config(dir.path().to_str().unwrap()).unwrap_err();
+    assert!(error.contains("Invalid config in"));
+    assert!(error.contains("complexipy.toml"));
+
+    fs::write(
+        dir.path().join("complexipy.toml"),
+        "max-complexity-allowed = ",
+    )
+    .unwrap();
+    let error = get_complexipy_toml_config(dir.path().to_str().unwrap()).unwrap_err();
     assert!(error.contains("Failed to parse"));
     assert!(error.contains("complexipy.toml"));
 }

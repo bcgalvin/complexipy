@@ -56,6 +56,7 @@ complexipy/
 |   |   `-- src/
 |   |       +-- cognitive_complexity.rs   # AST walking + scoring algorithm
 |   |       +-- classes.rs                # Data types (FunctionComplexity, RefactorPlan, ...)
+|   |       +-- config.rs                 # Config discovery shared by the CLI and the LSP
 |   |       +-- refactor_plans.rs         # ComplexityRegion tree + build_refactor_plans()
 |   |       +-- rules/                    # Clippy-style refactor rule system
 |   |       |   +-- types.rs              # RefactorRule trait + RuleMetadata
@@ -65,14 +66,15 @@ complexipy/
 |   |       +-- diff.rs                   # git-diff comparison (compute_diff, DiffEntry)
 |   |       +-- api.rs                    # Rust-level code_complexity / file_complexity
 |   |       +-- utils.rs                  # CSV/JSON writers, snapshot I/O, AST helpers
-|   |       `-- helpers/exclude.rs        # Glob-based file exclusion
+|   |       `-- helpers/exclude.rs        # Walker exclusion + the LSP's path matcher
 |   +-- complexipy-types/         # shared enums; `python` feature builds enum.Enum classes
 |   +-- complexipy-cli/           # CLI: clap args, output rendering, run orchestration
+|   +-- complexipy-lsp/           # stdio language server: diagnostics, inlay hints, hover
 |   `-- complexipy-python/        # PyO3 module (_complexipy) + py_diff wrappers
 |
 +-- complexipy/                   # Python package: thin re-export layer over Rust
 |   +-- __init__.py               # Public API: imports _complexipy, file_complexity wrapper
-|   +-- cli.py                    # Console-script bootstrap -> _complexipy.run_cli
+|   +-- cli.py                    # Console-script bootstrap -> run_cli, or run_lsp for `lsp`
 |   +-- py.typed                  # PEP 561 marker
 |   `-- _complexipy.pyi           # Type stubs for the Rust extension
 |
@@ -204,6 +206,8 @@ self-dogfooding threshold at 15 and excludes `tests/**`.
 uv run complexipy <path>
 uv run complexipy . --diff main --max-complexity-allowed 15
 uv run complexipy complexipy --failed          # dogfood the tool on itself
+uv run complexipy lsp                          # stdio language server
+cargo run -p complexipy-lsp                    # the same server from the tree
 ```
 
 ## Architecture
@@ -211,10 +215,11 @@ uv run complexipy complexipy --failed          # dogfood the tool on itself
 ### Layering
 
 ```
-complexipy/cli.py        console-script bootstrap: sys.argv -> _complexipy.run_cli()
+complexipy/cli.py        console-script bootstrap: sys.argv -> run_cli(), or run_lsp() for `lsp`
 complexipy/__init__.py   public API: re-exports _complexipy names + file_complexity wrapper
   `- complexipy._complexipy  PyO3 module (crates/complexipy-python)
        +- run_cli -> complexipy_cli::run::run_at()   clap args -> RunConfig -> display/exit
+       +- run_lsp -> complexipy_lsp::run_server()    stdio LSP loop, GIL released
        +- code_complexity / file_complexity         engine entry points (complexipy-core)
        `- compute_diff / has_regressions            diff ratchet (complexipy-core)
 ```
@@ -260,8 +265,10 @@ specify a Python default.
 `complexipy/__init__.py` is the public Python API surface: `code_complexity`,
 `file_complexity`, `collect_all_ignored_locations`,
 `collect_removable_ignored_locations`, `compute_diff`, `has_regressions`, and the
-`DiffEntry` / `DiffStatus` types. Keep the implementation, exports, documentation
-and tests aligned when deliberately changing a contract. New exports belong in
+`DiffEntry` / `DiffStatus` types. `run_cli` and `run_lsp` are process bootstraps
+in `_complexipy`, declared in the stub but kept out of `__all__`. Keep the
+implementation, exports, documentation and tests aligned when deliberately
+changing a contract. New exports belong in
 `__init__.py` + `__all__` and on `docs/python-api.md`. The Rust re-exports in
 `crates/complexipy-core/src/lib.rs` have their own contract tests in
 `crates/complexipy-core/tests/lib_surface.rs`; they include Rust-only entry
@@ -295,7 +302,14 @@ marker JSON writes even an empty array; a failed marker collection invalidates
 the requested marker JSON file instead of leaving a stale complete inventory.
 Missing/empty resolved CLI path lists and malformed/unreadable discovered TOML
 candidates fail before analysis; absent config and valid filtered-empty targets
-are not errors.
+are not errors. Discovery is `read_complexipy_config` in
+`crates/complexipy-core/src/config.rs`, shared with the language server: the
+first existing candidate decides, and a read or parse failure, or a failed
+validation of the keys a consumer reads, is never replaced by a later candidate
+or by defaults. Each consumer validates only its own keys, so one file can be
+valid for the CLI and invalid for the server, or the reverse. The server shows
+a failure with `window/showMessage` when the error changes and publishes no
+results until the configuration reloads.
 
 ### Rust core
 
@@ -314,6 +328,16 @@ are not errors.
   the ignored-location collectors).
 - `crates/complexipy-core/src/diff.rs` - git diff comparison, `DiffEntry` /
   `DiffStatus`, staged diff, regression ratchet.
+- `crates/complexipy-core/src/config.rs` - config discovery, `StringOrList`, the
+  default threshold and the language server's `LspConfig`.
+- `crates/complexipy-core/src/helpers/exclude.rs` - two exclusion matchers: the
+  walker's pattern program in `get_paths_to_process`, and `is_path_excluded`,
+  which the language server uses for open documents. The walker matches
+  relative to each walked directory and skips explicit files; the server
+  matches relative to the workspace root. `helpers/exclude/tests.rs` pins them
+  together for walks from that root, so a change to one has to keep the other
+  in agreement. The server skips malformed patterns; the walker fails the
+  directory.
 - `crates/complexipy-core/src/api.rs` - Rust-level `code_complexity` /
   `file_complexity` (mirrors the Python public API).
 - `crates/complexipy-core/src/utils.rs` - CSV/JSON writers, snapshot file I/O, and
@@ -356,7 +380,7 @@ behind. If a heuristic isn't confident, emit `help` text rather than a wrong
 
 ### Crate split
 
-The workspace splits the build across four crates:
+The workspace splits the build across five crates:
 
 - `complexipy-types` - the shared `RuleCategory`, `Applicability` and
   `DiffStatus` enums. Its optional `python` feature builds them as Python
@@ -366,12 +390,15 @@ The workspace splits the build across four crates:
   attributes** to the shared types and enables `complexipy-types/python`.
   Everything else is unconditional.
 - `complexipy-cli` - clap args + output rendering; depends on core.
+- `complexipy-lsp` - the stdio language server (`lsp-server`, `lsp-types`);
+  depends on core. Its `complexipy-lsp` binary is for running the server from
+  the tree.
 - `complexipy-python` - PyO3 module; depends on core (`python`), types
-  (`python`, for the enum classes) and the cli crate (for `run_cli`). Built by
-  maturin via `manifest-path` in pyproject.toml.
+  (`python`, for the enum classes), the cli crate (for `run_cli`) and the lsp
+  crate (for `run_lsp`). Built by maturin via `manifest-path` in pyproject.toml.
 
-Dependency direction is one-way: python -> cli -> core -> types. Never the
-reverse. Adding a dependency means adding it to the crate that uses it.
+Dependency direction is one-way: python -> cli and lsp -> core -> types. Never
+the reverse. Adding a dependency means adding it to the crate that uses it.
 
 ## Testing
 
@@ -384,6 +411,10 @@ reverse. Adding a dependency means adding it to the crate that uses it.
 - `tests/fixtures/refactor_plans/` - fixtures for rule behaviour, deliberately kept out
   of the `tests/src/` complexity corpus so rule work doesn't perturb the asserted
   totals.
+- `tests/test_lsp.py` - drives `complexipy lsp` as a subprocess client. Read the
+  child's stdout with `os.read` on the raw fd; a buffered read swallows frames.
+  `crates/complexipy-lsp/tests/protocol.rs` covers the same protocol over an
+  in-memory connection.
 - `tests/contract/` - the installed-wheel stub contract harness. `cases/*.py` are
   deliberately wrong or right consumer snippets with expected ty diagnostics encoded
   in `check_stub_contract.py`; they are not collected by pytest and are outside the
@@ -423,6 +454,8 @@ reverse. Adding a dependency means adding it to the crate that uses it.
 - `crates/complexipy-core/src/diff.rs` - Git diff comparison, `DiffEntry`/`DiffStatus`, `compute_diff`, `has_regressions`
 - `crates/complexipy-core/src/runner.rs` - Shared entry points: `run_analysis_shared`, `file_complexity_shared`, ignored-location collectors
 - `crates/complexipy-python/src/lib.rs` - PyO3 module `_complexipy`, pyfunctions, `py_diff` wrappers
+- `crates/complexipy-lsp/src/server.rs` - language server loop, config loading, debounced publishing
+- `crates/complexipy-core/src/config.rs` - config discovery shared by the CLI and the language server
 - `crates/complexipy-types/src/python.rs` - Python `enum.Enum` classes and conversions for the shared enums
 - `crates/complexipy-cli/src/run.rs` - `run_at()`: config -> analysis -> snapshot -> display -> exit code
 - `crates/complexipy-cli/src/utils/config.rs` - `resolve_config()`: merges CLI args + TOML into `RunConfig`

@@ -30,6 +30,7 @@ globset = { workspace = true }
 wax = { workspace = true }
 rayon = { workspace = true }
 pyo3 = { workspace = true, optional = true }
+toml = { workspace = true }
 
 [dev-dependencies]
 tempfile = { workspace = true }

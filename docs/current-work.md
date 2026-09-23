@@ -19,6 +19,13 @@ Update it as work lands and remove completed tasks rather than building a log.
   comparison state on incomplete collections and invalidates failed marker JSON.
   Its behavior is covered by real permission-error, state-reuse and collector
   contract tests; see the maintenance catalog's Fixed section.
+- Upstream `main` through `5c52836` is adopted selectively. Adopted: the
+  applicability-tier pin, real `enum.Enum` classes for the three enums, and the
+  `complexipy lsp` language server on this fork's fail-closed config loader.
+  Excluded: CI/release and riscv64 builds, the docs site, upstream changelog and
+  agent-file edits, and upstream's stub rewrite. The parent's wheel predates
+  these; adopting them there changes enum `repr` output and config error text,
+  and leaves its `variants()` enum helper working but stale.
 - Remaining batches below are not implemented. Parent reassessment is complete;
   parent edits still await confirmation in that session. Coordination messages
   do not answer another session's approval prompt.

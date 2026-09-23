@@ -1,3 +1,5 @@
+from collections.abc import Callable
+
 from complexipy import (
     Applicability,
     DiffEntry,
@@ -7,6 +9,7 @@ from complexipy import (
     compute_diff,
     has_regressions,
 )
+from complexipy._complexipy import run_lsp
 
 entry = DiffEntry(
     file_path="a.py", func_name="f", old_complexity=2, new_complexity=6
@@ -38,3 +41,4 @@ result = code_complexity(
     "def f():\n    pass\n", check_script=False, no_ignore=False
 )
 total: int = result.complexity
+lsp_entry: Callable[[], int] = run_lsp

@@ -1,0 +1,30 @@
+[package]
+name = "complexipy-lsp"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
+publish = false
+
+[lints]
+workspace = true
+
+[lib]
+name = "complexipy_lsp"
+
+[[bin]]
+name = "complexipy-lsp"
+path = "src/main.rs"
+
+[dependencies]
+complexipy-core = { path = "../complexipy-core" }
+crossbeam-channel = { workspace = true }
+lsp-server = { workspace = true }
+lsp-types = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+[dev-dependencies]
+tempfile = { workspace = true }

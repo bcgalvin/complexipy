@@ -44,6 +44,7 @@ EXPECTED_DIAGNOSTICS: dict[str, list[tuple[int, str]]] = {
     ],
     "bad_keyword.py": [(3, "missing-argument"), (3, "unknown-argument")],
     "positional_base_path.py": [(3, "too-many-positional-arguments")],
+    "lsp_arguments.py": [(3, "too-many-positional-arguments")],
     "phantom_import.py": [(1, "unresolved-import")],
     "phantom_plan_fields.py": [
         (9, "unresolved-attribute"),
@@ -134,6 +135,8 @@ for name in (
 ):
     if hasattr(native, name):
         raise SystemExit(f"native module unexpectedly exposes {name}")
+if not callable(getattr(native, "run_lsp", None)) or hasattr(complexipy, "run_lsp"):
+    raise SystemExit("run_lsp must be a native bootstrap, not a package export")
 if not hasattr(RefactorPlan, "rule_id"):
     raise SystemExit("RefactorPlan lost its rule_id accessor")
 for name in ("doc_url", "references"):
