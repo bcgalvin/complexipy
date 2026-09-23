@@ -20,9 +20,14 @@ parent consumer and coordinate its adoption of the new wheel.
   and conversions. `add_class` does not enumerate fields. Preserve read-only
   properties unless setters really exist. Core's `python` feature gates both
   PyO3 annotations and `serde(skip)`; consider both serialization shapes.
-- **Diff types:** Python `DiffEntry` and `DiffStatus` live in `py_diff` in the
-  Python crate's `lib.rs`, with conversions to distinct core diff types. Update
-  those conversions when affected, rather than looking only in `classes.rs`.
+- **Enums:** `RuleCategory`, `Applicability` and `DiffStatus` are defined once
+  in `crates/complexipy-types/src/lib.rs`. Its `python.rs` builds the Python
+  `enum.Enum` classes from member tables and converts members both ways; keep
+  the Rust enum, member table, stub members and `_complexipy` `m.add` call in
+  step.
+- **Diff types:** Python `DiffEntry` lives in `py_diff` in the Python crate's
+  `lib.rs`, with conversions to core's `DiffEntry`. Update those conversions
+  when affected, rather than looking only in `classes.rs`.
 - **Function:** keep the implementation, PyO3 binding, stub and any Python
   wrapper/exports synchronized. Use explicit `#[pyo3(signature = ...)]` for
   defaults. Test omitted arguments and keyword calls at runtime; `Option` alone
@@ -31,12 +36,13 @@ parent consumer and coordinate its adoption of the new wheel.
   `crates/complexipy-core/tests/lib_surface.rs` when changing public Rust
   re-exports. They have their own contract, not a copy of Python's `__all__`.
 
-Keep constructor promises honest: the eight native result structs and three
-simple enums have no Python constructors; the stub's required `Never` argument
-to `__new__` is only a typing guard. `DiffEntry` has a real constructor. All
-exported native types reject subclassing and have `@final` stub declarations.
-Do not document the construction guard as a runtime API; check native behavior
-before changing either construction or subclassability.
+Keep constructor promises honest: the eight native result structs have no
+Python constructors; the stub's required `Never` argument to `__new__` is only a
+typing guard. The three enums are standard `enum.Enum` classes whose calls look
+up existing members by value. `DiffEntry` has a real constructor. All exported
+native types reject subclassing and have `@final` stub declarations. Do not
+document the construction guard as a runtime API; check native behavior before
+changing either construction or subclassability.
 
 Add or update consumer cases in `tests/contract/cases/` and their expectations
 in `tests/contract/check_stub_contract.py`, plus the relevant runtime checks.
@@ -45,10 +51,10 @@ types also need an instance in `cases/result_usage.py`'s `objects` tuple, which
 feeds the runtime getter/read-only/constructor sweep. Every new exported native
 type needs a subclass attempt in `cases/subclass_native.py`, an updated
 `EXPECTED_DIAGNOSTICS` line range and an updated runtime type count. New enums
-also need calls in `cases/construct_enums.py`, matching diagnostics, and a
-runtime constructor check. New enum members need typed reads in
-`cases/valid_usage.py`; the runtime check compares all member names with the
-installed stub.
+also need a member reassignment in `cases/reassign_enums.py` with matching
+diagnostics and an entry in the runtime enum checks. New enum members need typed
+reads in `cases/valid_usage.py`; the runtime check compares all member names and
+values, in order, with the installed stub.
 Prove both valid use and rejected use for the changed promise; keep intentional
 type errors Ruff-clean. The root ty check does not establish stub/native parity.
 Run `verify`, rebuilding before pytest after Rust changes. Report compatibility

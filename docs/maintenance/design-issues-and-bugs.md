@@ -138,7 +138,9 @@ verification contract change.
   The new negative cases failed against the unchanged parent 8.1.0 wheel,
   demonstrating the gap without changing that artifact. Static checks are
   stricter for code that already failed at runtime; native behavior and the
-  public export list are unchanged.
+  public export list are unchanged. Superseded for the enums by the adoption of
+  upstream's real `enum.Enum` classes: `reassign_enums.py` replaced
+  `construct_enums.py`, and enum calls are now member lookups.
 
 - **Two tests could pass without checking their claimed behavior.**
   `crates/complexipy-cli/src/run/tests.rs` `version_flag_handled_by_clap` now
@@ -195,7 +197,9 @@ verification contract change.
 - **Three stub enums claimed to be `enum.Enum`.** `RuleCategory`,
   `Applicability` and `DiffStatus` are PyO3 simple enums with no `.name`, no
   `.value` and no iteration. The stub now declares them as plain classes with
-  typed members, and says so. Fixed in D.
+  typed members, and says so. Fixed in D. Later resolved in the other direction:
+  upstream 5b72976, adopted here, made the runtime classes real `enum.Enum`
+  classes and the stub declares them as such.
 
 - **The stub documented a removed feature.** Two collector docstrings described
   `paths` as accepting Git repository URLs, removed in 8.0.0. Fixed in D; the
@@ -658,8 +662,8 @@ the editable project installed, so ty reads the native module. The contract
 harness (`tests/contract/check_stub_contract.py`) checks stub/runtime parity from
 a neutral directory. It has eleven diagnostic cases, including positive getter
 and enum-member types, negative assignment/construction for all eight result
-types, construction rejection for three enums and subclass rejection for all
-twelve native types, plus separate runtime checks. These are selected promises,
+types, member-reassignment rejection for three enums and subclass rejection for
+all twelve native types, plus separate runtime checks. These are selected promises,
 not exhaustive API coverage. H's `verify` skill distinguishes these checks.
 No CI rebuild is planned under the single-machine mandate; a separate root-lint
 environment remains an unadopted option, not a prerequisite for the existing

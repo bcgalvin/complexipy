@@ -66,6 +66,7 @@ complexipy/
 |   |       +-- api.rs                    # Rust-level code_complexity / file_complexity
 |   |       +-- utils.rs                  # CSV/JSON writers, snapshot I/O, AST helpers
 |   |       `-- helpers/exclude.rs        # Glob-based file exclusion
+|   +-- complexipy-types/         # shared enums; `python` feature builds enum.Enum classes
 |   +-- complexipy-cli/           # CLI: clap args, output rendering, run orchestration
 |   `-- complexipy-python/        # PyO3 module (_complexipy) + py_diff wrappers
 |
@@ -222,25 +223,34 @@ complexipy/__init__.py   public API: re-exports _complexipy names + file_complex
 
 Shared analysis types cross into Python through
 `crates/complexipy-core/src/classes.rs` (`FileComplexity`, `FunctionComplexity`,
-`LineComplexity`, `RefactorPlan`, `CodeSuggestion`, `RuleCategory`,
-`Applicability`, `IgnoredLocation`, `RemovableIgnore`, `CodeComplexity`).
-Adding or removing a type changes `crates/complexipy-core/src/classes.rs`, the
-`#[pymodule]` export list in `crates/complexipy-python/src/lib.rs`, and
-`complexipy/_complexipy.pyi`. A field change updates its Rust definition and the
-stub plus all Rust struct literals; `add_class` does not enumerate fields.
-The core crate's `python` feature gates both `#[pyclass]` and `serde(skip)` on the
-shared types. `DiffEntry` and `DiffStatus` are defined in `py_diff` in
-`crates/complexipy-python/src/lib.rs`, not in core's `classes.rs`.
+`LineComplexity`, `RefactorPlan`, `CodeSuggestion`, `IgnoredLocation`,
+`RemovableIgnore`, `CodeComplexity`). Adding or removing a type changes
+`crates/complexipy-core/src/classes.rs`, the `#[pymodule]` export list in
+`crates/complexipy-python/src/lib.rs`, and `complexipy/_complexipy.pyi`. A field
+change updates its Rust definition and the stub plus all Rust struct literals;
+`add_class` does not enumerate fields. The core crate's `python` feature gates
+both `#[pyclass]` and `serde(skip)` on the shared types and enables
+`complexipy-types/python`.
+
+`RuleCategory`, `Applicability` and `DiffStatus` have one Rust definition each in
+`crates/complexipy-types/src/lib.rs`; core re-exports them from `classes.rs` and
+`diff.rs`. Behind its `python` feature, `complexipy-types/src/python.rs` builds
+real `enum.Enum` classes whose values equal the member names, converts members
+in both directions, and the module registers the classes with `m.add`. A member
+change updates the Rust enum, its Python member table and the stub. The Python
+`DiffEntry` is defined in `py_diff` in `crates/complexipy-python/src/lib.rs`,
+with conversions to core's `DiffEntry`.
 
 The eight result structs in `classes.rs` have getters but no Python constructors.
 Their stub properties are read-only; a required `Never` argument to `__new__`
 rejects direct construction statically, including zero-argument calls. It is a
-typing-only guard, not a runtime token API. The three simple enums use the same
-guard because they also reject direct construction. `DiffEntry` has a real
-constructor. All twelve exported native types reject subclassing; their stub
-classes are `@final`. Keep these promises covered by the installed-wheel
-contract's positive getter/member, negative assignment/construction/subclass,
-and runtime checks.
+typing-only guard, not a runtime token API. The three enums are standard
+`enum.Enum` classes: calling one looks up an existing member by value, and
+members cannot be reassigned. `DiffEntry` has a real constructor. All twelve
+exported native types reject subclassing; their stub classes are `@final`. Keep
+these promises covered by the installed-wheel contract's positive
+getter/member, negative assignment/construction/reassignment/subclass, and
+runtime checks.
 
 Function changes must also keep the binding, stub, wrapper and public exports in
 sync. Use explicit `#[pyo3(signature = ...)]` for defaulted arguments and test
@@ -346,17 +356,22 @@ behind. If a heuristic isn't confident, emit `help` text rather than a wrong
 
 ### Crate split
 
-The workspace splits the build across three crates:
+The workspace splits the build across four crates:
 
-- `complexipy-core` - the engine. One optional feature, `python`, which adds the
-  pyo3 `#[pyclass]` attributes **and the `serde(skip)` attributes** to the shared
-  types. Everything else is unconditional.
+- `complexipy-types` - the shared `RuleCategory`, `Applicability` and
+  `DiffStatus` enums. Its optional `python` feature builds them as Python
+  `enum.Enum` classes.
+- `complexipy-core` - the engine; depends on types. One optional feature,
+  `python`, which adds the pyo3 `#[pyclass]` attributes **and the `serde(skip)`
+  attributes** to the shared types and enables `complexipy-types/python`.
+  Everything else is unconditional.
 - `complexipy-cli` - clap args + output rendering; depends on core.
-- `complexipy-python` - PyO3 module; depends on core (`python`) and the cli crate
-  (for `run_cli`). Built by maturin via `manifest-path` in pyproject.toml.
+- `complexipy-python` - PyO3 module; depends on core (`python`), types
+  (`python`, for the enum classes) and the cli crate (for `run_cli`). Built by
+  maturin via `manifest-path` in pyproject.toml.
 
-Dependency direction is one-way: python -> cli -> core. Never the reverse. Adding a
-dependency means adding it to the crate that uses it.
+Dependency direction is one-way: python -> cli -> core -> types. Never the
+reverse. Adding a dependency means adding it to the crate that uses it.
 
 ## Testing
 
@@ -408,6 +423,7 @@ dependency means adding it to the crate that uses it.
 - `crates/complexipy-core/src/diff.rs` - Git diff comparison, `DiffEntry`/`DiffStatus`, `compute_diff`, `has_regressions`
 - `crates/complexipy-core/src/runner.rs` - Shared entry points: `run_analysis_shared`, `file_complexity_shared`, ignored-location collectors
 - `crates/complexipy-python/src/lib.rs` - PyO3 module `_complexipy`, pyfunctions, `py_diff` wrappers
+- `crates/complexipy-types/src/python.rs` - Python `enum.Enum` classes and conversions for the shared enums
 - `crates/complexipy-cli/src/run.rs` - `run_at()`: config -> analysis -> snapshot -> display -> exit code
 - `crates/complexipy-cli/src/utils/config.rs` - `resolve_config()`: merges CLI args + TOML into `RunConfig`
 - `crates/complexipy-cli/src/output.rs` - Console display, `handle_display`, `handle_results_storage`

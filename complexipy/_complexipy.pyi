@@ -1,43 +1,41 @@
 """Python bindings for cognitive complexity analysis."""
 
-from typing import Final, Never, Self, final
+from enum import Enum
+from typing import Never, Self, final
 
 @final
-class RuleCategory:
-    """PyO3 enum with class members, no name/value attributes or iteration."""
+class RuleCategory(Enum):
+    """Rule category enum; each member's value equals its name."""
 
-    def __new__(cls, _token: Never, /) -> Self: ...
-    Complexity: Final[RuleCategory]
-    Readability: Final[RuleCategory]
+    Complexity = "Complexity"
+    Readability = "Readability"
 
 @final
-class Applicability:
-    """PyO3 enum describing a rule's ceiling or a suggestion's applicability.
+class Applicability(Enum):
+    """Enum for a rule's ceiling or a suggestion's applicability.
 
-    A MachineApplicable rule can produce help without a suggestion. Check for
-    a suggestion before reading its applicability. Members have no name/value
-    attributes and the class is not iterable.
+    Each member's value equals its name. A MachineApplicable rule can produce
+    help without a suggestion. Check for a suggestion before reading its
+    applicability.
     """
 
-    def __new__(cls, _token: Never, /) -> Self: ...
-    MachineApplicable: Final[Applicability]
-    MaybeIncorrect: Final[Applicability]
-    Informational: Final[Applicability]
+    MachineApplicable = "MachineApplicable"
+    MaybeIncorrect = "MaybeIncorrect"
+    Informational = "Informational"
 
 @final
-class DiffStatus:
-    """PyO3 enum, not enum.Enum or str; has no name/value or iteration.
+class DiffStatus(Enum):
+    """Comparison status enum; each member's value equals its name.
 
-    Formatting a member yields a qualified string such as DiffStatus.REGRESSED.
-    Compare members directly rather than comparing to unqualified strings.
+    It is not a str subclass. Formatting a member yields a qualified string
+    such as DiffStatus.REGRESSED; compare members, or read .name or .value.
     """
 
-    def __new__(cls, _token: Never, /) -> Self: ...
-    REGRESSED: Final[DiffStatus]
-    IMPROVED: Final[DiffStatus]
-    UNCHANGED: Final[DiffStatus]
-    NEW: Final[DiffStatus]
-    REMOVED: Final[DiffStatus]
+    REGRESSED = "REGRESSED"
+    IMPROVED = "IMPROVED"
+    UNCHANGED = "UNCHANGED"
+    NEW = "NEW"
+    REMOVED = "REMOVED"
 
 @final
 class DiffEntry:

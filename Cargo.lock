@@ -278,6 +278,7 @@ dependencies = [
 name = "complexipy-core"
 version = "8.1.0"
 dependencies = [
+ "complexipy-types",
  "csv",
  "globset",
  "ignore",
@@ -299,7 +300,16 @@ dependencies = [
  "clap",
  "complexipy-cli",
  "complexipy-core",
+ "complexipy-types",
  "pyo3",
+]
+
+[[package]]
+name = "complexipy-types"
+version = "8.1.0"
+dependencies = [
+ "pyo3",
+ "serde",
 ]
 
 [[package]]

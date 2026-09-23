@@ -134,16 +134,19 @@ named `Class::method`; script mode adds a `<module>` entry.
 
 ## Enums and result objects
 
-**The enums are not `enum.Enum`.** `RuleCategory`, `Applicability` and
-`DiffStatus` are PyO3 simple enums: the MRO is `(cls, object)`, `.name` and
-`.value` raise `AttributeError`, and the class is not iterable. Compare members
-directly; to recover a name, build a mapping with `dir()`. The stub declares them
-as final classes with typed members and the same required `Never` construction
-guard used for result structs. Direct enum construction raises `TypeError`.
-`construct_enums.py` pins rejection of empty and one-argument calls statically;
-the installed-wheel runtime checks also reject integer and member arguments.
-`valid_usage.py` checks typed reads of every enum member. The runtime checks
-also compare each enum's member names against the installed stub.
+**The enums are standard `enum.Enum` classes.** `RuleCategory`, `Applicability`
+and `DiffStatus` are built by the extension with the functional `Enum` API and
+report `complexipy` as their module. Each member's `.value` equals its `.name`,
+iteration yields members in declaration order, and `cls(value)` or `cls[name]`
+returns an existing member. A call without a value raises `TypeError`; an
+unknown value raises `ValueError`. Members cannot be reassigned. Each enum has
+one Rust definition, in the `complexipy-types` crate, shared by the engine and
+the extension. The stub declares them as final `Enum` subclasses whose member
+values are their names. `valid_usage.py` checks typed member reads, names,
+values, iteration and lookup; `reassign_enums.py` pins rejected member
+reassignment in ty. The installed-wheel runtime checks compare each enum's
+member names and values, in order, against the installed stub, and check
+lookups, rejected calls and rejected reassignment.
 
 `Applicability` on a plan is the **rule's declared ceiling**, not what that plan
 achieved. A rule declaring `MachineApplicable` can still emit help text with no

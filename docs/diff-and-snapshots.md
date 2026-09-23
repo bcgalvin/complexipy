@@ -45,26 +45,28 @@ is new or removed.
 ### The DiffStatus comparison contract
 
 `DiffStatus` has five members - `REGRESSED`, `IMPROVED`, `UNCHANGED`, `NEW`,
-`REMOVED` - and is a PyO3 simple enum, not an `enum.Enum` and not a `str`
-subclass. This is the single easiest thing to get wrong, because the failure is
-silent: a status comparison that never matches means regressions pass unnoticed
-rather than raising.
+`REMOVED` - and is a standard `enum.Enum` whose member values equal their names.
+It is not a `str` subclass. This is the single easiest thing to get wrong,
+because the failure is silent: a status comparison that never matches means
+regressions pass unnoticed rather than raising.
 
 ```python
 e.status == DiffStatus.REGRESSED   # True
 e.status == "REGRESSED"            # False
+e.status.value == "REGRESSED"      # True
 f"{e.status}"                      # 'DiffStatus.REGRESSED'
 ```
 
-There is no `.name` and no `.value`, and formatting yields the qualified
-`DiffStatus.REGRESSED` rather than `REGRESSED`, so comparison to an unqualified
-name fails even after formatting. Compare against members.
-If you need plain names, build your own mapping. Both member comparison and
-formatting are pinned by `RUNTIME_CHECKS` in
-`tests/contract/check_stub_contract.py`.
+Formatting yields the qualified `DiffStatus.REGRESSED` rather than `REGRESSED`,
+so comparison to an unqualified name fails even after formatting. Compare
+against members, or read `.name` or `.value` when you need a plain string.
+Member comparison and formatting are pinned by `RUNTIME_CHECKS` in
+`tests/contract/check_stub_contract.py`; `tests/test_enums.py` and
+`tests/test_diff_api.py` pin the enum type through analysis and the `compute_diff`
+round trip.
 
-`complexipy/_complexipy.pyi` declares `DiffStatus` as a plain class with `Final`
-members and documents the same comparison and formatting contract.
+`complexipy/_complexipy.pyi` declares `DiffStatus` as a final `Enum` subclass and
+documents the same comparison and formatting contract.
 
 ## Snapshots
 

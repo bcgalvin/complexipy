@@ -15,9 +15,10 @@ workspace = true
 name = "complexipy_core"
 
 [features]
-python = ["dep:pyo3"]
+python = ["dep:pyo3", "complexipy-types/python"]
 
 [dependencies]
+complexipy-types = { path = "../complexipy-types" }
 ruff_python_parser = { workspace = true }
 ruff_python_ast = { workspace = true }
 regex = { workspace = true }

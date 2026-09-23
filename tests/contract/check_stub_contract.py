@@ -30,13 +30,10 @@ EXPECTED_DIAGNOSTICS: dict[str, list[tuple[int, str]]] = {
         (line, "missing-argument" if line % 2 == 0 else "invalid-argument-type")
         for line in range(12, 28)
     ],
-    "construct_enums.py": [
-        (3, "missing-argument"),
-        (4, "invalid-argument-type"),
-        (5, "missing-argument"),
-        (6, "invalid-argument-type"),
-        (7, "missing-argument"),
-        (8, "invalid-argument-type"),
+    "reassign_enums.py": [
+        (3, "invalid-assignment"),
+        (4, "invalid-assignment"),
+        (5, "invalid-assignment"),
     ],
     "subclass_native.py": [
         (line, "subclass-of-final-class") for line in range(17, 62, 4)
@@ -56,10 +53,11 @@ EXPECTED_DIAGNOSTICS: dict[str, list[tuple[int, str]]] = {
 
 RUNTIME_CHECKS = """
 import ast
+from enum import Enum
 from functools import partial
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from types import GetSetDescriptorType, UnionType
+from types import GetSetDescriptorType, UnionType, new_class
 from typing import get_args, get_origin
 
 from result_usage import objects
@@ -85,24 +83,32 @@ if len(native_types) != 12:
     raise SystemExit(f"expected 12 exported native types, found {native_types}")
 for cls in native_types:
     try:
-        type(f"{cls.__name__}Child", (cls,), {})
+        new_class(f"{cls.__name__}Child", (cls,))
     except TypeError:
         pass
     else:
         raise SystemExit(f"{cls.__name__} unexpectedly allowed subclassing")
-for cls, member in (
-    (RuleCategory, RuleCategory.Complexity),
-    (Applicability, Applicability.MachineApplicable),
-    (DiffStatus, DiffStatus.REGRESSED),
-):
-    assert type(member) is cls
-    for args in ((), (None,), (0,), (member,)):
+for cls in (RuleCategory, Applicability, DiffStatus):
+    if not issubclass(cls, Enum) or cls.__module__ != "complexipy":
+        raise SystemExit(f"{cls.__name__} is not a complexipy enum.Enum")
+    for member in cls:
+        if type(member) is not cls or member.value != member.name:
+            raise SystemExit(f"{cls.__name__}.{member.name} has a foreign value")
+        if cls(member.value) is not member or cls[member.name] is not member:
+            raise SystemExit(f"{cls.__name__} lookup missed {member.name}")
         try:
-            cls(*args)
-        except TypeError:
+            setattr(cls, member.name, member)
+        except AttributeError:
             pass
         else:
-            raise SystemExit(f"{cls.__name__} unexpectedly grew a constructor")
+            raise SystemExit(f"{cls.__name__}.{member.name} was reassignable")
+    for args in ((), (None,), (0,), ("missing",)):
+        try:
+            cls(*args)
+        except (TypeError, ValueError):
+            pass
+        else:
+            raise SystemExit(f"{cls.__name__} accepted {args!r}")
 
 entry = DiffEntry(
     file_path="a.py", func_name="f", old_complexity=2, new_complexity=6
@@ -149,11 +155,12 @@ for cls in (RuleCategory, Applicability, DiffStatus):
         node for node in stub.body
         if isinstance(node, ast.ClassDef) and node.name == cls.__name__
     )
-    declared = {
-        field.target.id for field in definition.body
-        if isinstance(field, ast.AnnAssign)
-    }
-    actual = {name for name in dir(cls) if type(getattr(cls, name)) is cls}
+    declared = [
+        (node.targets[0].id, node.value.value)
+        for node in definition.body
+        if isinstance(node, ast.Assign)
+    ]
+    actual = [(member.name, member.value) for member in cls]
     if declared != actual:
         raise SystemExit(f"{cls.__name__} members disagree with the installed stub")
 namespace = dict(vars(native))
