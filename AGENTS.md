@@ -192,10 +192,12 @@ cargo check -p complexipy-cli --locked
 
 ### Changelog
 
-Use the locally installed git-cliff directly. Confirm `git-cliff --version`
-reports `2.14.1`; root `cliff.toml` holds the configuration. The short manual
-procedure is in `docs/changelog.md`. No installer, wrapper or automated release
-pipeline is maintained here.
+Use the locally installed git-cliff directly. Confirm
+`~/.local/bin/git-cliff --version` reports `2.14.1`; a newer Homebrew
+`git-cliff` can shadow it on `PATH`. Root `cliff.toml` holds the configuration.
+The short manual procedure is in `docs/changelog.md`, including the upstream
+baseline to move when a sync is recorded with a merge. No installer, wrapper or
+automated release pipeline is maintained here.
 
 ### Run
 

@@ -18,7 +18,8 @@ first, then begin from a clean tree so verification matches the release commit.
    This is a deliberate lockfile-writing command, unlike the gate's `--locked`
    commands. Check all three workspace package records match the new version
    and investigate unrelated dependency changes.
-3. Confirm the local `git-cliff --version` is 2.14.1. Follow the direct candidate
+3. Confirm `~/.local/bin/git-cliff --version` is 2.14.1; a newer Homebrew
+   `git-cliff` can shadow it on `PATH`. Follow the direct candidate
    generation and review procedure in `docs/changelog.md`, using the requested
    version for `--tag`. Keep the explicit fork baseline. Do not add an installer,
    wrapper, handwritten duplicate entries or a publishing step.

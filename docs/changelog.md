@@ -10,21 +10,26 @@ git-cliff --version
 ```
 
 Use **2.14.1**. That local version check is sufficient. The current command is
-`~/.local/bin/git-cliff`; root `cliff.toml` is the checked-in configuration.
-There is no repository artifact manifest or checksum gate.
+`~/.local/bin/git-cliff`; a newer Homebrew `git-cliff` earlier on `PATH` can
+shadow it, so call that path directly. Root `cliff.toml` is the checked-in
+configuration. There is no repository artifact manifest or checksum gate.
 
 ## Preview
 
 Run from the repository root:
 
 ```bash
-git-cliff --config cliff.toml --offline --no-exec \
-  030e2079457412221087f520445e9f2a709faad6..HEAD
+~/.local/bin/git-cliff --config cliff.toml --offline --no-exec \
+  5c52836812e8288a01948b36a4df788e0eca8a31..HEAD
 ```
 
-The range excludes the upstream baseline and includes the first fork commit
-`87ad610`. Do not use `87ad610..HEAD` or add `--unreleased`, which can replace
-an explicit range with the latest-tag range in git-cliff 2.14.1.
+The range excludes upstream history through the last recorded upstream merge,
+`5c52836`, and includes the first fork commit `87ad610`. When a later upstream
+sync is recorded with a merge, move this baseline and the `cliff.toml` header to
+that upstream commit in the same change; otherwise the range walks into
+upstream history through the merge. Do not use `87ad610..HEAD` or add
+`--unreleased`, which can replace an explicit range with the latest-tag range
+in git-cliff 2.14.1.
 
 The config keeps merge summaries, routine changes and unknown subjects. It
 prints first-line messages and breaking descriptions, not whole bodies or
@@ -44,15 +49,15 @@ absolute scratch directory outside the checkout, using the agent's session
 scratchpad when available:
 
 ```bash
-git-cliff --config cliff.toml --offline --no-exec --tag 8.1.0 \
-  030e2079457412221087f520445e9f2a709faad6..HEAD \
+~/.local/bin/git-cliff --config cliff.toml --offline --no-exec --tag 8.1.0 \
+  5c52836812e8288a01948b36a4df788e0eca8a31..HEAD \
   > "<absolute-scratch>/complexipy-changelog.md"
 ```
 
 Check the command succeeded and read the candidate. Confirm the first fork fix,
 the merge, and the field-removal/Python-floor breaking descriptions are present,
 with no session trailers or inherited release sections. If needed, compare against
-`git log --oneline 030e207..HEAD`; `--context` provides git-cliff's parsed JSON.
+`git log --oneline 5c52836..HEAD`; `--context` provides git-cliff's parsed JSON.
 
 Replace `CHANGELOG.md` with the reviewed candidate in full. Do not hand-maintain
 additional entries that regeneration would overwrite; commit messages are the

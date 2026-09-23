@@ -32,3 +32,6 @@ do not auto-merge, switch branches, move tags or bump versions. Do not restore
 PyPI publishing, a docs site, web/wasm/VS Code targets, collaborator workflows
 or CI just because an upstream change assumes them. Run `verify` after an
 adopted implementation and use `git-commit` only when committing is authorized.
+When a sync is recorded with a merge, move the changelog baseline in
+`cliff.toml` and `docs/changelog.md` to the recorded upstream commit in the same
+change, or git-cliff will walk into upstream history through the merge.
