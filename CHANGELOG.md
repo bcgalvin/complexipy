@@ -1,8 +1,62 @@
 # Changelog
 
-Generated from this fork's commits after upstream `030e207`.
+Generated from this fork's commits after upstream `5c52836`.
 Do not edit by hand. See [changelog maintenance](docs/changelog.md).
 
+## 9.0.0
+
+### Breaking changes
+
+- (paths) unify analysis and collector root semantics (`13a779b`)
+  Breaking change: Relative inputs resolve from base_path or invocation_path,
+  which must name an existing directory. In-root results are root-relative;
+  outside results are canonical absolute paths, and failures are absolute.
+  Use file_complexity(path, base_path=root) for repository-relative identity.
+  Python path arguments must be strings, not pathlib.Path objects. Update
+  outside-root snapshot keys deliberately when adopting the new behavior.
+  Rust runner::collect_file_ignored_locations takes &Path for its base.
+
+- fail closed on incomplete populations and bad config (`00eaec3`)
+  Breaking change: Failed-path entries are plain absolute paths without
+  appended error text. A malformed or unreadable discovered
+  complexipy.toml, .complexipy.toml or pyproject.toml now fails the run
+  instead of falling through to the next candidate, and a configuration
+  that resolves to no paths is an error. Quiet runs count removable-marker
+  collection failures in the exit status.
+
+- (types) expose the shared enums as real Python enums (`db9fb92`)
+  Breaking change: The enums are enum.Enum classes. Members gain .name,
+  .value and iteration, calling a class with a member's value returns
+  that member instead of raising TypeError, and repr() now shows the
+  value. Code that recovered names through dir() keeps working but can
+  read .name directly.
+
+- (lsp) add the language server on the shared config loader (`da5285f`)
+  Breaking change: `complexipy lsp` now starts the language server;
+  analyze a path named lsp with `complexipy -- lsp`. Schema errors in
+  complexipy.toml or .complexipy.toml report `Invalid config in <path>`
+  with the key instead of `Failed to parse <path>` with a line and
+  column; the run still fails.
+
+### Fixes
+
+- (maintenance) align local build and verification contracts (`9138278`)
+
+### Documentation
+
+- (maintenance) document current fork and parent work (`458ae1d`)
+
+- (rules) define applicability tier policy (`8ae388f`)
+
+### Tests
+
+- (core) pin rule applicability tiers (`f60594e`)
+
+### Maintenance
+
+- (maintenance) record upstream main 5c52836 as merged (`c07ae49`)
+
+- (changelog) move the fork baseline to upstream 5c52836 (`6abea19`)
 ## 8.1.0
 
 ### Breaking changes
