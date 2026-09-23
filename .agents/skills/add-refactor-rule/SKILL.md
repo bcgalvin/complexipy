@@ -21,12 +21,15 @@ to make a suggestion look effective.
 - Register a new rule in `RuleRegistry::register_defaults()` in
   `rules/registry.rs`. Ranking reads metadata, so do not add a separate
   rule-ID-to-effectiveness switch.
-- Update the three explicit gates in `rules/registry/tests.rs`: the `fixture_for`
+- Update the four explicit gates in `rules/registry/tests.rs`: the `fixture_for`
   arm; the checked-rule count and message in
-  `every_registered_rule_produces_a_plan_consistent_with_its_own_metadata`; and
-  the expected table in `effectiveness_matches_documented_tiers`. Derive the
-  count from the rules you actually registered, not the stale "9th rule" comment.
-  Follow the no-explanatory-code-comments convention instead of copying it.
+  `every_registered_rule_produces_a_plan_consistent_with_its_own_metadata`; the
+  expected table in `effectiveness_matches_documented_tiers`; and the pinned
+  tier table in `rule_applicability_tiers_are_pinned`. Derive the count from
+  the rules you actually registered, not the stale "9th rule" comment. Follow
+  the no-explanatory-code-comments convention instead of copying it.
+- Declare `MaybeIncorrect` only with a test for each known failure shape; the
+  tier test rejects it until you extend it deliberately with those tests.
 - Add a behavioral fixture under `tests/fixtures/refactor_plans/` and assertions
   in `tests/test_refactor_plans.py`. Include a case that should fire and a refusal
   case where a rewrite would be unsafe. Assert relevant identity, applicability,

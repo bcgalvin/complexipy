@@ -333,8 +333,10 @@ ranking switch. Adding a rule is therefore: write the struct + `impl RefactorRul
 `RuleRegistry::register_defaults()`, and document it in `docs/rules.md`.
 Update `crates/complexipy-core/src/rules/registry/tests.rs` as well:
 `fixture_for`, the checked-rule count
-in `every_registered_rule_produces_a_plan_consistent_with_its_own_metadata`, and
-`effectiveness_matches_documented_tiers`. Add behavioral fixtures and assertions
+in `every_registered_rule_produces_a_plan_consistent_with_its_own_metadata`,
+`effectiveness_matches_documented_tiers` and `rule_applicability_tiers_are_pinned`.
+`MaybeIncorrect` requires a test for each known failure shape; the tier test
+rejects it until such a rule exists. Add behavioral fixtures and assertions
 under `tests/fixtures/refactor_plans/` and `tests/test_refactor_plans.py`.
 The `add-refactor-rule` skill is the task procedure for this lockstep.
 

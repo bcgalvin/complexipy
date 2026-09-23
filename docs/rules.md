@@ -20,12 +20,13 @@ there is no C006, C008, C009 or C010.
 per-plan sentence. The values come from each rule's `RuleMetadata` in
 `crates/complexipy-core/src/rules/complexity.rs`. What the tests pin:
 `effectiveness_matches_documented_tiers` in `rules/registry/tests.rs` pins every
-effectiveness value, and `every_registered_rule_produces_a_plan_consistent_with_its_own_metadata`
-pins that a plan's `rule_id`, `kind`, category and applicability are the
-metadata's rather than a second literal - but not what the metadata says.
-`tests/test_refactor_plans.py` pins the applicability of C004, C005, C007 and C011
-against real fixtures; the C001, C002 and C003 values, and every category, rest on
-the metadata literals alone.
+effectiveness value, `rule_applicability_tiers_are_pinned` pins every
+applicability value and the set of registered rule IDs, and
+`every_registered_rule_produces_a_plan_consistent_with_its_own_metadata` pins
+that a plan's `rule_id`, `kind`, category and applicability are the metadata's
+rather than a second literal. `tests/test_refactor_plans.py` also pins the
+applicability of C004, C005, C007 and C011 against real fixtures. Every category
+rests on the metadata literals alone.
 
 - **C001** - deeply nested conditions that can be inverted into early returns.
 - **C002** - use `continue` guards at the top of a loop to reduce nesting. Refuses
@@ -45,6 +46,13 @@ the metadata literals alone.
 tool stands behind, and `Informational` when it can only explain. A rule that is
 not confident emits `help` text rather than a wrong `suggestion`, and never prints
 a complexity number it knows is fabricated.
+
+`MaybeIncorrect` is reserved for a suggestion that is usually right but changes
+behavior for a known input shape, so a human must review it. No rule declares it.
+A rule may declare it only together with a test for each known failure shape;
+until then `rule_applicability_tiers_are_pinned` rejects it for every registered
+rule. complexipy never applies a suggestion itself: applicability is a confidence
+signal for the reader, not an instruction to an automatic fixer.
 
 **`plan.applicability` is a declared ceiling, not a promise.** It always comes
 from the rule's metadata, and no rule overrides it per-plan. C002, C005 and C007
