@@ -12,12 +12,10 @@ Update it as work lands and remove completed tasks rather than building a log.
 - Fork branch `rcq` includes `13a779b`: public `file_complexity(..., base_path=".")`,
   shared canonical roots for analysis and collectors, and path/population tests.
   No further public-base, collector-root or basename-compatibility work is due.
-- The parent's adopted wheel is still 8.1.0 from `7f27ffb`. Release 9.0.0
-  (tag `9.0.0`, `cdfda9b`) is built and verified but not yet adopted: the wheel
-  and its evidence are in
-  `~/Desktop/recsys-code-quality-runs/20260922-complexipy-9.0.0-pJzFy2/`, SHA-256
-  `38ad3b47b6cbacd280c552f1782dc184bf378b90e610ed42aaec7f60cae8362e`. Source
-  commits do not refresh the parent's wheel, gitlink or environments.
+- The parent adopted release 9.0.0 (tag `9.0.0`, `cdfda9b`) in its commit
+  `5e102b3`: its wheelhouse holds the verified wheel, its gitlink points at
+  `cdfda9b`, and its provider guidance describes the 9.0.0 contracts. Later
+  fork commits do not refresh the parent's wheel, gitlink or environments.
 - The population/CLI batch now preserves emitted discovery and collector
   failures, rejects empty paths and bad TOML, aligns quiet gates, protects
   comparison state on incomplete collections and invalidates failed marker JSON.
@@ -159,11 +157,6 @@ resolved; adopting changed runtime behavior requires a new release wheel.
 
 ### Independent guidance corrections
 
-- Correct `wheelhouse/README.md` to follow the fork's `vendor-build` procedure:
-  dedicated external build environment, exported `UV_PROJECT_ENVIRONMENT` and
-  `CARGO_TARGET_DIR`, setup with `uv sync --locked --no-install-project` when
-  needed, then `uv run --no-sync`. Build into scratch and validate before
-  adopting; do not install the project editably into the provider checkout.
 - Fix the stale section reference in
   `.agents/skills/complexipy-explore/SKILL.md`.
 - Make required guidance available to the bounded evaluation in
@@ -173,38 +166,21 @@ resolved; adopting changed runtime behavior requires a new release wheel.
   snapshot inputs and read allowlist with tests, not a new copying framework.
   Guidance must describe the evaluated wheel, not merely current fork HEAD.
 
-### New-wheel adoption
+### After the 9.0.0 adoption
 
-The fork side is done: release 9.0.0 and its validated wheel exist (see
-Current position). What remains is parent work: copy that wheel into the
-wheelhouse, update its record and the parent's `main`/8.1.0/`7f27ffb`
-references to `rcq`/9.0.0/`cdfda9b`, and commit the gitlink at `cdfda9b` in the
-same change. Do not rebuild different source under the 9.0.0 identity.
+The wheel swap, record, gitlink and guidance updates are done. The exact-wheel
+contract, source-stub equality, hash agreement, real plan and suggestion
+serialization and unchanged input checkouts were checked. Still open:
 
-- Update current capability/API guidance in `docs/tools/complexipy.md` and the
-  explore skill to use public `file_complexity(..., base_path=...)`; remove the
-  private-binding workaround when the adopted wheel supports the new contract.
-- Do not change `scripts/complexipy_analysis/reduced_record.py` `main` solely
-  for this batch: it passes a string path and constructs its own location
-  instead of consuming `result.path`.
+- Run an external-CWD CLI capture on an aliased (symlinked) target and compare
+  it with the canonical prefix while retaining multiplicity checks; public
+  explicit-root lookup has not yet been exercised that way from the parent.
 - Keep `compare_artifacts.py` `population` lexical. Supply each capture's
   canonical target prefix, including symlink resolution; do not repair retained
   artifact paths by resolving them against today's filesystem.
 - Use fresh or deliberately selected snapshot state. Changed path keys must
   not silently reinterpret or migrate an earlier snapshot.
-
-Minimum acceptance for adoption:
-
-- Exact-wheel installed contract, source-stub equality, and agreement of
-  version, source revision and the recorded wheel hash.
-- Real native plan **and suggestion** serialization through `plan_native`, not
-  only synthetic fixtures.
-- Public explicit-root lookup and path identity; an external-CWD CLI capture
-  using an aliased target, compared with its canonical prefix while retaining
-  multiplicity checks.
-- Input checkouts unchanged by building and provider execution.
-- Update the current wheel metadata and parent gitlink together. Installation
-  into a provider environment remains explicit, not implied by wheel creation.
+- Installing the wheel into a provider environment remains explicit.
 
 Emitted file-discovery/processing failures now reach the CLI gate, but complete
 filter validation still needs the ignore-file I/O decision above. Complete

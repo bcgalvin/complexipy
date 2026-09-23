@@ -35,9 +35,9 @@ through direct exploration in
 `scripts/complexipy_analysis/reduced_record.py` (`main`, `plan_native`). Parent
 paths in this section are relative to `recsys-code-quality`, not this fork.
 
-The parent pins the 8.1.0 release and its current wheel; its serializer no longer
-reads `doc_url` or `references`. A verified 9.0.0 wheel awaits parent adoption;
-see [current work](../current-work.md#new-wheel-adoption). A source change alone neither updates that wheel
+The parent pins the 9.0.0 release and its wheel; its serializer no longer reads
+`doc_url` or `references`. Remaining adoption checks are in
+[current work](../current-work.md#after-the-900-adoption). A source change alone neither updates that wheel
 nor installs it in a provider environment. On a requested refresh, check the
 exact wheel contract and the real native-plan serializer together. Synthetic
 parent tests do not establish native API compatibility on their own.
