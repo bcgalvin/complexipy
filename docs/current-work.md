@@ -9,7 +9,7 @@ Update it as work lands and remove completed tasks rather than building a log.
 
 ## Current position
 
-- Fork `main` includes `13a779b`: public `file_complexity(..., base_path=".")`,
+- Fork branch `rcq` includes `13a779b`: public `file_complexity(..., base_path=".")`,
   shared canonical roots for analysis and collectors, and path/population tests.
   No further public-base, collector-root or basename-compatibility work is due.
 - The parent's adopted wheel is still 8.1.0 from `7f27ffb`, not current fork

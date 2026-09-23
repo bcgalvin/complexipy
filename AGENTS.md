@@ -206,11 +206,23 @@ self-dogfooding threshold at 15 and excludes `tests/**`.
 
 ```bash
 uv run complexipy <path>
-uv run complexipy . --diff main --max-complexity-allowed 15
+uv run complexipy . --diff rcq --max-complexity-allowed 15
 uv run complexipy complexipy --failed          # dogfood the tool on itself
 uv run complexipy lsp                          # stdio language server
 cargo run -p complexipy-lsp                    # the same server from the tree
 ```
+
+## Branches and remotes
+
+- `rcq` is the fork's only working branch. Commits, release tags and the
+  parent's gitlink live on it, and `origin/rcq` on the public GitHub fork is its
+  backup. It is the GitHub default branch and `origin/HEAD`.
+- `origin/main` is a pristine mirror of upstream `main`, advanced only by
+  GitHub's fork sync (`gh repo sync bcgalvin/complexipy -b main`). Keep no local
+  `main` branch; never commit or push to `main`.
+- Upstream tags are never fetched. Fetch with `git fetch --no-tags origin`.
+- The `sync-upstream` skill evaluates `origin/main` against `rcq` and records
+  each adoption with a merge.
 
 ## Architecture
 

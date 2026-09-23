@@ -15,7 +15,7 @@ No distribution or environment-management layer is needed.
 Before building, confirm the source commit and workspace version. Build a
 consumer artifact from a clean, committed tree so its recorded SHA identifies
 its contents. Do not overwrite a wheel with different source under the same
-version. Build from the requested fork release on `main`; `origin` is the fork,
+version. Build from the requested fork release on `rcq`; `origin` is the fork,
 not upstream.
 
 From this repository's root, select absolute environment and scratch paths
