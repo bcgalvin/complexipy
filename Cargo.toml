@@ -29,6 +29,7 @@ allow_attributes = "warn"
 allow_attributes_without_reason = "warn"
 print_stdout = "warn"
 print_stderr = "warn"
+string_slice = "warn"
 
 [workspace.dependencies]
 ruff_python_parser = { git = "https://github.com/astral-sh/ruff.git", rev = "ef422460de726c5b896c09c364d02a4db24bcaf0", package = "ruff_python_parser" }

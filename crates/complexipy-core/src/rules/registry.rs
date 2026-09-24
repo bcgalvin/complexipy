@@ -164,12 +164,12 @@ fn splice_plan(
         return None;
     }
     let mut spliced = String::with_capacity(source.len() + suggestion.replacement.len());
-    spliced.push_str(&source[..byte_start]);
+    spliced.push_str(source.get(..byte_start)?);
     spliced.push_str(&suggestion.replacement);
     if byte_end < source.len() {
         spliced.push('\n');
     }
-    spliced.push_str(&source[byte_end..]);
+    spliced.push_str(source.get(byte_end..)?);
     Some(spliced)
 }
 

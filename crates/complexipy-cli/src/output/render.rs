@@ -62,13 +62,12 @@ fn rule_at(title: &str, width: usize) -> String {
     let plain = format!("{} {} {}", "─".repeat(left), title, "─".repeat(right));
     let plain = set_cell_size(&plain, width);
 
-    if let Some(start) = plain.find(title) {
-        let end = start + title.len();
+    if let Some((before, after)) = plain.split_once(title) {
         format!(
             "{}{}{}",
-            plain[..start].to_string().bright_green(),
-            &plain[start..end],
-            plain[end..].to_string().bright_green()
+            before.to_string().bright_green(),
+            title,
+            after.to_string().bright_green()
         )
     } else {
         plain.bright_green().to_string()

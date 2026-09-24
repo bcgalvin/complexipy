@@ -910,10 +910,7 @@ fn generate_predicate_suggestion(
 
 fn line_at<'a>(source: &'a str, index: &LineIndex, line: u64) -> Option<&'a str> {
     let start = index.byte_of_line(line)?;
-    let end = source[start..]
-        .find('\n')
-        .map_or(source.len(), |i| start + i);
-    Some(&source[start..end])
+    source.get(start..)?.split('\n').next()
 }
 
 fn span_lines<'a>(
@@ -927,7 +924,7 @@ fn span_lines<'a>(
     if end_byte < start_byte {
         return Some(Vec::new());
     }
-    Some(source[start_byte..end_byte].lines().collect())
+    Some(source.get(start_byte..end_byte)?.lines().collect())
 }
 
 fn get_indentation_from_str(line: &str) -> usize {
@@ -1334,7 +1331,7 @@ fn extract_condition_from_line(line: &str) -> Option<String> {
     }
 
     let colon_byte = colon_byte?;
-    let condition = trimmed[keyword_len..colon_byte].trim();
+    let condition = trimmed.get(keyword_len..colon_byte)?.trim();
     if condition.is_empty() {
         return None;
     }
@@ -1598,7 +1595,7 @@ fn strip_top_level_not(condition: &str) -> Option<String> {
     {
         return None;
     }
-    Some(condition[4..].to_string())
+    condition.strip_prefix("not ").map(str::to_string)
 }
 
 fn combine_conditions_chain(conditions: &[String]) -> String {

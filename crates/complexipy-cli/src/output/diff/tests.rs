@@ -89,7 +89,6 @@ fn status_ordering_in_summary() {
 
     let output = strip_ansi(&format_diff(&entries, "main"));
 
-    let net_index = output.find("Net:").expect("net line");
-    let summary = &output[net_index..];
+    let (_, summary) = output.split_once("Net:").expect("net line");
     assert!(summary.contains("1 regressed"));
 }

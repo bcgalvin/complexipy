@@ -229,6 +229,10 @@ impl LineIndex {
         (self.newlines.partition_point(|&offset| offset < byte) + 1) as u64
     }
 
+    #[expect(
+        clippy::string_slice,
+        reason = "byte offsets come from ruff text ranges, which are char boundaries"
+    )]
     pub fn column_of(&self, byte: usize, code: &str) -> u64 {
         let idx = self.newlines.partition_point(|&offset| offset < byte);
         let line_start = match idx {
@@ -388,13 +392,23 @@ fn count_different_childs_type(expr: &ast::Expr, prev_pr: &ast::Expr) -> u64 {
 }
 
 fn line_start_of(code: &str, offset: usize) -> usize {
-    code[..offset].rfind('\n').map_or(0, |i| i + 1)
+    code.as_bytes()[..offset]
+        .iter()
+        .rposition(|&byte| byte == b'\n')
+        .map_or(0, |i| i + 1)
 }
 
 fn line_end_of(code: &str, offset: usize) -> usize {
-    code[offset..].find('\n').map_or(code.len(), |i| offset + i)
+    code.as_bytes()[offset..]
+        .iter()
+        .position(|&byte| byte == b'\n')
+        .map_or(code.len(), |i| offset + i)
 }
 
+#[expect(
+    clippy::string_slice,
+    reason = "line bounds sit next to newline bytes or at the ends of the text"
+)]
 fn line_at(code: &str, line_start: usize) -> &str {
     &code[line_start..line_end_of(code, line_start)]
 }
