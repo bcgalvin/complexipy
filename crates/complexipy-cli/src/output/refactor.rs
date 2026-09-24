@@ -211,11 +211,15 @@ fn output_caret_span(plan: &RefactorPlan, source_lines: Option<&[String]>) -> St
     };
 
     let column_index = plan.column_start as usize - 1;
-    if column_index >= source_line.chars().count() {
+    let Some(rest) = source_line
+        .char_indices()
+        .nth(column_index)
+        .and_then(|(byte_index, _)| source_line.get(byte_index..))
+    else {
         return String::new();
-    }
+    };
 
-    let caret_width = source_line[column_index..].trim_end().chars().count();
+    let caret_width = rest.trim_end().chars().count();
     if caret_width == 0 {
         return String::new();
     }

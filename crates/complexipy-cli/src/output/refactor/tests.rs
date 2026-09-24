@@ -158,3 +158,20 @@ fn caret_span_rendered_from_source() {
     assert!(output.contains("2 | "));
     assert!(output.contains("^"));
 }
+
+#[test]
+fn caret_span_starts_after_multibyte_prefix() {
+    let mut p = plan();
+    p.line_start = 1;
+    p.column_start = 2;
+    let output = crate::output::refactor::output_single_plan_for_test(
+        &p,
+        1,
+        "src/a.py",
+        Some(&["\u{feff}if a and b:".to_string()]),
+    );
+
+    let stripped = strip_ansi(&output);
+    assert!(stripped.contains("1 | \u{feff}if a and b:"));
+    assert!(stripped.contains(&"^".repeat("if a and b:".chars().count())));
+}
