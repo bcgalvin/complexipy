@@ -519,6 +519,8 @@ the reverse. Adding a dependency means adding it to the crate that uses it.
   gate before other work and fix new lint findings or renamed lint names in
   one dedicated commit, for example `chore(rust): adopt Rust 1.99 lints`. Keep
   that commit separate from feature work and from a parser revision bump.
+  `resolver = "3"` makes `cargo update` prefer dependency versions that the
+  installed rustc supports.
 - **Cargo lockfile:** Regenerate and review `Cargo.lock` after dependency or workspace-version changes, and include required lockfile updates with the change. Every Cargo command here that resolves dependencies passes `--locked`, so drift fails rather than silently resolving. `maturin develop` does not, so a manifest edit followed by a rebuild can regenerate the lockfile without warning.
 - **Commits:** Only commit when explicitly asked. Never auto-commit. Stage explicit paths - never `git add -A` or `git add .`
 - **Commit subjects:** Must follow Conventional Commits. There is no automatic
