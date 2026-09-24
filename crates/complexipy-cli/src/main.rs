@@ -5,6 +5,10 @@ use clap::Parser;
 use complexipy_cli::args::CliArgs;
 use complexipy_cli::run::run_at;
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "the binary's working directory is its invocation root"
+)]
 fn main() -> ExitCode {
     let invocation_path = std::env::current_dir()
         .map(|path| path.to_string_lossy().into_owned())

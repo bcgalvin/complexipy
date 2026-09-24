@@ -120,6 +120,10 @@ fn capabilities() -> ServerCapabilities {
     deprecated,
     reason = "root_uri is the fallback for clients that send no workspace folders"
 )]
+#[expect(
+    clippy::disallowed_methods,
+    reason = "a client that sends no root gets the server's working directory"
+)]
 fn workspace_root(params: &InitializeParams) -> String {
     params
         .workspace_folders

@@ -194,12 +194,15 @@ prefer `str::get` or char-based methods). Root `clippy.toml` sets
 `avoid-breaking-exported-api = false` because no crate is published,
 `allow-panic-in-tests = true`, and `excessive-nesting-threshold = 6`, the
 deepest block nesting in the code today (extract a function rather than nest
-deeper). It bans `std::env::set_current_dir` because test binaries share one
-process working directory. Lints are declared as warnings, so
-promotion to errors comes from the `-D warnings` flag on the Clippy commands and
-nothing else enforces it automatically. The restriction, nursery and cargo
-groups are not enabled. `cargo clippy --fix --workspace --all-targets --locked`
-applies the machine-applicable fixes. To count findings, for example after
+deeper). It bans `std::env::set_current_dir`, because test binaries share one
+process working directory, and `std::env::current_dir`, because library code
+takes an explicit root (`invocation_path`); only the cli and lsp entry points
+and one test read it, under reasoned expectations. Lints are declared as
+warnings, so promotion to errors comes from the `-D warnings` flag on the
+Clippy commands and nothing else enforces it automatically. The restriction,
+nursery and cargo groups are not enabled.
+`cargo clippy --fix --workspace --all-targets --locked` applies the
+machine-applicable fixes. To count findings, for example after
 `rustup update`, run Clippy without `-D warnings`; with it, Cargo stops after
 the first failing crate.
 

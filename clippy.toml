@@ -3,4 +3,5 @@ allow-panic-in-tests = true
 excessive-nesting-threshold = 6
 disallowed-methods = [
     { path = "std::env::set_current_dir", reason = "test binaries share one process cwd; pass explicit roots" },
+    { path = "std::env::current_dir", reason = "library code takes an explicit invocation root" },
 ]

@@ -130,6 +130,10 @@ fn excluded_invalid_files_are_omitted_rather_than_failed() {
 }
 
 #[test]
+#[expect(
+    clippy::disallowed_methods,
+    reason = "the \".\" invocation root resolves against the process working directory"
+)]
 fn missing_path_reporting_is_absolute() {
     let missing = "definitely/not/here.py".to_string();
 
