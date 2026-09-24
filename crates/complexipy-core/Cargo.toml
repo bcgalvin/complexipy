@@ -26,7 +26,6 @@ serde = { workspace = true }
 serde_json = { workspace = true }
 csv = { workspace = true }
 ignore = { workspace = true }
-globset = { workspace = true }
 wax = { workspace = true }
 rayon = { workspace = true }
 pyo3 = { workspace = true, optional = true }

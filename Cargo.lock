@@ -286,7 +286,6 @@ version = "9.0.0"
 dependencies = [
  "complexipy-types",
  "csv",
- "globset",
  "ignore",
  "pyo3",
  "rayon",

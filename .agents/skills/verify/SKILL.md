@@ -18,6 +18,11 @@ own commit, as the "Rust toolchain" convention in `AGENTS.md` describes.
 For Python dependency changes, regenerate/review `uv.lock` deliberately and
 run `uv lock --check` before the gate, so `uv run` does not silently repair drift.
 
+For Cargo manifest changes, regenerate/review `Cargo.lock` deliberately
+(`cargo update --workspace` or `cargo update -p <crate>`), then run
+`cargo clippy --workspace --lib --locked -- -D unused_crate_dependencies`. It
+checks library targets only; bins and integration tests report false positives.
+
 For source, tests, dependencies or build/config changes, run the standing gate:
 
 ```bash
