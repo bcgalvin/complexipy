@@ -24,8 +24,7 @@ pub enum ExportError {
 impl fmt::Display for ExportError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::Io(message) => write!(f, "{message}"),
-            Self::Serialize(message) => write!(f, "{message}"),
+            Self::Io(message) | Self::Serialize(message) => write!(f, "{message}"),
             Self::InvalidSort(message) => write!(f, "Invalid sort value: {message}"),
         }
     }

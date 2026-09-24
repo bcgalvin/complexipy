@@ -12,6 +12,7 @@ use super::{
 };
 use crate::refactor_plans::{ComplexityRegion, RegionKind};
 use crate::utils::LineIndex;
+use std::collections::HashSet;
 
 fn combine(parts: &[&str]) -> String {
     let owned: Vec<String> = parts.iter().map(std::string::ToString::to_string).collect();
@@ -137,7 +138,7 @@ fn predicate_suggestion_shows_the_enclosing_function_context() {
         &region,
         source,
         &LineIndex::new(source),
-        &Default::default(),
+        &HashSet::default(),
     )
     .unwrap();
     assert_eq!(
@@ -160,7 +161,7 @@ fn predicate_suggestion_falls_back_to_a_bare_call_at_module_level() {
         &region,
         source,
         &LineIndex::new(source),
-        &Default::default(),
+        &HashSet::default(),
     )
     .unwrap();
     assert_eq!(

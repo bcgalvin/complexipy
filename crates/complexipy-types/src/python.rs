@@ -50,7 +50,7 @@ impl Applicability {
 }
 
 impl DiffStatus {
-    pub(crate) fn python_name(&self) -> &'static str {
+    pub(crate) fn python_name(self) -> &'static str {
         match self {
             Self::Regressed => "REGRESSED",
             Self::Improved => "IMPROVED",

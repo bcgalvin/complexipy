@@ -119,7 +119,7 @@ fn build_rows_filters_failed_only_and_tracks_totals() {
         file("src/b.py", "b.py", vec![function("other", 1)]),
     ];
 
-    let (entries, total, all_pass) = build_output_rows(&files, false, Sort::Asc, 5, None);
+    let (entries, total, all_pass) = build_output_rows(&files, false, &Sort::Asc, 5, None);
 
     assert_eq!(total, 4);
     assert!(!all_pass);
@@ -127,7 +127,7 @@ fn build_rows_filters_failed_only_and_tracks_totals() {
     assert_eq!(entries[0].functions.len(), 3);
     assert_eq!(entries[0].path, "src/a.py");
 
-    let (entries, _, _) = build_output_rows(&files, true, Sort::Asc, 5, None);
+    let (entries, _, _) = build_output_rows(&files, true, &Sort::Asc, 5, None);
     assert_eq!(entries.len(), 1);
     assert_eq!(entries[0].functions.len(), 1);
     assert_eq!(entries[0].functions[0].name, "fail");
@@ -137,7 +137,7 @@ fn build_rows_filters_failed_only_and_tracks_totals() {
 fn build_rows_all_pass_when_within_threshold() {
     let files = vec![file("src/a.py", "a.py", vec![function("f", 2)])];
 
-    let (_, _, all_pass) = build_output_rows(&files, false, Sort::Asc, 5, None);
+    let (_, _, all_pass) = build_output_rows(&files, false, &Sort::Asc, 5, None);
 
     assert!(all_pass);
 }
@@ -182,7 +182,7 @@ fn truncate_top_n_groups_by_path() {
         },
     ];
 
-    let truncated = truncate_top_n(entries, 2);
+    let truncated = truncate_top_n(&entries, 2);
 
     assert_eq!(truncated.len(), 2);
     assert_eq!(truncated[0].path, "a.py");

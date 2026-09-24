@@ -75,10 +75,10 @@ pub fn run_analysis_shared(
                 Err(_) => (vec![], vec![path.clone()]),
             }
         };
-        complexities.iter_mut().for_each(|f| {
+        for f in &mut complexities {
             f.functions
                 .sort_by(|a, b| a.complexity.cmp(&b.complexity).then(a.name.cmp(&b.name)));
-        });
+        }
         complexities.sort_by(|a, b| {
             a.path
                 .cmp(&b.path)
@@ -97,9 +97,8 @@ fn evaluate_dir_shared(
     opts: &ProcessOptions,
     invocation_path: &path::Path,
 ) -> ComplexitiesAndFailedPaths {
-    let discovered = match get_paths_to_process(path, opts.exclude.clone()) {
-        Ok(paths) => paths,
-        Err(_) => return (vec![], vec![path.to_string()]),
+    let Ok(discovered) = get_paths_to_process(path, &opts.exclude) else {
+        return (vec![], vec![path.to_string()]);
     };
 
     let results: Vec<Result<FileComplexity, String>> = discovered
@@ -235,9 +234,7 @@ where
         let path_str = path_string(&path_obj);
 
         if path_obj.is_dir() {
-            let discovered = if let Ok(paths) = get_paths_to_process(&path_str, exclude.to_vec()) {
-                paths
-            } else {
+            let Ok(discovered) = get_paths_to_process(&path_str, exclude) else {
                 failed_paths.push(path_str);
                 continue;
             };

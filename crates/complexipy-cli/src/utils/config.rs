@@ -54,9 +54,7 @@ fn resolve_cache_dir(
     }
 }
 
-pub fn resolve_config(toml_config: Option<Config>, cli: CliArgs) -> Result<RunConfig, ConfigError> {
-    let toml = toml_config.as_ref();
-
+pub fn resolve_config(toml: Option<&Config>, cli: CliArgs) -> Result<RunConfig, ConfigError> {
     let paths = if !cli.paths.is_empty() {
         cli.paths
     } else if let Some(toml) = toml {

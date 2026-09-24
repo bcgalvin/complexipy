@@ -1,4 +1,5 @@
 use std::fs;
+use std::io::Write;
 
 use serde_json::{Value, json};
 
@@ -63,7 +64,6 @@ pub fn store_gitlab(
             "Failed to create GitLab report at {output_path}: {e}"
         ))
     })?;
-    use std::io::Write;
     file.write_all(serialized.as_bytes()).map_err(|e| {
         ExportError::Io(format!(
             "Failed to write GitLab report to {output_path}: {e}"

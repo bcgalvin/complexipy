@@ -96,7 +96,7 @@ fn record_ignore_error(error: &ignore::Error, fallback: &Path, failed_paths: &mu
 
 pub fn get_paths_to_process(
     root_path: &str,
-    to_exclude_paths: Vec<String>,
+    to_exclude_paths: &[String],
 ) -> Result<DiscoveredPaths, String> {
     let mut files = Vec::new();
     let mut failed_paths = Vec::new();

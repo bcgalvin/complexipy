@@ -265,7 +265,7 @@ impl Server {
             INLAY_HINT => {
                 let id = request.id.clone();
                 match request.extract::<InlayHintParams>(INLAY_HINT) {
-                    Ok((id, params)) => self.respond_inlay_hints(id, params),
+                    Ok((id, params)) => self.respond_inlay_hints(id, &params),
                     Err(_) => self.respond_invalid_params(id),
                 }
             }
@@ -297,7 +297,7 @@ impl Server {
                         item.version,
                         item.language_id,
                     );
-                    self.mark_dirty(item.uri);
+                    self.mark_dirty(&item.uri);
                 }
             }
             DID_CHANGE => {
@@ -342,7 +342,7 @@ impl Server {
 
         self.documents
             .change(&uri, change.text, params.text_document.version);
-        self.mark_dirty(uri);
+        self.mark_dirty(&uri);
     }
 
     fn close_document(&mut self, params: DidCloseTextDocumentParams) {
@@ -367,8 +367,8 @@ impl Server {
         }
     }
 
-    fn mark_dirty(&mut self, uri: Uri) {
-        self.mark_dirty_key(Documents::key(&uri));
+    fn mark_dirty(&mut self, uri: &Uri) {
+        self.mark_dirty_key(Documents::key(uri));
     }
 
     fn mark_dirty_key(&mut self, key: String) {
@@ -541,7 +541,7 @@ impl Server {
         self.send(Request::new(id, INLAY_HINT_REFRESH.to_string(), ()));
     }
 
-    fn respond_inlay_hints(&mut self, id: RequestId, params: InlayHintParams) {
+    fn respond_inlay_hints(&mut self, id: RequestId, params: &InlayHintParams) {
         let analysis = self.current_analysis(&params.text_document.uri);
         let hints = match analysis {
             Some(analysis) => analysis.hints(&self.config, Some(params.range)),

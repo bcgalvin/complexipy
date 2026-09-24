@@ -82,7 +82,7 @@ impl Session {
         };
 
         self.send(Request::new(id.clone(), "initialize".to_string(), params));
-        let result = self.result(id);
+        let result = self.result(&id);
         self.send(Notification::new(
             "initialized".to_string(),
             InitializedParams {},
@@ -91,16 +91,16 @@ impl Session {
         result
     }
 
-    fn response(&mut self, id: RequestId) -> Result<serde_json::Value, lsp_server::ResponseError> {
+    fn response(&mut self, id: &RequestId) -> Result<serde_json::Value, lsp_server::ResponseError> {
         loop {
             if let Message::Response(response) = self.receive() {
-                assert_eq!(response.id, id);
+                assert_eq!(&response.id, id);
                 return response.response_result;
             }
         }
     }
 
-    fn result(&mut self, id: RequestId) -> serde_json::Value {
+    fn result(&mut self, id: &RequestId) -> serde_json::Value {
         self.response(id).expect("response carried an error")
     }
 
@@ -111,7 +111,7 @@ impl Session {
     fn request(&mut self, method: &str, params: impl serde::Serialize) -> serde_json::Value {
         let id = self.next_id();
         self.publish(id.clone(), method, params);
-        self.result(id)
+        self.result(&id)
     }
 
     fn notify(&mut self, method: &str, params: impl serde::Serialize) {
@@ -265,7 +265,7 @@ impl Session {
     fn shutdown(mut self) -> i32 {
         let id = self.next_id();
         self.publish(id.clone(), SHUTDOWN, ());
-        self.result(id);
+        self.result(&id);
         self.send(Notification::new(EXIT.to_string(), ()));
 
         self.server.join().unwrap()
@@ -538,7 +538,7 @@ fn unknown_requests_get_an_error_response() {
     let id = session.next_id();
     session.publish(id.clone(), "textDocument/codeAction", serde_json::json!({}));
 
-    assert!(session.response(id).is_err());
+    assert!(session.response(&id).is_err());
     assert_eq!(session.shutdown(), EXIT_CODE_CLEAN);
 }
 
@@ -553,7 +553,7 @@ fn an_unparseable_initialize_gets_an_error_response() {
     ));
 
     let error = session
-        .response(id)
+        .response(&id)
         .expect_err("initialize should be rejected");
 
     assert_eq!(error.code, ErrorCode::InvalidParams as i32);
@@ -585,7 +585,7 @@ fn stray_messages_during_shutdown_keep_the_exit_code_clean() {
     session.initialize();
     let id = session.next_id();
     session.publish(id.clone(), SHUTDOWN, ());
-    session.result(id);
+    session.result(&id);
 
     session.send(Message::Response(lsp_server::Response::new_ok(
         RequestId::from(9),

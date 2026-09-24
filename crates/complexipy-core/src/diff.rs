@@ -1,3 +1,4 @@
+use std::cmp::Ordering;
 use std::collections::HashMap;
 use std::io::Read;
 use std::process::{Command, Stdio};
@@ -24,22 +25,17 @@ impl DiffEntry {
         match (self.old_complexity, self.new_complexity) {
             (None, ..) => DiffStatus::New,
             (.., None) => DiffStatus::Removed,
-            (Some(old), Some(new)) => {
-                if new > old {
-                    DiffStatus::Regressed
-                } else if new < old {
-                    DiffStatus::Improved
-                } else {
-                    DiffStatus::Unchanged
-                }
-            }
+            (Some(old), Some(new)) => match new.cmp(&old) {
+                Ordering::Greater => DiffStatus::Regressed,
+                Ordering::Less => DiffStatus::Improved,
+                Ordering::Equal => DiffStatus::Unchanged,
+            },
         }
     }
 
     pub fn delta(&self) -> Option<i64> {
         match (self.old_complexity, self.new_complexity) {
-            (None, ..) => None,
-            (.., None) => None,
+            (None, ..) | (.., None) => None,
             (Some(old), Some(new)) => Some(new as i64 - old as i64),
         }
     }

@@ -91,7 +91,7 @@ impl RuleRegistry {
         let (mut selected, cap_dropped) = select_non_overlapping(plans, &effectiveness);
 
         let measured_before = selected.len();
-        self.measure_plans(&mut selected, ctx);
+        Self::measure_plans(&mut selected, ctx);
         selected.retain(|plan| plan.estimated_reduction >= 1);
         let measurement_dropped = measured_before.saturating_sub(selected.len());
 
@@ -101,7 +101,7 @@ impl RuleRegistry {
     /// Plans whose measurement fails keep their formula estimate with
     /// `reduction_is_measured = false` - never a panic, never a fabricated
     /// measured number.
-    fn measure_plans(&self, plans: &mut [RefactorPlan], ctx: &PlanContext<'_>) {
+    fn measure_plans(plans: &mut [RefactorPlan], ctx: &PlanContext<'_>) {
         for plan in plans.iter_mut() {
             let Some(suggestion) = &plan.suggestion else {
                 continue;

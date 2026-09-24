@@ -10,7 +10,7 @@ use crate::refactor_plans::{ComplexityRegion, RegionKind};
 use crate::rules::types::{AnalysisOptions, RuleSet};
 use crate::utils::LineIndex;
 use ruff_python_parser::parse_module;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 fn plan(rule_id: &str, line_start: u64, line_end: u64, estimated_reduction: u64) -> RefactorPlan {
     RefactorPlan {
@@ -233,7 +233,7 @@ fn every_registered_rule_produces_a_plan_consistent_with_its_own_metadata() {
                 &region,
                 &source,
                 &LineIndex::new(&source),
-                &Default::default(),
+                &HashSet::default(),
                 10,
             )
             .unwrap_or_else(|| {
@@ -376,7 +376,7 @@ fn spliceable_plan_reports_the_measured_reduction() {
         &PlanContext {
             source: &source,
             index: &LineIndex::new(&source),
-            def_names: &Default::default(),
+            def_names: &HashSet::default(),
             function_complexity: complexity,
             is_module: true,
             active: &RuleSet::default(),
@@ -471,7 +471,7 @@ fn inactive_rules_never_produce_plans() {
                     &PlanContext {
                         source: &source,
                         index: &index,
-                        def_names: &Default::default(),
+                        def_names: &HashSet::default(),
                         function_complexity: 10,
                         is_module: true,
                         active,
@@ -509,7 +509,7 @@ fn inactive_rule_never_shadows_an_active_rule() {
                 &PlanContext {
                     source: &source,
                     index: &index,
-                    def_names: &Default::default(),
+                    def_names: &HashSet::default(),
                     function_complexity: 10,
                     is_module: true,
                     active,

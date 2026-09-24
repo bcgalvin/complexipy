@@ -7,7 +7,7 @@ use complexipy_core::classes::{FileComplexity, FunctionComplexity};
 pub fn build_output_rows(
     files: &[FileComplexity],
     failed_only: bool,
-    sort: Sort,
+    sort: &Sort,
     max_complexity: u64,
     snapshot_map: Option<&HashMap<(String, String, String), u64>>,
 ) -> (Vec<FileEntry>, u64, bool) {
@@ -16,7 +16,7 @@ pub fn build_output_rows(
     let mut all_pass = true;
 
     for file in files {
-        let sorted_functions = sort_functions(&file.functions, &sort);
+        let sorted_functions = sort_functions(&file.functions, sort);
         let mut displayable_functions = Vec::new();
 
         for function in sorted_functions {
@@ -111,9 +111,9 @@ pub fn has_success_functions(
     })
 }
 
-pub fn truncate_top_n(file_entries: Vec<FileEntry>, n: u64) -> Vec<FileEntry> {
+pub fn truncate_top_n(file_entries: &[FileEntry], n: u64) -> Vec<FileEntry> {
     let mut all_functions: Vec<(String, FunctionRow)> = Vec::new();
-    for entry in &file_entries {
+    for entry in file_entries {
         for function in &entry.functions {
             all_functions.push((entry.path.clone(), function.clone()));
         }

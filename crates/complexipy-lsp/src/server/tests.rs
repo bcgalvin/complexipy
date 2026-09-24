@@ -94,7 +94,7 @@ fn hint_requests_store_the_recomputed_analysis() {
         .documents
         .open(uri(), SAMPLE.to_string(), 3, "python".to_string());
 
-    server.respond_inlay_hints(RequestId::from(1), hints_params());
+    server.respond_inlay_hints(RequestId::from(1), &hints_params());
 
     let stored = server
         .analyses
@@ -160,7 +160,7 @@ fn a_hint_request_on_a_failing_version_publishes_the_parse_diagnostic() {
     assert_eq!(diagnostics_of(&client).len(), 1);
 
     server.documents.change(&uri(), BROKEN.to_string(), 4);
-    server.respond_inlay_hints(RequestId::from(1), hints_params());
+    server.respond_inlay_hints(RequestId::from(1), &hints_params());
 
     let diagnostics = diagnostics_of(&client);
     assert_eq!(diagnostics.len(), 1);
@@ -206,7 +206,7 @@ fn a_fresh_cached_analysis_is_reused_without_a_second_parse() {
     server
         .documents
         .open(uri(), SAMPLE.to_string(), 3, "python".to_string());
-    server.respond_inlay_hints(RequestId::from(1), hints_params());
+    server.respond_inlay_hints(RequestId::from(1), &hints_params());
 
     assert!(server.refresh(&uri()));
     assert_eq!(diagnostics_of(&client).len(), 1);

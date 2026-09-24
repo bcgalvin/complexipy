@@ -500,7 +500,7 @@ impl RefactorRule for CollapsibleIfRule {
         for r in &chain {
             let line = line_at(source, index, r.line_start)?;
             if let Some(cond) = extract_condition_from_line(line.trim_start()) {
-                conditions.push(cond)
+                conditions.push(cond);
             } else {
                 conditions_extracted = false;
                 break;
@@ -661,9 +661,8 @@ fn generate_loop_guard_suggestion(
         let Some(line_idx) = span_idx(r.line_start) else {
             break;
         };
-        let condition = match extract_condition_from_line(lines[line_idx].trim_start()) {
-            Some(cond) => cond,
-            None => break,
+        let Some(condition) = extract_condition_from_line(lines[line_idx].trim_start()) else {
+            break;
         };
         guards.push((r, condition));
 
@@ -1013,11 +1012,12 @@ struct FreeNameCollector<'a> {
 impl<'a> Visitor<'a> for FreeNameCollector<'a> {
     fn visit_expr(&mut self, expr: &'a Expr) {
         match expr {
-            Expr::Named(_) | Expr::Lambda(_) => {
-                self.disqualified = true;
-                return;
-            }
-            Expr::ListComp(_) | Expr::SetComp(_) | Expr::DictComp(_) | Expr::Generator(_) => {
+            Expr::Named(_)
+            | Expr::Lambda(_)
+            | Expr::ListComp(_)
+            | Expr::SetComp(_)
+            | Expr::DictComp(_)
+            | Expr::Generator(_) => {
                 self.disqualified = true;
                 return;
             }

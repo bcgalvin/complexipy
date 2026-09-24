@@ -80,13 +80,13 @@ fn hash_targets(joined: &str) -> String {
 fn normalize_targets(invocation_path: &str, targets: &[String]) -> Vec<String> {
     let mut normalized_targets: Vec<String> = targets
         .iter()
-        .filter_map(|target| normalize_target(invocation_path, target))
+        .map(|target| normalize_target(invocation_path, target))
         .collect();
     normalized_targets.sort();
     normalized_targets
 }
 
-fn normalize_target(invocation_path: &str, target: &str) -> Option<String> {
+fn normalize_target(invocation_path: &str, target: &str) -> String {
     let base_path = Path::new(target);
     let base_path = if base_path.is_absolute() {
         base_path.to_path_buf()
@@ -95,8 +95,8 @@ fn normalize_target(invocation_path: &str, target: &str) -> Option<String> {
     };
 
     match fs::canonicalize(&base_path) {
-        Ok(resolved) => Some(to_posix(&resolved)),
-        Err(_) => Some(to_posix(&lexically_clean(&base_path))),
+        Ok(resolved) => to_posix(&resolved),
+        Err(_) => to_posix(&lexically_clean(&base_path)),
     }
 }
 

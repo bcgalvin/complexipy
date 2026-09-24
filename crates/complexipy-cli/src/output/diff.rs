@@ -26,7 +26,7 @@ pub fn format_diff(entries: &[DiffEntry], git_ref: &str) -> String {
     table.set_header(vec!["Status", "Location", "Change"]);
     for entry in changed.iter().copied() {
         table.add_row(vec![
-            Cell::new(status_style(&entry.status())),
+            Cell::new(status_style(entry.status())),
             Cell::new(format!("{}::{}", entry.file_path, entry.func_name)),
             Cell::new(format_change(entry)),
         ]);
@@ -40,7 +40,7 @@ pub fn format_diff(entries: &[DiffEntry], git_ref: &str) -> String {
     )
 }
 
-fn status_style(status: &DiffStatus) -> String {
+fn status_style(status: DiffStatus) -> String {
     match status {
         DiffStatus::Regressed => "REGRESSED".red().bold().to_string(),
         DiffStatus::Improved => "IMPROVED".green().bold().to_string(),

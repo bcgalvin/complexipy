@@ -181,15 +181,11 @@ mod _complexipy {
         current_files: Vec<FileComplexity>,
         git_ref: &str,
         invocation_path: Option<&str>,
-    ) -> PyResult<Vec<DiffEntry>> {
-        Ok(complexipy_core::diff::compute_diff(
-            &current_files,
-            git_ref,
-            invocation_path.unwrap_or("."),
-        )
-        .into_iter()
-        .map(DiffEntry::from)
-        .collect())
+    ) -> Vec<DiffEntry> {
+        complexipy_core::diff::compute_diff(&current_files, git_ref, invocation_path.unwrap_or("."))
+            .into_iter()
+            .map(DiffEntry::from)
+            .collect()
     }
 
     #[pyfunction]

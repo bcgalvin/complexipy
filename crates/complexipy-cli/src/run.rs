@@ -35,7 +35,7 @@ pub fn run_at(cli: CliArgs, invocation_path: &str) -> ExitCode {
         }
     };
 
-    let config = match resolve_config(toml_config, cli) {
+    let config = match resolve_config(toml_config.as_ref(), cli) {
         Ok(config) => config,
         Err(error) => {
             eprintln!("{error}");

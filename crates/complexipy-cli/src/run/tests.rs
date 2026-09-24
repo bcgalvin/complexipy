@@ -32,9 +32,9 @@ fn init_repo(dir: &Path) {
 }
 
 fn parse(args: &[&str]) -> CliArgs {
-    let mut argv = vec!["complexipy"];
-    argv.extend_from_slice(args);
-    CliArgs::try_parse_from(argv).expect("cli args should parse")
+    let mut command = vec!["complexipy"];
+    command.extend_from_slice(args);
+    CliArgs::try_parse_from(command).expect("cli args should parse")
 }
 
 #[test]

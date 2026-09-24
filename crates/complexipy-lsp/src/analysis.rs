@@ -112,7 +112,7 @@ impl DocumentAnalysis {
         for (index, function) in self.functions.iter().enumerate() {
             let mut function_hint_position = None;
 
-            if self.shows_function_hint(function, config) {
+            if Self::shows_function_hint(function, config) {
                 let position = self.declaration_position(index);
 
                 if is_within(position, requested.as_ref()) {
@@ -181,7 +181,7 @@ impl DocumentAnalysis {
         self.bounds.end_position(line)
     }
 
-    fn shows_function_hint(&self, function: &FunctionComplexity, config: &LspConfig) -> bool {
+    fn shows_function_hint(function: &FunctionComplexity, config: &LspConfig) -> bool {
         match config.lsp.inlay_hints {
             InlayHints::Never => false,
             InlayHints::Always => true,

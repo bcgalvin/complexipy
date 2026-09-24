@@ -9,7 +9,7 @@ fn resolve(cli_args: &[&str], toml_source: Option<&str>) -> Result<RunConfig, Co
     argv.extend_from_slice(cli_args);
     let cli = CliArgs::try_parse_from(argv).expect("cli args should parse");
     let toml = toml_source.map(|source| toml::from_str(source).expect("toml should parse"));
-    resolve_config(toml, cli)
+    resolve_config(toml.as_ref(), cli)
 }
 
 #[test]

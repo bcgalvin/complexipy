@@ -50,7 +50,7 @@ fn canonical_root(dir: &TempDir) -> String {
 }
 
 fn agreement(root: &str, patterns: &[String]) {
-    let mut kept = get_paths_to_process(root, patterns.to_vec()).unwrap().files;
+    let mut kept = get_paths_to_process(root, patterns).unwrap().files;
     kept.sort();
 
     for file in FILES {
@@ -129,7 +129,7 @@ fn a_pattern_is_reported_when_the_walker_refuses_it() {
     for pattern in VALIDITY_CORPUS {
         let patterns = vec![pattern.to_string()];
         let reported = invalid_exclude_patterns(&patterns);
-        let refused = get_paths_to_process(&root, patterns).is_err();
+        let refused = get_paths_to_process(&root, &patterns).is_err();
 
         assert_eq!(
             reported.is_empty(),

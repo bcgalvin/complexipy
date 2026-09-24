@@ -23,8 +23,7 @@ pub fn handle_console_settings(
 ) -> ConsoleSettings {
     let color_enabled = match color {
         crate::types::Color::No => false,
-        crate::types::Color::Yes => true,
-        crate::types::Color::Auto => true,
+        crate::types::Color::Yes | crate::types::Color::Auto => true,
     };
 
     let banner = if quiet || plain {
@@ -129,11 +128,11 @@ pub fn output_summary(options: SummaryOptions) -> (bool, String) {
         invocation_path,
     } = options;
     let (mut file_entries, total_functions, all_pass) =
-        build_output_rows(files, failed_only, sort, max_complexity, snapshot_map);
+        build_output_rows(files, failed_only, &sort, max_complexity, snapshot_map);
     let has_success = all_pass || ignore_complexity;
 
     if let Some(top) = top {
-        file_entries = truncate_top_n(file_entries, top);
+        file_entries = truncate_top_n(&file_entries, top);
     }
 
     if plain {
