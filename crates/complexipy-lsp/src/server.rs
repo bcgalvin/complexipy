@@ -111,7 +111,10 @@ fn capabilities() -> ServerCapabilities {
     }
 }
 
-#[allow(deprecated)]
+#[expect(
+    deprecated,
+    reason = "root_uri is the fallback for clients that send no workspace folders"
+)]
 fn workspace_root(params: &InitializeParams) -> String {
     params
         .workspace_folders

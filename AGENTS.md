@@ -174,9 +174,11 @@ All five crates inherit `[workspace.lints]` from the root `Cargo.toml`. The rust
 table forbids `unsafe_code`. The Clippy table warns on the restriction lints
 `exit`, `dbg_macro`, `todo`, `unimplemented`, `panic`, `unreachable`,
 `mod_module_files` (modules use `foo.rs` plus a `foo/` directory, never
-`mod.rs`) and `iter_over_hash_type` (output order must not depend on hashing),
-and on `collapsible_else_if`, `nonminimal_bool` and `overly_complex_bool_expr`,
-which Clippy moved from its default groups into pedantic. Root `clippy.toml`
+`mod.rs`), `iter_over_hash_type` (output order must not depend on hashing), and
+`allow_attributes` and `allow_attributes_without_reason` (see the suppression
+rule under Code Style). It also warns on `collapsible_else_if`,
+`nonminimal_bool` and `overly_complex_bool_expr`, which Clippy moved from its
+default groups into pedantic. Root `clippy.toml`
 sets `avoid-breaking-exported-api = false` because no crate is published,
 `allow-panic-in-tests = true`, and bans `std::env::set_current_dir` because test
 binaries share one process working directory. Lints are declared as warnings, so
@@ -481,6 +483,13 @@ the reverse. Adding a dependency means adding it to the crate that uses it.
 
 - No explanatory comments in code. The code must speak for itself. Required
   PEP 723 metadata in a standalone script is configuration and is permitted.
+- Suppress a lint with `#[expect(lint, reason = "...")]` on the smallest item
+  that covers it, never `#[allow]`; an expectation that stops firing fails the
+  gate. The reason is one short clause naming the external constraint. It is
+  lint data read by the compiler, not an explanatory comment. Use
+  `#[cfg_attr(test, expect(...))]` or `#[cfg_attr(feature = "python", expect(...))]`
+  when a lint fires in one build only; a lint that fires inside PyO3-generated
+  code needs the expectation on the enclosing module.
 - ASCII punctuation only. Never use Unicode dashes (em dash U+2014, en
   dash U+2013, horizontal bar U+2015) in code, comments, docs, or commit
   messages. Use ASCII `-`.
