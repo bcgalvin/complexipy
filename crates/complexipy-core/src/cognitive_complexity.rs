@@ -1,20 +1,8 @@
-mod shared_deps {
-    pub use crate::classes::{FunctionComplexity, LineComplexity};
-    pub use crate::refactor_plans::{
-        ComplexityRegion, ComplexityResult, RegionKind, build_refactor_plans,
-    };
-    pub use crate::rules::{AnalysisOptions, RuleSet};
-    pub use crate::utils::{LineIndex, count_bool_ops, find_noqa_comment, is_decorator};
-    pub use ruff_python_ast::{self as ast, Stmt};
-}
-
-use crate::classes::CodeComplexity;
-
-use shared_deps::{
-    AnalysisOptions, ComplexityRegion, ComplexityResult, FunctionComplexity, LineComplexity,
-    LineIndex, RegionKind, RuleSet, Stmt, ast, build_refactor_plans, count_bool_ops,
-    find_noqa_comment, is_decorator,
-};
+use crate::classes::{CodeComplexity, FunctionComplexity, LineComplexity};
+use crate::refactor_plans::{ComplexityRegion, ComplexityResult, RegionKind, build_refactor_plans};
+use crate::rules::{AnalysisOptions, RuleSet};
+use crate::utils::{LineIndex, count_bool_ops, find_noqa_comment, is_decorator};
+use ruff_python_ast::{self as ast, Stmt};
 
 pub fn code_complexity_shared(
     code: &str,

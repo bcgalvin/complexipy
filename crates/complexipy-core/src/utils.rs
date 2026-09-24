@@ -2,15 +2,10 @@ use regex::Regex;
 use ruff_python_ast::{self as ast, Stmt};
 use std::sync::OnceLock;
 
-mod export_deps {
-    pub use crate::classes::{FileComplexity, FunctionComplexity};
-    pub use csv::Writer;
-    pub use serde_json;
-    pub use std::fs::File;
-    pub use std::io::Write;
-}
-
-use export_deps::{File, FileComplexity, FunctionComplexity, Write, Writer, serde_json};
+use crate::classes::{FileComplexity, FunctionComplexity};
+use csv::Writer;
+use std::fs::File;
+use std::io::Write;
 
 use std::fmt;
 
