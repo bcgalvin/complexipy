@@ -216,7 +216,11 @@ cargo run -p complexipy-lsp                    # the same server from the tree
 
 - `rcq` is the fork's only working branch. Commits, release tags and the
   parent's gitlink live on it, and `origin/rcq` on the public GitHub fork is its
-  backup. It is the GitHub default branch and `origin/HEAD`.
+  backup. Local `origin/HEAD` points at it, pinned with
+  `remote.origin.followRemoteHEAD=never`.
+- The GitHub default branch is `main`, so the fork's landing page and its
+  "Sync fork" button act on the mirror. Never use GitHub's sync on `rcq`: it
+  would merge upstream there, or overwrite it with `--force`.
 - `origin/main` is a pristine mirror of upstream `main`, advanced only by
   GitHub's fork sync (`gh repo sync bcgalvin/complexipy -b main`). Keep no local
   `main` branch; never commit or push to `main`.
