@@ -1,3 +1,9 @@
+#![expect(
+    clippy::print_stdout,
+    clippy::print_stderr,
+    reason = "the CLI owns terminal output"
+)]
+
 use std::process::ExitCode;
 
 use owo_colors::OwoColorize;

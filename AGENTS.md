@@ -171,20 +171,20 @@ Excluded explicit paths are skipped, so a successful command does not mean those
 files were checked.
 
 All five crates inherit `[workspace.lints]` from the root `Cargo.toml`. The rustc
-table forbids `unsafe_code`. The Clippy table warns on the restriction lints
-`exit`, `dbg_macro`, `todo`, `unimplemented`, `panic`, `unreachable`,
+table forbids `unsafe_code`. The Clippy table warns on these restriction lints:
+`exit`, `dbg_macro`, `todo`, `unimplemented`, `panic` and `unreachable`;
 `mod_module_files` (modules use `foo.rs` plus a `foo/` directory, never
-`mod.rs`), `iter_over_hash_type` (output order must not depend on hashing), and
-`allow_attributes` and `allow_attributes_without_reason` (see the suppression
-rule under Code Style). It also warns on `collapsible_else_if`,
-`nonminimal_bool` and `overly_complex_bool_expr`, which Clippy moved from its
-default groups into pedantic. Root `clippy.toml`
-sets `avoid-breaking-exported-api = false` because no crate is published,
-`allow-panic-in-tests = true`, and bans `std::env::set_current_dir` because test
-binaries share one process working directory. Lints are declared as warnings, so
-promotion to errors comes from the `-D warnings` flag on the Clippy commands and
-nothing else enforces it automatically. The restriction, nursery and cargo groups
-are not enabled.
+`mod.rs`); `iter_over_hash_type` (output order must not depend on hashing);
+`allow_attributes` and `allow_attributes_without_reason` (the suppression rule
+under Code Style); and `print_stdout` and `print_stderr` (the output rule
+there). It also warns on `collapsible_else_if`, `nonminimal_bool` and
+`overly_complex_bool_expr`, which Clippy moved from its default groups into
+pedantic. Root `clippy.toml` sets `avoid-breaking-exported-api = false` because
+no crate is published, `allow-panic-in-tests = true`, and bans
+`std::env::set_current_dir` because test binaries share one process working
+directory. Lints are declared as warnings, so promotion to errors comes from
+the `-D warnings` flag on the Clippy commands and nothing else enforces it
+automatically. The restriction, nursery and cargo groups are not enabled.
 
 ty treats `possibly-unresolved-reference`, `possibly-missing-attribute`,
 `unused-ignore-comment`, and `redundant-cast` as errors. Every remaining warning
@@ -490,6 +490,11 @@ the reverse. Adding a dependency means adding it to the crate that uses it.
   `#[cfg_attr(test, expect(...))]` or `#[cfg_attr(feature = "python", expect(...))]`
   when a lint fires in one build only; a lint that fires inside PyO3-generated
   code needs the expectation on the enclosing module.
+- Only `crates/complexipy-cli/src/run.rs` writes to stdout, and only it and
+  `crates/complexipy-lsp/src/server.rs` write to stderr; each carries a
+  module-level expectation for the print lints. Stdout is the LSP protocol
+  stream while the server runs, including inside the Python process through
+  `run_lsp`, so core, types and the bindings never print.
 - ASCII punctuation only. Never use Unicode dashes (em dash U+2014, en
   dash U+2013, horizontal bar U+2015) in code, comments, docs, or commit
   messages. Use ASCII `-`.

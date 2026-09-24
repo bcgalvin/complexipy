@@ -1,3 +1,8 @@
+#![expect(
+    clippy::print_stderr,
+    reason = "stdout carries the LSP protocol; stderr is the log channel"
+)]
+
 use std::collections::{BTreeSet, HashMap};
 use std::time::{Duration, Instant};
 
