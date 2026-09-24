@@ -2,7 +2,7 @@
 header = """
 # Changelog
 
-Generated from this fork's commits after upstream `5c52836`.
+Generated from this fork's commits after upstream `fb8af35`.
 Do not edit by hand. See [changelog maintenance](docs/changelog.md).
 """
 body = '''

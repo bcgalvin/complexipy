@@ -50,5 +50,6 @@ clean, port where fork contracts differ; keep ported upstream code close to
 verbatim), then record the evaluated SHA with
 `git merge -s ours <sha>`, listing adopted and excluded work in the message.
 When a sync is recorded with a merge, move the changelog baseline in
-`cliff.toml` and `docs/changelog.md` to the recorded upstream commit in the same
-change, or git-cliff will walk into upstream history through the merge.
+`cliff.toml` and `docs/changelog.md` to the recorded upstream commit in the
+commit right after the merge (an `ours` merge carries no file changes), or
+git-cliff will walk into upstream history through the merge.

@@ -20,16 +20,16 @@ Run from the repository root:
 
 ```bash
 ~/.local/bin/git-cliff --config cliff.toml --offline --no-exec \
-  5c52836812e8288a01948b36a4df788e0eca8a31..HEAD
+  fb8af353dc9b63607013ffcce9da9e2fed917d6f..HEAD
 ```
 
 The range excludes upstream history through the last recorded upstream merge,
-`5c52836`, and includes the first fork commit `87ad610`. When a later upstream
+`fb8af35`, and includes the first fork commit `87ad610`. When a later upstream
 sync is recorded with a merge, move this baseline and the `cliff.toml` header to
-that upstream commit in the same change; otherwise the range walks into
-upstream history through the merge. Do not use `87ad610..HEAD` or add
-`--unreleased`, which can replace an explicit range with the latest-tag range
-in git-cliff 2.14.1.
+that upstream commit in the commit right after the recording merge; otherwise
+the range walks into upstream history through the merge. Do not use
+`87ad610..HEAD` or add `--unreleased`, which can replace an explicit range with
+the latest-tag range in git-cliff 2.14.1.
 
 The config keeps merge summaries, routine changes and unknown subjects. It
 prints first-line messages and breaking descriptions, not whole bodies or
@@ -50,14 +50,14 @@ scratchpad when available:
 
 ```bash
 ~/.local/bin/git-cliff --config cliff.toml --offline --no-exec --tag 8.1.0 \
-  5c52836812e8288a01948b36a4df788e0eca8a31..HEAD \
+  fb8af353dc9b63607013ffcce9da9e2fed917d6f..HEAD \
   > "<absolute-scratch>/complexipy-changelog.md"
 ```
 
 Check the command succeeded and read the candidate. Confirm the first fork fix,
 the merge, and the field-removal/Python-floor breaking descriptions are present,
 with no session trailers or inherited release sections. If needed, compare against
-`git log --oneline 5c52836..HEAD`; `--context` provides git-cliff's parsed JSON.
+`git log --oneline fb8af35..HEAD`; `--context` provides git-cliff's parsed JSON.
 
 Replace `CHANGELOG.md` with the reviewed candidate in full. Do not hand-maintain
 additional entries that regeneration would overwrite; commit messages are the
