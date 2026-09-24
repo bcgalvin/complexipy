@@ -14,7 +14,7 @@ use crate::refactor_plans::{ComplexityRegion, RegionKind};
 use crate::utils::LineIndex;
 
 fn combine(parts: &[&str]) -> String {
-    let owned: Vec<String> = parts.iter().map(|s| s.to_string()).collect();
+    let owned: Vec<String> = parts.iter().map(std::string::ToString::to_string).collect();
     combine_conditions_chain(&owned)
 }
 

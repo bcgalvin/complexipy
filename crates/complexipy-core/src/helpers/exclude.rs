@@ -21,9 +21,7 @@ pub fn is_path_excluded(path: &str, root: &str, patterns: &[String]) -> bool {
 }
 
 fn pattern_matches(relative: &str, pattern: &str) -> bool {
-    any([normalized_pattern(pattern).as_ref()])
-        .map(|program| program.is_match(relative))
-        .unwrap_or(false)
+    any([normalized_pattern(pattern).as_ref()]).is_ok_and(|program| program.is_match(relative))
 }
 
 fn normalized_pattern(pattern: &str) -> Cow<'_, str> {
@@ -63,7 +61,7 @@ pub fn exclude_list_overflows(patterns: &[String]) -> bool {
         .iter()
         .map(|pattern| normalized_pattern(pattern).into_owned())
         .collect();
-    let pattern_refs: Vec<&str> = normalized.iter().map(|s| s.as_str()).collect();
+    let pattern_refs: Vec<&str> = normalized.iter().map(std::string::String::as_str).collect();
 
     any(pattern_refs).is_err()
 }
@@ -128,11 +126,14 @@ pub fn get_paths_to_process(
         }
     }
 
-    let exclude_refs: Vec<&str> = normalized_excludes.iter().map(|s| s.as_str()).collect();
+    let exclude_refs: Vec<&str> = normalized_excludes
+        .iter()
+        .map(std::string::String::as_str)
+        .collect();
     let non_excluded_entries = glob
         .walk(root)
         .not(any(exclude_refs))
-        .map_err(|e| format!("Failed to apply exclude patterns: {}", e))?;
+        .map_err(|e| format!("Failed to apply exclude patterns: {e}"))?;
 
     for result in non_excluded_entries {
         match result {
@@ -140,8 +141,7 @@ pub fn get_paths_to_process(
                 if entry
                     .path()
                     .to_str()
-                    .map(|s| non_ignored.contains(&s.replace('\\', "/")))
-                    .unwrap_or(false)
+                    .is_some_and(|s| non_ignored.contains(&s.replace('\\', "/")))
                 {
                     files.push(resolved_path(entry.path()));
                 }

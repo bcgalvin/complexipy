@@ -28,7 +28,10 @@ impl RuleRegistry {
     }
 
     fn register_defaults(&mut self) {
-        use super::complexity::*;
+        use super::complexity::{
+            CollapsibleIfRule, ExtractHelperRule, ExtractPredicateRule, FlattenConditionRule,
+            FlattenTryRule, LoopGuardsRule, SplitDispatcherRule,
+        };
 
         self.register(Box::new(FlattenConditionRule));
         self.register(Box::new(LoopGuardsRule));
@@ -264,7 +267,7 @@ fn select_non_overlapping(
             let existing = &selected[idx];
             let eff_existing = effectiveness_of(&existing.rule_id);
             let spliceable_existing = spliceable_of(existing);
-            spliceable_plan & !spliceable_existing
+            spliceable_plan && !spliceable_existing
                 || (spliceable_plan == spliceable_existing
                     && (eff_plan > eff_existing
                         || (eff_plan == eff_existing

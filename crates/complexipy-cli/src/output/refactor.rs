@@ -35,10 +35,10 @@ pub fn output_refactor_plans(function: &FunctionRow, invocation_path: &str) -> S
     }
 
     if function.additional_refactor_plans > 0 {
-        let suffix = if function.additional_refactor_plans != 1 {
-            "s"
-        } else {
+        let suffix = if function.additional_refactor_plans == 1 {
             ""
+        } else {
+            "s"
         };
         sections.push(format!(
             "\n      {}",
@@ -91,8 +91,7 @@ fn output_single_plan(
         sections.push(caret);
     }
     sections.push(format!(
-        "          Category: {} {} | Applicability: {} {}",
-        category_icon, category_name, applicability_icon, applicability_name
+        "          Category: {category_icon} {category_name} | Applicability: {applicability_icon} {applicability_name}"
     ));
     let reduction_label = if plan.reduction_is_measured {
         "Reduction"

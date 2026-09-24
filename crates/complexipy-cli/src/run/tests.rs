@@ -20,7 +20,7 @@ fn git(dir: &Path, args: &[&str]) {
         .stderr(std::process::Stdio::null())
         .status()
         .expect("git should run");
-    assert!(status.success(), "git {:?} failed", args);
+    assert!(status.success(), "git {args:?} failed");
 }
 
 fn init_repo(dir: &Path) {

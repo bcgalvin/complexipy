@@ -99,7 +99,7 @@ fn wide_source() -> String {
     let mut source = String::new();
 
     for index in 0..WIDE_FUNCTIONS {
-        source.push_str(&format!("def wide_{}(a, b):\n", index));
+        source.push_str(&format!("def wide_{index}(a, b):\n"));
         source.push_str("    if a and b:\n");
         source.push_str("        return 1\n");
         source.push_str("    return 0\n\n");

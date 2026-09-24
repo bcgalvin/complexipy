@@ -19,7 +19,7 @@ pub fn format_diff(entries: &[DiffEntry], git_ref: &str) -> String {
         .collect();
 
     if changed.is_empty() {
-        return format!("No functions changed relative to {}.", git_ref);
+        return format!("No functions changed relative to {git_ref}.");
     }
 
     let mut table = Table::new();
@@ -34,7 +34,7 @@ pub fn format_diff(entries: &[DiffEntry], git_ref: &str) -> String {
 
     format!(
         "\n{}\n{}\n\nNet: {}",
-        rule(&format!("Complexity diff (vs {})", git_ref)),
+        rule(&format!("Complexity diff (vs {git_ref})")),
         table,
         build_diff_summary(&changed)
     )

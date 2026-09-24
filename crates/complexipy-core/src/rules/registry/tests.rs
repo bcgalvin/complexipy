@@ -460,7 +460,7 @@ fn inactive_rules_never_produce_plans() {
     let registry = RuleRegistry::new();
     let ids = registry.registered_ids();
 
-    for rule_id in ids.iter() {
+    for rule_id in &ids {
         let (region, source) = fixture_for(rule_id);
         let index = LineIndex::new(&source);
         let regions = vec![region];
@@ -562,7 +562,7 @@ fn rule_applicability_tiers_are_pinned() {
     }
 
     let mut pinned_ids: Vec<&str> = pinned.keys().copied().collect();
-    pinned_ids.sort();
-    seen.sort();
+    pinned_ids.sort_unstable();
+    seen.sort_unstable();
     assert_eq!(seen, pinned_ids);
 }

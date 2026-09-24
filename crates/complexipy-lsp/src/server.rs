@@ -42,7 +42,7 @@ pub fn serve(connection: Connection) -> i32 {
     let initialized = match handshake(&connection) {
         Ok(initialized) => initialized,
         Err(error) => {
-            eprintln!("{}: {}", SERVER_NAME, error);
+            eprintln!("{SERVER_NAME}: {error}");
             return EXIT_CODE_FAILURE;
         }
     };
@@ -100,9 +100,9 @@ fn handshake(connection: &Connection) -> Result<Initialized, String> {
     let (config, config_error) = configured(&root);
 
     Ok(Initialized {
+        root,
         config,
         config_error,
-        root,
         refresh_support,
     })
 }
@@ -280,7 +280,7 @@ impl Server {
                 self.send(Response::new_err(
                     request.id,
                     ErrorCode::MethodNotFound as i32,
-                    format!("unsupported request: {}", other),
+                    format!("unsupported request: {other}"),
                 ));
             }
         }
@@ -568,17 +568,14 @@ impl Server {
             return;
         };
 
-        eprintln!(
-            "{}: {}; analysis is disabled until the configuration reloads",
-            SERVER_NAME, error
-        );
+        eprintln!("{SERVER_NAME}: {error}; analysis is disabled until the configuration reloads");
 
         if show {
             self.send(Notification::new(
                 SHOW_MESSAGE.to_string(),
                 ShowMessageParams {
                     typ: MessageType::ERROR,
-                    message: format!("{}: {}", SERVER_NAME, error),
+                    message: format!("{SERVER_NAME}: {error}"),
                 },
             ));
         }

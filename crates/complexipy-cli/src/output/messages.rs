@@ -9,10 +9,7 @@ pub fn handle_snapshot_console(snap: &SnapshotEvaluation, output_snapshot_path: 
     }
 
     if snap.watermark_messages.is_empty() {
-        format!(
-            "Snapshot watermark passed. Baseline stored at {}",
-            output_snapshot_path
-        )
+        format!("Snapshot watermark passed. Baseline stored at {output_snapshot_path}")
     } else {
         snap.watermark_messages
             .iter()
@@ -26,7 +23,7 @@ pub fn ignored_summary_output(location_count: usize, no_ignore: bool) -> String 
     let mut output = if location_count == 0 {
         "No ignore comments found.".to_string()
     } else {
-        format!("Found {} suppressed location(s).", location_count)
+        format!("Found {location_count} suppressed location(s).")
     };
     if location_count > 0 && no_ignore {
         output.push_str("\n(all markers ignored due to --no-ignore)");
@@ -35,7 +32,7 @@ pub fn ignored_summary_output(location_count: usize, no_ignore: bool) -> String 
 }
 
 pub fn ignored_saved_output(path: &str) -> String {
-    format!("Ignored locations saved at {}", path)
+    format!("Ignored locations saved at {path}")
 }
 
 pub fn removable_ignores_output(removable: &[RemovableIgnore]) -> String {
@@ -62,7 +59,7 @@ pub fn unknown_rule_warning(rule_id: &str) -> String {
     if rule_id.is_empty() {
         "Empty rule id in select or ignore. Ignoring it.".to_string()
     } else {
-        format!("Unknown rule id '{}'. Ignoring it.", rule_id)
+        format!("Unknown rule id '{rule_id}'. Ignoring it.")
     }
 }
 

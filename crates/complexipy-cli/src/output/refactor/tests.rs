@@ -156,7 +156,7 @@ fn caret_span_rendered_from_source() {
     );
 
     assert!(output.contains("2 | "));
-    assert!(output.contains("^"));
+    assert!(output.contains('^'));
 }
 
 #[test]

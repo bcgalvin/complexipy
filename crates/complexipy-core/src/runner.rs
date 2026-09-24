@@ -19,9 +19,9 @@ type ComplexitiesAndFailedPaths = (Vec<FileComplexity>, Vec<String>);
 fn resolve_root(root: &str) -> Result<path::PathBuf, String> {
     let resolved = path::Path::new(root)
         .canonicalize()
-        .map_err(|error| format!("Failed to resolve path root '{}': {}", root, error))?;
+        .map_err(|error| format!("Failed to resolve path root '{root}': {error}"))?;
     if !resolved.is_dir() {
-        return Err(format!("Path root is not a directory: '{}'", root));
+        return Err(format!("Path root is not a directory: '{root}'"));
     }
     Ok(resolved)
 }
@@ -72,12 +72,12 @@ pub fn run_analysis_shared(
         } else {
             match analyze_file_shared(&path, &opts, &invocation_root) {
                 Ok(file_complexity) => (vec![file_complexity], vec![]),
-                Err(_) => (vec![], vec![path.to_string()]),
+                Err(_) => (vec![], vec![path.clone()]),
             }
         };
         complexities.iter_mut().for_each(|f| {
             f.functions
-                .sort_by(|a, b| a.complexity.cmp(&b.complexity).then(a.name.cmp(&b.name)))
+                .sort_by(|a, b| a.complexity.cmp(&b.complexity).then(a.name.cmp(&b.name)));
         });
         complexities.sort_by(|a, b| {
             a.path
@@ -146,11 +146,11 @@ fn analyze_file_at(
     let file_name = path
         .file_name()
         .and_then(|n| n.to_str())
-        .ok_or_else(|| format!("Invalid file name: {}", file_path))?;
+        .ok_or_else(|| format!("Invalid file name: {file_path}"))?;
     let code = std::fs::read_to_string(file_path)
-        .map_err(|e| format!("Failed to read file '{}': {}", file_path, e))?;
+        .map_err(|e| format!("Failed to read file '{file_path}': {e}"))?;
     let code_complexity = code_complexity_shared(&code, opts)
-        .map_err(|e| format!("Failed to process file '{}': {}", file_path, e))?;
+        .map_err(|e| format!("Failed to process file '{file_path}': {e}"))?;
     Ok(FileComplexity {
         path: relative_label(file_path, base_path),
         file_name: file_name.to_string(),
@@ -164,7 +164,7 @@ pub fn collect_file_ignored_locations(
     base_path: &path::Path,
 ) -> Result<Vec<IgnoredLocation>, String> {
     let code = std::fs::read_to_string(file_path)
-        .map_err(|e| format!("Failed to read file '{}': {}", file_path, e))?;
+        .map_err(|e| format!("Failed to read file '{file_path}': {e}"))?;
     let locations = collect_ignored_locations(&code);
     Ok(locations
         .into_iter()
@@ -235,12 +235,11 @@ where
         let path_str = path_string(&path_obj);
 
         if path_obj.is_dir() {
-            let discovered = match get_paths_to_process(&path_str, exclude.to_vec()) {
-                Ok(paths) => paths,
-                Err(_) => {
-                    failed_paths.push(path_str);
-                    continue;
-                }
+            let discovered = if let Ok(paths) = get_paths_to_process(&path_str, exclude.to_vec()) {
+                paths
+            } else {
+                failed_paths.push(path_str);
+                continue;
             };
             failed_paths.extend(discovered.failed_paths);
             let results: Vec<Result<Vec<T>, String>> = discovered
@@ -257,10 +256,10 @@ where
         } else if path_obj.is_file() {
             match collect_file(&path_str, &root) {
                 Ok(locs) => all_locations.extend(locs),
-                Err(_) => failed_paths.push(path_str.to_string()),
+                Err(_) => failed_paths.push(path_str.clone()),
             }
         } else {
-            failed_paths.push(path_str.to_string());
+            failed_paths.push(path_str.clone());
         }
     }
 
@@ -274,12 +273,12 @@ fn collect_removable_ignores_from_file(
     max_complexity_allowed: u64,
 ) -> Result<Vec<RemovableIgnore>, String> {
     let code = std::fs::read_to_string(file_path)
-        .map_err(|e| format!("Failed to read file '{}': {}", file_path, e))?;
+        .map_err(|e| format!("Failed to read file '{file_path}': {e}"))?;
     let locations = collect_ignored_locations(&code);
     if locations.is_empty() {
         return Ok(vec![]);
     }
-    let parsed = parse_module(&code).map_err(|e| format!("Failed to parse code: {}", e))?;
+    let parsed = parse_module(&code).map_err(|e| format!("Failed to parse code: {e}"))?;
     let ast_body = parsed.into_suite();
     let (functions, _) = function_level_cognitive_complexity_shared(
         &ast_body,

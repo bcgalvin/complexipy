@@ -120,7 +120,7 @@ impl OutputFormat {
             Self::Gitlab => "gitlab.json",
             Self::Sarif => "sarif",
         };
-        format!("{}.{}", file_name, extension)
+        format!("{file_name}.{extension}")
     }
 }
 

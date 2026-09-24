@@ -499,12 +499,11 @@ impl RefactorRule for CollapsibleIfRule {
         let mut conditions_extracted = true;
         for r in &chain {
             let line = line_at(source, index, r.line_start)?;
-            match extract_condition_from_line(line.trim_start()) {
-                Some(cond) => conditions.push(cond),
-                None => {
-                    conditions_extracted = false;
-                    break;
-                }
+            if let Some(cond) = extract_condition_from_line(line.trim_start()) {
+                conditions.push(cond)
+            } else {
+                conditions_extracted = false;
+                break;
             }
         }
 
@@ -753,7 +752,7 @@ fn generate_loop_guard_suggestion(
                 let current_indent = get_indentation_from_str(line);
                 let shifted = current_indent.saturating_sub(shift);
                 let padding = " ".repeat(shifted);
-                result.push(format!("{}{}", padding, trimmed));
+                result.push(format!("{padding}{trimmed}"));
             }
         }
     }
@@ -767,7 +766,7 @@ fn generate_loop_guard_suggestion(
         let current_indent = get_indentation_from_str(line);
         let shifted = current_indent.saturating_sub(indent_step * guards.len());
         let padding = " ".repeat(shifted);
-        result.push(format!("{}{}", padding, trimmed));
+        result.push(format!("{padding}{trimmed}"));
     }
     result.extend(
         lines[innermost_end..]
@@ -1473,7 +1472,7 @@ fn generate_collapsible_if_suggestion_chain(
             let current_indent = get_indentation_from_str(line);
             let shifted = current_indent.saturating_sub(indent_step * (chain_depth - 1));
             let padding = " ".repeat(shifted);
-            body_lines.push(format!("{}{}", padding, trimmed));
+            body_lines.push(format!("{padding}{trimmed}"));
         }
         line_no += 1;
     }
@@ -1485,7 +1484,7 @@ fn generate_collapsible_if_suggestion_chain(
         replacement,
         applicability: Applicability::MachineApplicable,
         spliceable: true,
-        description: format!("Merge nested conditions into `if {}:`", combined),
+        description: format!("Merge nested conditions into `if {combined}:`"),
     })
 }
 
@@ -1603,7 +1602,7 @@ fn combine_conditions_chain(conditions: &[String]) -> String {
         .iter()
         .map(|c| {
             if needs_parens_for_and(c) {
-                format!("({})", c)
+                format!("({c})")
             } else {
                 c.clone()
             }

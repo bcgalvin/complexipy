@@ -47,7 +47,7 @@ fn refactor_plan() -> RefactorPlan {
         category: RuleCategory::Complexity,
         applicability: Applicability::MachineApplicable,
         description: "test plan".to_string(),
-        explanation: "".to_string(),
+        explanation: String::new(),
         suggestion: None::<CodeSuggestion>,
         help: None,
     }

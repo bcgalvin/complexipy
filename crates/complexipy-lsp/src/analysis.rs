@@ -310,7 +310,7 @@ fn bracket_delta(content: &str) -> i64 {
 fn function_hint(position: Position, complexity: u64) -> InlayHint {
     InlayHint {
         position,
-        label: InlayHintLabel::String(format!("{}{}", FUNCTION_HINT_LABEL, complexity)),
+        label: InlayHintLabel::String(format!("{FUNCTION_HINT_LABEL}{complexity}")),
         kind: Some(InlayHintKind::TYPE),
         text_edits: None,
         tooltip: None,
@@ -323,7 +323,7 @@ fn function_hint(position: Position, complexity: u64) -> InlayHint {
 fn line_hint(position: Position, complexity: u64) -> InlayHint {
     InlayHint {
         position,
-        label: InlayHintLabel::String(format!("{}{}", LINE_HINT_LABEL, complexity)),
+        label: InlayHintLabel::String(format!("{LINE_HINT_LABEL}{complexity}")),
         kind: None,
         text_edits: None,
         tooltip: None,

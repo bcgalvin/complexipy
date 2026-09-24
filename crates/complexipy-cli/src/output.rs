@@ -143,7 +143,7 @@ pub fn handle_results_storage(options: StorageOptions) -> Result<Vec<String>, Ex
                 suggest_refactors,
             )?,
         }
-        saved_lines.push(format!("Results saved at {}", output_path));
+        saved_lines.push(format!("Results saved at {output_path}"));
     }
 
     Ok(saved_lines)

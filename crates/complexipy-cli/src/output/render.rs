@@ -94,9 +94,7 @@ fn set_cell_size(text: &str, width: usize) -> String {
 
 fn terminal_width() -> usize {
     if std::io::stdout().is_terminal() {
-        terminal_size::terminal_size()
-            .map(|(width, _)| width.0 as usize)
-            .unwrap_or(RULE_WIDTH)
+        terminal_size::terminal_size().map_or(RULE_WIDTH, |(width, _)| width.0 as usize)
     } else {
         RULE_WIDTH
     }
@@ -144,10 +142,7 @@ pub fn output_summary(options: SummaryOptions) -> (bool, String) {
 
     let output = if failed_only && file_entries.is_empty() {
         let plural = if files.len() > 1 { "s" } else { "" };
-        format!(
-            "No function{} were found with complexity greater than {}.",
-            plural, max_complexity
-        )
+        format!("No function{plural} were found with complexity greater than {max_complexity}.")
     } else if total_functions == 0 {
         "No files were found with functions. No complexity was calculated.".to_string()
     } else {
@@ -257,7 +252,7 @@ pub fn output_delta_text(
         None => format!(" (new, \u{0394} = +{})", function.complexity),
         Some(previous) if *previous != function.complexity => {
             let delta = function.complexity as i64 - *previous as i64;
-            format!(" (last: {}, \u{0394} = {:+})", previous, delta)
+            format!(" (last: {previous}, \u{0394} = {delta:+})")
         }
         Some(_) => String::new(),
     }

@@ -217,7 +217,7 @@ fn cache_prunes_old_target_set_entries() {
     let mut entries = serde_json::Map::new();
     for i in 0..65u64 {
         entries.insert(
-            format!("key-{:02}", i),
+            format!("key-{i:02}"),
             json!({ "targets": [], "functions": [], "updated_at": i as f64 }),
         );
     }

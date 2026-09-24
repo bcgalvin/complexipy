@@ -54,15 +54,13 @@ fn agreement(root: &str, patterns: &[String]) {
     kept.sort();
 
     for file in FILES {
-        let path = format!("{}/{}", root, file);
+        let path = format!("{root}/{file}");
         let expected = !is_path_excluded(&path, root, patterns);
 
         assert_eq!(
             kept.contains(&path),
             expected,
-            "the walker and the matcher disagreed on {} for {:?}",
-            file,
-            patterns
+            "the walker and the matcher disagreed on {file} for {patterns:?}"
         );
     }
 }
@@ -136,8 +134,7 @@ fn a_pattern_is_reported_when_the_walker_refuses_it() {
         assert_eq!(
             reported.is_empty(),
             !refused,
-            "the report and the walker disagreed on {:?}",
-            pattern
+            "the report and the walker disagreed on {pattern:?}"
         );
     }
 }
@@ -153,17 +150,17 @@ fn an_invalid_pattern_does_not_disable_the_valid_ones() {
         vec!["[unclosed".to_string()]
     );
     assert!(is_path_excluded(
-        &format!("{}/legacy/old.py", root),
+        &format!("{root}/legacy/old.py"),
         &root,
         &patterns
     ));
     assert!(!is_path_excluded(
-        &format!("{}/mix.py", root),
+        &format!("{root}/mix.py"),
         &root,
         &patterns
     ));
     assert!(!is_path_excluded(
-        &format!("{}/src/new.py", root),
+        &format!("{root}/src/new.py"),
         &root,
         &patterns
     ));
@@ -200,7 +197,7 @@ fn a_list_too_large_for_one_program_is_reported_as_overflowing() {
 fn a_sibling_directory_is_not_inside_the_root() {
     let dir = tree();
     let root = canonical_root(&dir);
-    let sibling = format!("{}x/legacy/old.py", root);
+    let sibling = format!("{root}x/legacy/old.py");
 
     assert!(!is_path_excluded(
         &sibling,
@@ -208,7 +205,7 @@ fn a_sibling_directory_is_not_inside_the_root() {
         &["legacy/**".to_string()]
     ));
     assert!(is_path_excluded(
-        &format!("{}/legacy/old.py", root),
+        &format!("{root}/legacy/old.py"),
         &root,
         &["legacy/**".to_string()]
     ));

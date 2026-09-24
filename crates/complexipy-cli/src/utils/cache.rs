@@ -74,7 +74,7 @@ fn hash_targets(joined: &str) -> String {
     hasher
         .finalize_variable(&mut output)
         .expect("output size matches");
-    output.iter().map(|byte| format!("{:02x}", byte)).collect()
+    output.iter().map(|byte| format!("{byte:02x}")).collect()
 }
 
 fn normalize_targets(invocation_path: &str, targets: &[String]) -> Vec<String> {
@@ -145,13 +145,7 @@ fn cache_value_path(cache_dir: &Path, key: &str) -> PathBuf {
 
 fn load_cache_store(cache_file: &Path) -> Value {
     match load_cache(cache_file) {
-        Some(raw)
-            if raw
-                .get("entries")
-                .is_some_and(|entries| entries.is_object()) =>
-        {
-            raw
-        }
+        Some(raw) if raw.get("entries").is_some_and(serde_json::Value::is_object) => raw,
         _ => json!({ "entries": {} }),
     }
 }
@@ -196,7 +190,7 @@ fn load_previous_map(raw: &Value) -> Option<HashMap<(String, String, String), u6
             continue;
         };
         let complexity = entry.get("complexity");
-        if complexity.is_some_and(|value| value.is_boolean()) {
+        if complexity.is_some_and(serde_json::Value::is_boolean) {
             continue;
         }
         let Some(complexity) = complexity.and_then(python_int) else {
@@ -332,8 +326,7 @@ fn write_support_file(path: &Path, content: &str) {
 fn now_seconds() -> f64 {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
-        .map(|duration| duration.as_secs_f64())
-        .unwrap_or(0.0)
+        .map_or(0.0, |duration| duration.as_secs_f64())
 }
 
 #[cfg(test)]

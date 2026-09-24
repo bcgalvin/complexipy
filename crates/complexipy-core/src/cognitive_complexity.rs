@@ -10,14 +10,18 @@ mod shared_deps {
 
 use crate::classes::CodeComplexity;
 
-use shared_deps::*;
+use shared_deps::{
+    AnalysisOptions, ComplexityRegion, ComplexityResult, FunctionComplexity, LineComplexity,
+    LineIndex, RegionKind, RuleSet, Stmt, ast, build_refactor_plans, count_bool_ops,
+    find_noqa_comment, is_decorator,
+};
 
 pub fn code_complexity_shared(
     code: &str,
     opts: &AnalysisOptions,
 ) -> Result<CodeComplexity, String> {
-    let parsed = ruff_python_parser::parse_module(code)
-        .map_err(|e| format!("Failed to parse code: {}", e))?;
+    let parsed =
+        ruff_python_parser::parse_module(code).map_err(|e| format!("Failed to parse code: {e}"))?;
     let ast_body = parsed.into_suite();
     let (functions, complexity) = function_level_cognitive_complexity_shared(&ast_body, code, opts);
     Ok(CodeComplexity {
@@ -39,7 +43,7 @@ pub fn function_level_cognitive_complexity_shared(
     let mut module_line_complexities: Vec<LineComplexity> = Vec::new();
     let mut module_regions: Vec<ComplexityRegion> = Vec::new();
 
-    for node in ast_body.iter() {
+    for node in ast_body {
         match node {
             Stmt::FunctionDef(f) => {
                 if !is_ignored(f, code, opts.no_ignore) {
@@ -55,7 +59,7 @@ pub fn function_level_cognitive_complexity_shared(
                 }
             }
             Stmt::ClassDef(c) => {
-                for node in c.body.iter() {
+                for node in &c.body {
                     if let Stmt::FunctionDef(f) = node
                         && !is_ignored(f, code, opts.no_ignore)
                     {
@@ -110,7 +114,7 @@ pub fn function_level_cognitive_complexity_shared(
         });
     }
 
-    for function in functions.iter() {
+    for function in &functions {
         complexity += function.complexity;
     }
     (functions, complexity)
@@ -267,7 +271,7 @@ fn collect_suite(
     region_children: &mut Vec<ComplexityRegion>,
 ) -> ComplexityResult {
     let mut result = empty_result();
-    for node in suite.iter() {
+    for node in suite {
         let child = statement_cognitive_complexity_shared(node, nesting_level, code, index);
         result.complexity += child.complexity;
         result.line_complexities.extend(child.line_complexities);
@@ -370,7 +374,7 @@ fn statement_cognitive_complexity_shared(
 
     match statement {
         Stmt::FunctionDef(f) => {
-            for node in f.body.iter() {
+            for node in &f.body {
                 let next_nesting = if matches!(node, Stmt::FunctionDef(..)) {
                     nesting_level + 1
                 } else {
@@ -383,7 +387,7 @@ fn statement_cognitive_complexity_shared(
             }
         }
         Stmt::ClassDef(c) => {
-            for node in c.body.iter() {
+            for node in &c.body {
                 if let Stmt::FunctionDef(..) = node {
                     absorb_with_regions(
                         &mut result,
@@ -445,7 +449,7 @@ fn statement_cognitive_complexity_shared(
             );
 
             let mut elif_count = 0;
-            for clause in i.elif_else_clauses.iter() {
+            for clause in &i.elif_else_clauses {
                 let line = index.line_of(usize::from(clause.range.start()));
                 let column = index.column_of(usize::from(clause.range.start()), code);
                 let mut clause_complexity = 1;
@@ -497,7 +501,7 @@ fn statement_cognitive_complexity_shared(
 
             let mut structural = 0;
             let mut own = 0;
-            for handler in t.handlers.iter() {
+            for handler in &t.handlers {
                 structural += 1;
                 let handler_complexity = 1 + nesting_level;
                 own += handler_complexity;
@@ -544,7 +548,7 @@ fn statement_cognitive_complexity_shared(
             push_line(&mut result, line_start, own);
 
             let mut children = Vec::new();
-            for case in m.cases.iter() {
+            for case in &m.cases {
                 absorb(
                     &mut result,
                     collect_suite(&case.body, nesting_level + 1, code, index, &mut children),

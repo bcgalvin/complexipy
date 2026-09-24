@@ -73,9 +73,9 @@ pub fn handle_report_ignored(
                 })
                 .collect();
             let serialized = serde_json::to_string_pretty(&data).map_err(|error| {
-                ExportError::Serialize(format!("Failed to serialize ignored locations: {}", error))
+                ExportError::Serialize(format!("Failed to serialize ignored locations: {error}"))
             })?;
-            fs::write(&path, format!("{}\n", serialized)).map_err(|error| {
+            fs::write(&path, format!("{serialized}\n")).map_err(|error| {
                 ExportError::Io(format!(
                     "Failed to write ignored locations to {}: {}",
                     path.display(),

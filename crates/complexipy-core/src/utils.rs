@@ -10,7 +10,7 @@ mod export_deps {
     pub use std::io::Write;
 }
 
-use export_deps::*;
+use export_deps::{File, FileComplexity, FunctionComplexity, Write, Writer, serde_json};
 
 use std::fmt;
 
@@ -24,9 +24,9 @@ pub enum ExportError {
 impl fmt::Display for ExportError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::Io(message) => write!(f, "{}", message),
-            Self::Serialize(message) => write!(f, "{}", message),
-            Self::InvalidSort(message) => write!(f, "Invalid sort value: {}", message),
+            Self::Io(message) => write!(f, "{message}"),
+            Self::Serialize(message) => write!(f, "{message}"),
+            Self::InvalidSort(message) => write!(f, "Invalid sort value: {message}"),
         }
     }
 }
@@ -45,19 +45,14 @@ pub fn output_csv_shared(
         other => return Err(ExportError::InvalidSort(other.to_string())),
     }
 
-    let mut writer = Writer::from_path(invocation_path).map_err(|e| {
-        ExportError::Io(format!(
-            "Failed to create CSV at {}: {}",
-            invocation_path, e
-        ))
-    })?;
+    let mut writer = Writer::from_path(invocation_path)
+        .map_err(|e| ExportError::Io(format!("Failed to create CSV at {invocation_path}: {e}")))?;
 
     writer
         .write_record(["Path", "File Name", "Function Name", "Cognitive Complexity"])
         .map_err(|e| {
             ExportError::Io(format!(
-                "Failed to write CSV header at {}: {}",
-                invocation_path, e
+                "Failed to write CSV header at {invocation_path}: {e}"
             ))
         })?;
 
@@ -77,7 +72,7 @@ pub fn output_csv_shared(
         }
         "asc" => all_functions.sort_by_key(|f| f.2.complexity),
         "name" | "file_name" => {
-            all_functions.sort_by(|left, right| left.0.cmp(&right.0).then(left.1.cmp(&right.1)))
+            all_functions.sort_by(|left, right| left.0.cmp(&right.0).then(left.1.cmp(&right.1)));
         }
         other => return Err(ExportError::InvalidSort(other.to_string())),
     }
@@ -90,12 +85,12 @@ pub fn output_csv_shared(
                 &function.name,
                 &function.complexity.to_string(),
             ])
-            .map_err(|e| ExportError::Io(format!("Failed to write CSV row: {}", e)))?;
+            .map_err(|e| ExportError::Io(format!("Failed to write CSV row: {e}")))?;
     }
 
     writer
         .flush()
-        .map_err(|e| ExportError::Io(format!("Failed to flush CSV to disk: {}", e)))?;
+        .map_err(|e| ExportError::Io(format!("Failed to flush CSV to disk: {e}")))?;
 
     Ok(())
 }
@@ -130,25 +125,16 @@ pub fn output_json_shared(
     }
 
     let json_string = serde_json::to_string_pretty(&json_data)
-        .map_err(|e| ExportError::Serialize(format!("Failed to serialize JSON: {}", e)))?;
+        .map_err(|e| ExportError::Serialize(format!("Failed to serialize JSON: {e}")))?;
     let mut file = File::create(invocation_path).map_err(|e| {
         ExportError::Io(format!(
-            "Failed to create JSON file at {}: {}",
-            invocation_path, e
+            "Failed to create JSON file at {invocation_path}: {e}"
         ))
     })?;
-    file.write_all(json_string.as_bytes()).map_err(|e| {
-        ExportError::Io(format!(
-            "Failed to write JSON to {}: {}",
-            invocation_path, e
-        ))
-    })?;
-    file.write_all(b"\n").map_err(|e| {
-        ExportError::Io(format!(
-            "Failed to write JSON to {}: {}",
-            invocation_path, e
-        ))
-    })?;
+    file.write_all(json_string.as_bytes())
+        .map_err(|e| ExportError::Io(format!("Failed to write JSON to {invocation_path}: {e}")))?;
+    file.write_all(b"\n")
+        .map_err(|e| ExportError::Io(format!("Failed to write JSON to {invocation_path}: {e}")))?;
 
     Ok(())
 }
@@ -179,17 +165,15 @@ pub fn create_snapshot_file_shared(
         .collect();
 
     let json_string = serde_json::to_string_pretty(&files_snapshot)
-        .map_err(|e| ExportError::Serialize(format!("Failed to serialize JSON: {}", e)))?;
+        .map_err(|e| ExportError::Serialize(format!("Failed to serialize JSON: {e}")))?;
     let mut file = File::create(snapshot_file_path).map_err(|e| {
         ExportError::Io(format!(
-            "Failed to create snapshot file at {}: {}",
-            snapshot_file_path, e
+            "Failed to create snapshot file at {snapshot_file_path}: {e}"
         ))
     })?;
     file.write_all(json_string.as_bytes()).map_err(|e| {
         ExportError::Io(format!(
-            "Failed to write snapshot file at {}: {}",
-            snapshot_file_path, e
+            "Failed to write snapshot file at {snapshot_file_path}: {e}"
         ))
     })?;
 
@@ -201,12 +185,11 @@ pub fn load_snapshot_file_shared(
 ) -> Result<Vec<FileComplexity>, ExportError> {
     let snapshot_content = std::fs::read_to_string(snapshot_file_path).map_err(|e| {
         ExportError::Io(format!(
-            "Failed to read snapshot file {}: {}",
-            snapshot_file_path, e
+            "Failed to read snapshot file {snapshot_file_path}: {e}"
         ))
     })?;
     serde_json::from_str(snapshot_content.as_str())
-        .map_err(|e| ExportError::Serialize(format!("Failed to parse snapshot JSON: {}", e)))
+        .map_err(|e| ExportError::Serialize(format!("Failed to parse snapshot JSON: {e}")))
 }
 
 pub struct LineIndex {
@@ -267,7 +250,7 @@ pub fn count_bool_ops(expr: &ast::Expr, nesting_level: u64) -> u64 {
     match expr {
         ast::Expr::BoolOp(b) => {
             complexity += 1;
-            for value in b.values.iter() {
+            for value in &b.values {
                 complexity += count_different_childs_type(value, expr);
             }
         }
@@ -276,7 +259,7 @@ pub fn count_bool_ops(expr: &ast::Expr, nesting_level: u64) -> u64 {
         }
         ast::Expr::Compare(c) => {
             complexity += count_bool_ops(&c.left, nesting_level);
-            for comparator in c.comparators.iter() {
+            for comparator in &c.comparators {
                 complexity += count_bool_ops(comparator, nesting_level);
             }
         }
@@ -302,22 +285,22 @@ pub fn count_bool_ops(expr: &ast::Expr, nesting_level: u64) -> u64 {
             complexity += count_comprehension(&[&c.key, &c.value], &c.generators, nesting_level);
         }
         ast::Expr::Call(c) => {
-            for arg in c.arguments.args.iter() {
+            for arg in &c.arguments.args {
                 complexity += count_bool_ops(arg, nesting_level);
             }
         }
         ast::Expr::Tuple(t) => {
-            for element in t.elts.iter() {
+            for element in &t.elts {
                 complexity += count_bool_ops(element, nesting_level);
             }
         }
         ast::Expr::List(l) => {
-            for element in l.elts.iter() {
+            for element in &l.elts {
                 complexity += count_bool_ops(element, nesting_level);
             }
         }
         ast::Expr::Set(s) => {
-            for element in s.elts.iter() {
+            for element in &s.elts {
                 complexity += count_bool_ops(element, nesting_level);
             }
         }
@@ -340,16 +323,16 @@ fn count_comprehension(
     let mut complexity: u64 = 0;
     let inner_nesting = nesting_level + 1;
 
-    for generator in generators.iter() {
+    for generator in generators {
         complexity += 1 + nesting_level;
         complexity += count_bool_ops(&generator.iter, nesting_level);
-        for filter in generator.ifs.iter() {
+        for filter in &generator.ifs {
             complexity += 1;
             complexity += count_bool_ops(filter, inner_nesting);
         }
     }
 
-    for element in elements.iter() {
+    for element in elements {
         complexity += count_bool_ops(element, inner_nesting);
     }
 
@@ -365,7 +348,7 @@ fn count_different_childs_type(expr: &ast::Expr, prev_pr: &ast::Expr) -> u64 {
                 if b.op != p.op {
                     complexity += 1;
                 }
-                for value in p.values.iter() {
+                for value in &p.values {
                     complexity += count_different_childs_type(value, expr);
                 }
             }
@@ -376,7 +359,7 @@ fn count_different_childs_type(expr: &ast::Expr, prev_pr: &ast::Expr) -> u64 {
         },
         ast::Expr::UnaryOp(..) => match prev_pr {
             ast::Expr::BoolOp(p) => {
-                for value in p.values.iter() {
+                for value in &p.values {
                     complexity += count_different_childs_type(value, expr);
                 }
             }

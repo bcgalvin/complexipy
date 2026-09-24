@@ -69,7 +69,7 @@ fn python_documents_are_marked_by_language_or_path() {
         uri("file:///repo/a.py"),
         "text".to_string(),
         1,
-        "".to_string(),
+        String::new(),
     );
     documents.open(
         uri("file:///repo/b"),

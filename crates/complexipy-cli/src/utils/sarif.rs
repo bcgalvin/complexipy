@@ -38,9 +38,9 @@ pub fn store_sarif(
     });
 
     let serialized = serde_json::to_string_pretty(&sarif_doc)
-        .map_err(|e| ExportError::Serialize(format!("Failed to serialize SARIF: {}", e)))?;
+        .map_err(|e| ExportError::Serialize(format!("Failed to serialize SARIF: {e}")))?;
     fs::write(output_path, serialized)
-        .map_err(|e| ExportError::Io(format!("Failed to write SARIF to {}: {}", output_path, e)))?;
+        .map_err(|e| ExportError::Io(format!("Failed to write SARIF to {output_path}: {e}")))?;
     Ok(())
 }
 

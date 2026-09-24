@@ -245,7 +245,7 @@ fn format_function_location(path: &str, file_name: &str, function_name: &str) ->
             .to_string_lossy()
             .into_owned()
     };
-    format!("{}:{}", location, function_name)
+    format!("{location}:{function_name}")
 }
 
 #[cfg(test)]

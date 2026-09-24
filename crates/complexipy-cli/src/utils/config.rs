@@ -116,25 +116,25 @@ pub fn resolve_config(toml_config: Option<Config>, cli: CliArgs) -> Result<RunCo
         .output
         .or_else(|| toml.and_then(|toml| toml.output.clone()));
 
-    let exclude = if !cli.exclude.is_empty() {
-        cli.exclude
-    } else {
+    let exclude = if cli.exclude.is_empty() {
         toml.map(|toml| toml.exclude.clone().into_vec())
             .unwrap_or_default()
+    } else {
+        cli.exclude
     };
 
-    let select = if !cli.select.is_empty() {
-        cli.select
-    } else {
+    let select = if cli.select.is_empty() {
         toml.map(|toml| toml.select.clone().into_vec())
             .unwrap_or_default()
+    } else {
+        cli.select
     };
 
-    let ignore = if !cli.ignore.is_empty() {
-        cli.ignore
-    } else {
+    let ignore = if cli.ignore.is_empty() {
         toml.map(|toml| toml.ignore.clone().into_vec())
             .unwrap_or_default()
+    } else {
+        cli.ignore
     };
 
     let check_script = cli
@@ -190,13 +190,13 @@ pub fn resolve_config(toml_config: Option<Config>, cli: CliArgs) -> Result<RunCo
         exclude,
         select,
         ignore,
+        cache_dir,
         check_script,
         no_ignore,
         report_ignored,
         plain,
         suggest_refactors,
         top,
-        cache_dir,
         diff,
         diff_only,
         staged,

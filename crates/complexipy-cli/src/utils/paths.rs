@@ -27,7 +27,7 @@ impl fmt::Display for PathsError {
                 f,
                 "When multiple output formats are selected, --output must point to a directory or end with a path separator."
             ),
-            Self::Io(message) => write!(f, "{}", message),
+            Self::Io(message) => write!(f, "{message}"),
         }
     }
 }
@@ -106,7 +106,7 @@ pub fn normalize_path(path: &str, file_name: &str) -> String {
     if cleaned.ends_with(file_name) {
         cleaned.to_string()
     } else if !cleaned.is_empty() {
-        format!("{}/{}", cleaned, file_name)
+        format!("{cleaned}/{file_name}")
     } else {
         file_name.to_string()
     }

@@ -57,24 +57,21 @@ pub fn store_gitlab(
     }
 
     let serialized = serde_json::to_string_pretty(&report)
-        .map_err(|e| ExportError::Serialize(format!("Failed to serialize GitLab report: {}", e)))?;
+        .map_err(|e| ExportError::Serialize(format!("Failed to serialize GitLab report: {e}")))?;
     let mut file = fs::File::create(output_path).map_err(|e| {
         ExportError::Io(format!(
-            "Failed to create GitLab report at {}: {}",
-            output_path, e
+            "Failed to create GitLab report at {output_path}: {e}"
         ))
     })?;
     use std::io::Write;
     file.write_all(serialized.as_bytes()).map_err(|e| {
         ExportError::Io(format!(
-            "Failed to write GitLab report to {}: {}",
-            output_path, e
+            "Failed to write GitLab report to {output_path}: {e}"
         ))
     })?;
     file.write_all(b"\n").map_err(|e| {
         ExportError::Io(format!(
-            "Failed to write GitLab report to {}: {}",
-            output_path, e
+            "Failed to write GitLab report to {output_path}: {e}"
         ))
     })?;
 
@@ -83,15 +80,14 @@ pub fn store_gitlab(
 
 fn build_description(function_name: &str, complexity: u64, max_complexity: u64) -> String {
     format!(
-        "Function '{}' has cognitive complexity {} (max allowed: {}).",
-        function_name, complexity, max_complexity
+        "Function '{function_name}' has cognitive complexity {complexity} (max allowed: {max_complexity})."
     )
 }
 
 fn build_fingerprint(check_id: &str, path: &str, function_name: &str, line_start: u64) -> String {
-    let payload = format!("{}:{}:{}:{}", check_id, path, function_name, line_start);
+    let payload = format!("{check_id}:{path}:{function_name}:{line_start}");
     let digest = Sha256::digest(payload.as_bytes());
-    digest.iter().map(|byte| format!("{:02x}", byte)).collect()
+    digest.iter().map(|byte| format!("{byte:02x}")).collect()
 }
 
 fn refactor_plan_severity(applicability: &Applicability) -> &'static str {

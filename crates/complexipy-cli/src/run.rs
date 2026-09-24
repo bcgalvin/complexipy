@@ -30,7 +30,7 @@ pub fn run_at(cli: CliArgs, invocation_path: &str) -> ExitCode {
     let toml_config = match get_complexipy_toml_config(invocation_path) {
         Ok(config) => config,
         Err(error) => {
-            eprintln!("{}", error);
+            eprintln!("{error}");
             return ExitCode::FAILURE;
         }
     };
@@ -38,7 +38,7 @@ pub fn run_at(cli: CliArgs, invocation_path: &str) -> ExitCode {
     let config = match resolve_config(toml_config, cli) {
         Ok(config) => config,
         Err(error) => {
-            eprintln!("{}", error);
+            eprintln!("{error}");
             return ExitCode::FAILURE;
         }
     };
@@ -71,7 +71,7 @@ pub fn run_at(cli: CliArgs, invocation_path: &str) -> ExitCode {
         match run_analysis_shared(&config.paths, &config.exclude, &analysis, invocation_path) {
             Ok(result) => result,
             Err(error) => {
-                eprintln!("{}", error);
+                eprintln!("{error}");
                 return ExitCode::FAILURE;
             }
         };
@@ -86,7 +86,7 @@ pub fn run_at(cli: CliArgs, invocation_path: &str) -> ExitCode {
     ) {
         Ok(report) => report,
         Err(error) => {
-            eprintln!("{}", error);
+            eprintln!("{error}");
             return ExitCode::FAILURE;
         }
     };
@@ -98,7 +98,7 @@ pub fn run_at(cli: CliArgs, invocation_path: &str) -> ExitCode {
     ) {
         Ok(result) => result,
         Err(error) => {
-            eprintln!("{}", error);
+            eprintln!("{error}");
             return ExitCode::FAILURE;
         }
     };
@@ -108,11 +108,11 @@ pub fn run_at(cli: CliArgs, invocation_path: &str) -> ExitCode {
     failed_paths.dedup();
     let (paths_ok, invalid_paths_output) = print_invalid_paths(&failed_paths);
     if !invalid_paths_output.is_empty() {
-        eprintln!("{}", invalid_paths_output);
+        eprintln!("{invalid_paths_output}");
         eprintln!("Incomplete collection; snapshot and previous-function cache updates skipped.");
     }
 
-    let output_snapshot_path = format!("{}/complexipy-snapshot.json", invocation_path);
+    let output_snapshot_path = format!("{invocation_path}/complexipy-snapshot.json");
     let snap = if paths_ok {
         match evaluate_snapshot(
             config.snapshot_create,
@@ -123,7 +123,7 @@ pub fn run_at(cli: CliArgs, invocation_path: &str) -> ExitCode {
         ) {
             Ok(snap) => snap,
             Err(error) => {
-                eprintln!("{}", error);
+                eprintln!("{error}");
                 return ExitCode::FAILURE;
             }
         }
@@ -149,11 +149,11 @@ pub fn run_at(cli: CliArgs, invocation_path: &str) -> ExitCode {
     }) {
         Ok(saved_lines) => {
             for line in saved_lines {
-                println!("{}", line);
+                println!("{line}");
             }
         }
         Err(error) => {
-            eprintln!("{}", error);
+            eprintln!("{error}");
             return ExitCode::FAILURE;
         }
     }
@@ -175,7 +175,7 @@ pub fn run_at(cli: CliArgs, invocation_path: &str) -> ExitCode {
         suggest_refactors: config.suggest_refactors,
     });
     if !display_output.is_empty() {
-        println!("{}", display_output);
+        println!("{display_output}");
     }
 
     if config.report_ignored {
@@ -201,7 +201,7 @@ pub fn run_at(cli: CliArgs, invocation_path: &str) -> ExitCode {
     if !config.quiet {
         let removable_output = removable_ignores_output(&removable);
         if !removable_output.is_empty() {
-            println!("{}", removable_output);
+            println!("{removable_output}");
         }
     }
 
@@ -209,32 +209,29 @@ pub fn run_at(cli: CliArgs, invocation_path: &str) -> ExitCode {
     if !config.quiet {
         let snapshot_output = handle_snapshot_console(&snap, &output_snapshot_path);
         if !snapshot_output.is_empty() {
-            println!("{}", snapshot_output);
+            println!("{snapshot_output}");
         }
     }
 
     let diff_ref = diff.clone().or_else(|| diff_only.clone());
     let diff_entries = if let Some(diff_ref) = diff_ref {
         if config.staged {
-            match compute_staged_diff(&diff_ref, invocation_path) {
-                Some(entries) => {
-                    if !config.quiet {
-                        println!(
-                            "{}",
-                            format_diff_for(&entries, &format!("{} (staged)", diff_ref))
-                        );
-                    }
-                    Some(entries)
+            if let Some(entries) = compute_staged_diff(&diff_ref, invocation_path) {
+                if !config.quiet {
+                    println!(
+                        "{}",
+                        format_diff_for(&entries, &format!("{diff_ref} (staged)"))
+                    );
                 }
-                None => {
-                    if !config.quiet {
-                        println!(
-                            "{} --staged requires a git repository; skipping the staged diff.",
-                            "Warning:".yellow()
-                        );
-                    }
-                    None
+                Some(entries)
+            } else {
+                if !config.quiet {
+                    println!(
+                        "{} --staged requires a git repository; skipping the staged diff.",
+                        "Warning:".yellow()
+                    );
                 }
+                None
             }
         } else if !files_complexities.is_empty() {
             let entries = compute_diff(&files_complexities, &diff_ref, invocation_path);

@@ -167,11 +167,7 @@ mod _complexipy {
             }
         };
         let exit = complexipy_cli::run::run_at(cli, invocation_path.unwrap_or("."));
-        if exit == std::process::ExitCode::SUCCESS {
-            0
-        } else {
-            1
-        }
+        i32::from(exit != std::process::ExitCode::SUCCESS)
     }
 
     #[pyfunction]
