@@ -9,6 +9,10 @@ Read `AGENTS.md` for the canonical commands and exclusions. Work from the
 repository root. This is a manual procedure for the existing local environment,
 not a request to create a runner, hook or CI job.
 
+Cargo takes `PYO3_PYTHON` from `.cargo/config.toml`, which names the project
+`.venv`; run `uv sync` first if `.venv` is missing, and do not export an ad hoc
+value.
+
 For Python dependency changes, regenerate/review `uv.lock` deliberately and
 run `uv lock --check` before the gate, so `uv run` does not silently repair drift.
 

@@ -106,6 +106,12 @@ check the instructions, references, Markdown structure, ASCII punctuation and
 uv sync
 ```
 
+`uv sync` creates `.venv`. Workspace builds unify core's `python` feature, so
+Cargo links pyo3 into test binaries; `.cargo/config.toml` sets `PYO3_PYTHON` to
+`.venv/bin/python` so those builds use the project interpreter rather than the
+first `python3` on `PATH`. Run `uv sync` before workspace Cargo commands. An
+exported `PYO3_PYTHON`, or maturin's `--interpreter`, takes precedence.
+
 ### Build (Rust extension)
 
 ```bash
