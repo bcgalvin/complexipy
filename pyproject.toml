@@ -24,6 +24,7 @@ manifest-path = "crates/complexipy-python/Cargo.toml"
 module-name = "complexipy._complexipy"
 bindings = "pyo3"
 include = ["LICENSE"]
+locked = true
 
 [tool.uv]
 cache-keys = [

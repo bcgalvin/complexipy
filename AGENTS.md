@@ -220,7 +220,7 @@ uv run complexipy <path>
 uv run complexipy . --diff rcq --max-complexity-allowed 15
 uv run complexipy complexipy --failed          # dogfood the tool on itself
 uv run complexipy lsp                          # stdio language server
-cargo run -p complexipy-lsp                    # the same server from the tree
+cargo run -p complexipy-lsp --locked           # the same server from the tree
 ```
 
 ## Branches and remotes
@@ -522,7 +522,7 @@ the reverse. Adding a dependency means adding it to the crate that uses it.
   that commit separate from feature work and from a parser revision bump.
   `resolver = "3"` makes `cargo update` prefer dependency versions that the
   installed rustc supports.
-- **Cargo lockfile:** Regenerate and review `Cargo.lock` after dependency or workspace-version changes, and include required lockfile updates with the change. Every Cargo command here that resolves dependencies passes `--locked`, so drift fails rather than silently resolving. `maturin develop` does not, so a manifest edit followed by a rebuild can regenerate the lockfile without warning.
+- **Cargo lockfile:** Regenerate and review `Cargo.lock` after dependency or workspace-version changes, and include required lockfile updates with the change. Every Cargo command here that resolves dependencies passes `--locked`, so drift fails rather than silently resolving. `[tool.maturin] locked = true` extends this to `maturin develop` and uv's automatic rebuilds: after a manifest edit they fail until `Cargo.lock` is deliberately regenerated (`cargo update --workspace` or `cargo update -p <crate>`).
 - **Commits:** Only commit when explicitly asked. Never auto-commit. Stage explicit paths - never `git add -A` or `git add .`
 - **Commit subjects:** Must follow Conventional Commits. There is no automatic
   validator. git-cliff retains unknown subjects in `Other` rather than silently
