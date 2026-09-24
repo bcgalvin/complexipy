@@ -116,6 +116,8 @@ In `pyproject.toml` the same keys live under `[tool.complexipy]` and
 | `max-complexity-allowed` | `15` | Functions strictly above this value are reported. A function at the limit passes. |
 | `exclude` | `[]` | Glob patterns matched relative to the workspace root. Excluded files produce no hints and no diagnostics. |
 | `no-ignore` | `false` | Analyze functions even when an inline ignore comment suppresses them. |
+| `select` | all rules | Refactor rule ids whose plans appear in hover. Unknown ids are dropped silently. |
+| `ignore` | `[]` | Refactor rule ids whose plans never appear; wins over `select`. |
 | `lsp.inlay-hints` | `"threshold"` | When to show the per-function hint: `"threshold"`, `"always"` or `"never"`. |
 | `lsp.per-line-hints` | `false` | Also show a `+N` hint on every line with a nonzero complexity increment. |
 | `lsp.diagnostics` | `true` | Publish warnings for functions above `max-complexity-allowed`. |
@@ -132,7 +134,8 @@ stderr and publishes no hints, hover or warnings, just as the CLI refuses to
 run. It never falls through to a later candidate or to defaults.
 
 Validation is per consumer. The server checks the keys it reads
-(`max-complexity-allowed`, `exclude`, `no-ignore` and the `lsp` table) and
+(`max-complexity-allowed`, `exclude`, `select`, `ignore`, `no-ignore` and the
+`lsp` table) and
 treats a failure there the same way, for example an unknown `inlay-hints`
 value. The CLI checks its own keys and ignores `lsp`, so one file can be valid
 for one and invalid for the other: `paths = false` stops the CLI but not the
@@ -189,7 +192,9 @@ inside it shows the parent.
 - `helpers/exclude/tests.rs` pins the server's matcher against the walker's
   for walks rooted at the workspace root and the patterns both accept.
 - Inline suppression comments (`# noqa: complexipy` and `# complexipy: ignore`)
-  are honored as in the CLI unless `no-ignore = true`.
+  are honored as in the CLI unless `no-ignore = true`, including rule lists
+  such as `# complexipy: ignore[C007]`, which keep the function and only hide
+  those rules' plans.
 
 ## Logs
 

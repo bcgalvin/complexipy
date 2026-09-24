@@ -117,7 +117,9 @@ marked otherwise:
   multi-line signature before the first line containing a colon removes the
   function from the result (`test_ignore_marker_placements_that_suppress`,
   `test_noqa_complexipy_ignore`). See [CLI](cli.md#inline-ignores) for the
-  placements that do not work.
+  placements that do not work. A marker with a rule list, such as
+  `# complexipy: ignore[C007]`, does not suppress the function; it only removes
+  those rules' refactor plans.
 
 ## Expression walker limits
 

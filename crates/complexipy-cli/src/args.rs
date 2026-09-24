@@ -27,6 +27,20 @@ pub struct CliArgs {
     )]
     pub exclude: Vec<String>,
 
+    #[arg(
+        long,
+        value_delimiter = ',',
+        help = "Report only these refactor rule ids, comma-separated (e.g. C001,C007)"
+    )]
+    pub select: Vec<String>,
+
+    #[arg(
+        long,
+        value_delimiter = ',',
+        help = "Never report these refactor rule ids, comma-separated; wins over --select"
+    )]
+    pub ignore: Vec<String>,
+
     #[arg(long, help = "Fail any function scoring above this")]
     pub max_complexity_allowed: Option<u64>,
 

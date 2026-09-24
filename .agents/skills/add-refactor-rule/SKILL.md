@@ -18,6 +18,9 @@ to make a suggestion look effective.
   The registry drops reductions below 1 before selection and after measurement.
   Set `spliceable` only for a faithful replacement: it takes ranking priority
   over effectiveness and enables the registry's re-parse/measurement attempt.
+- Give a new rule an id of one letter followed by digits, like `C012`; inline
+  rule lists treat any other bracketed text as a reason. Registration makes the
+  id selectable with `--select`/`--ignore` without further wiring.
 - Register a new rule in `RuleRegistry::register_defaults()` in
   `rules/registry.rs`. Ranking reads metadata, so do not add a separate
   rule-ID-to-effectiveness switch.

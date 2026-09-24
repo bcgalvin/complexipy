@@ -5,11 +5,21 @@ use std::slice;
 use complexipy_core::classes::FileComplexity;
 use complexipy_core::runner::file_complexity_shared;
 use complexipy_core::{
-    collect_all_ignored_locations, collect_removable_ignored_locations, run_analysis_shared,
+    AnalysisOptions, collect_all_ignored_locations, collect_removable_ignored_locations,
+    run_analysis_shared,
 };
 use tempfile::tempdir;
 
 const MARKED: &str = "def f(a):  # complexipy: ignore\n    return a\n";
+
+fn options(check_script: bool, no_ignore: bool) -> AnalysisOptions {
+    AnalysisOptions {
+        check_script,
+        no_ignore,
+        with_plans: true,
+        ..AnalysisOptions::default()
+    }
+}
 
 fn write(root: &Path, name: &str, content: &[u8]) {
     let path = root.join(name);
@@ -36,7 +46,7 @@ fn unreadable_subdirectory_keeps_good_rows_and_reports_failure() {
     let unreadable = fs::read_dir(&blocked).is_err();
     let inputs = [".".to_string()];
     let invocation = root.to_str().unwrap();
-    let analysis = run_analysis_shared(&inputs, &[], false, false, invocation);
+    let analysis = run_analysis_shared(&inputs, &[], &options(false, false), invocation);
     let ignored = collect_all_ignored_locations(&inputs, &[], invocation);
     let removable = collect_removable_ignored_locations(&inputs, &[], 15, invocation);
     fs::set_permissions(&blocked, fs::Permissions::from_mode(0o700)).unwrap();
@@ -62,8 +72,7 @@ fn malformed_ignore_rules_keep_good_rows_and_report_the_rule_file() {
     let (files, failed) = run_analysis_shared(
         &[".".to_string()],
         &[],
-        false,
-        false,
+        &options(false, false),
         root.to_str().unwrap(),
     )
     .unwrap();
@@ -82,8 +91,7 @@ fn directory_exclusions_match_relative_to_an_absolute_walk_root() {
         let (files, failed) = run_analysis_shared(
             &[root.to_string()],
             &[pattern.to_string()],
-            false,
-            false,
+            &options(false, false),
             root,
         )
         .unwrap();
@@ -98,8 +106,7 @@ fn directory_exclusions_match_relative_to_an_absolute_walk_root() {
         let (files, failed) = run_analysis_shared(
             &["pkg".to_string()],
             &[pattern.to_string()],
-            false,
-            false,
+            &options(false, false),
             root.to_str().unwrap(),
         )
         .unwrap();
@@ -115,12 +122,17 @@ fn native_file_analysis_uses_the_explicit_root() {
     let root = dir.path().to_str().unwrap();
     let absolute = dir.path().join("pkg/a.py").canonicalize().unwrap();
     for input in ["pkg/a.py", absolute.to_str().unwrap()] {
-        let file = file_complexity_shared(input, root, false, false).unwrap();
+        let file = file_complexity_shared(input, root, &options(false, false)).unwrap();
         assert_eq!(file.path, "pkg/a.py");
     }
     for invalid in [dir.path().join("missing"), absolute] {
         assert!(
-            file_complexity_shared("pkg/a.py", invalid.to_str().unwrap(), false, false).is_err()
+            file_complexity_shared(
+                "pkg/a.py",
+                invalid.to_str().unwrap(),
+                &options(false, false)
+            )
+            .is_err()
         );
     }
 }
@@ -139,7 +151,8 @@ fn all_walkers_resolve_relative_targets_and_share_file_identity() {
             "pkg/b/utils.py".to_string(),
         ],
     ] {
-        let (files, failed) = run_analysis_shared(&inputs, &[], false, false, root).unwrap();
+        let (files, failed) =
+            run_analysis_shared(&inputs, &[], &options(false, false), root).unwrap();
         assert!(failed.is_empty());
         assert_eq!(paths(&files), ["pkg/a/utils.py", "pkg/b/utils.py"]);
         let (ignored, failed) = collect_all_ignored_locations(&inputs, &[], root).unwrap();
@@ -174,8 +187,13 @@ fn outside_root_files_and_symlink_targets_keep_absolute_identity() {
     let expected = target.canonicalize().unwrap().to_str().unwrap().to_string();
     for input in [target.to_str().unwrap().to_string(), "alias.py".to_string()] {
         let invocation = root.path().to_str().unwrap();
-        let (files, failed) =
-            run_analysis_shared(slice::from_ref(&input), &[], false, false, invocation).unwrap();
+        let (files, failed) = run_analysis_shared(
+            slice::from_ref(&input),
+            &[],
+            &options(false, false),
+            invocation,
+        )
+        .unwrap();
         assert!(failed.is_empty());
         assert_eq!(paths(&files), [expected.as_str()]);
         let (ignored, failed) =
@@ -209,8 +227,13 @@ fn all_walkers_filter_directories_but_process_explicit_files() {
     }
     let invocation = dir.path().to_str().unwrap();
     let excludes = ["excluded.py".to_string()];
-    let (files, failed) =
-        run_analysis_shared(&[".".to_string()], &excludes, false, false, invocation).unwrap();
+    let (files, failed) = run_analysis_shared(
+        &[".".to_string()],
+        &excludes,
+        &options(false, false),
+        invocation,
+    )
+    .unwrap();
     assert!(failed.is_empty());
     assert_eq!(paths(&files), ["keep.py"]);
     let (ignored, failed) =
@@ -236,7 +259,7 @@ fn all_walkers_filter_directories_but_process_explicit_files() {
     for input in filtered {
         let inputs = [input.to_string()];
         let (files, failed) =
-            run_analysis_shared(&inputs, &excludes, false, false, invocation).unwrap();
+            run_analysis_shared(&inputs, &excludes, &options(false, false), invocation).unwrap();
         assert!(failed.is_empty());
         assert_eq!(paths(&files), [input]);
         let (ignored, failed) =
@@ -274,7 +297,7 @@ fn failures_are_absolute_and_valid_rows_survive() {
         ],
     ] {
         let (files, mut failed) =
-            run_analysis_shared(&inputs, &[], false, false, invocation).unwrap();
+            run_analysis_shared(&inputs, &[], &options(false, false), invocation).unwrap();
         assert_eq!(paths(&files), ["pkg/good.py"]);
         failed.sort();
         assert_eq!(failed, expected);
@@ -291,7 +314,7 @@ fn failures_are_absolute_and_valid_rows_survive() {
     let missing = ["missing.py".to_string()];
     let expected = root.join("missing.py").to_str().unwrap().to_string();
     assert_eq!(
-        run_analysis_shared(&missing, &[], false, false, invocation)
+        run_analysis_shared(&missing, &[], &options(false, false), invocation)
             .unwrap()
             .1,
         [expected.as_str()]
@@ -317,7 +340,7 @@ fn invalid_invocation_roots_fail_before_processing_even_empty_inputs() {
     for name in ["missing", "file.py"] {
         let root = dir.path().join(name);
         let root = root.to_str().unwrap();
-        assert!(run_analysis_shared(&[], &[], false, false, root).is_err());
+        assert!(run_analysis_shared(&[], &[], &options(false, false), root).is_err());
         assert!(collect_all_ignored_locations(&[], &[], root).is_err());
         assert!(collect_removable_ignored_locations(&[], &[], 15, root).is_err());
     }
@@ -329,7 +352,7 @@ fn overlapping_inputs_preserve_multiplicity() {
     write(dir.path(), "pkg/a.py", MARKED.as_bytes());
     let root = dir.path().to_str().unwrap();
     let inputs = ["pkg".to_string(), "pkg/a.py".to_string()];
-    let (files, failed) = run_analysis_shared(&inputs, &[], false, false, root).unwrap();
+    let (files, failed) = run_analysis_shared(&inputs, &[], &options(false, false), root).unwrap();
     assert!(failed.is_empty());
     assert_eq!(paths(&files), ["pkg/a.py", "pkg/a.py"]);
     let (ignored, failed) = collect_all_ignored_locations(&inputs, &[], root).unwrap();
@@ -361,7 +384,7 @@ fn symlink_roots_produce_the_same_relative_identity() {
     std::os::unix::fs::symlink(dir.path(), &alias).unwrap();
     let root = alias.to_str().unwrap();
     let inputs = ["pkg".to_string()];
-    let (files, failed) = run_analysis_shared(&inputs, &[], false, false, root).unwrap();
+    let (files, failed) = run_analysis_shared(&inputs, &[], &options(false, false), root).unwrap();
     assert!(failed.is_empty());
     assert_eq!(paths(&files), ["pkg/a.py"]);
     let (ignored, failed) = collect_all_ignored_locations(&inputs, &[], root).unwrap();
@@ -381,7 +404,7 @@ fn invalid_excludes_report_the_absolute_directory_as_failed() {
     let inputs = ["pkg".to_string()];
     let excludes = ["[".to_string()];
     let (files, analysis_failed) =
-        run_analysis_shared(&inputs, &excludes, false, false, invocation).unwrap();
+        run_analysis_shared(&inputs, &excludes, &options(false, false), invocation).unwrap();
     assert!(files.is_empty());
     let (ignored, ignored_failed) =
         collect_all_ignored_locations(&inputs, &excludes, invocation).unwrap();
@@ -406,9 +429,13 @@ fn directory_analysis_forwards_script_and_suppression_flags() {
     let root = dir.path().to_str().unwrap();
     for check_script in [false, true] {
         for no_ignore in [false, true] {
-            let (files, failed) =
-                run_analysis_shared(&[".".to_string()], &[], check_script, no_ignore, root)
-                    .unwrap();
+            let (files, failed) = run_analysis_shared(
+                &[".".to_string()],
+                &[],
+                &options(check_script, no_ignore),
+                root,
+            )
+            .unwrap();
             assert!(failed.is_empty());
             assert_eq!(files.len(), 1);
             assert_eq!(

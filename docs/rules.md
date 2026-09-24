@@ -80,7 +80,9 @@ do not sum.
 
 ## How plans are selected
 
-`RuleRegistry::analyze()` collects plans over the region tree, then, in order:
+`RuleRegistry::analyze()` collects plans from the active rules (see
+[Selecting and suppressing rules](#selecting-and-suppressing-rules)) over the
+region tree, then, in order:
 
 1. Drops any plan with `estimated_reduction < 1` as noise.
 1. Sorts by spliceable first, then `effectiveness`, then reduction, then line - so
@@ -107,6 +109,35 @@ registry reads it through `effectiveness_by_rule_id()`, so there is no
 measurement put their reduction below one. It excludes earlier noise and overlap
 rejections, so it is not a count of all candidate plans. (Source read of
 `analyze`; the stub documents both kinds of drop.)
+
+## Selecting and suppressing rules
+
+`--select C001,C007` keeps only the listed rules and `--ignore C007` removes
+rules. Both take comma-separated, repeatable ids, and `--ignore` wins when both
+name a rule. The `select` and `ignore` keys in the configuration file do the
+same; a non-empty flag replaces the key it names. Ids are case-insensitive. An
+unknown id prints a warning on stderr, which `--quiet` suppresses, and is
+otherwise ignored, so a `select` list with no known id leaves no rule active. The
+language server reads the same keys and drops unknown ids silently. `RuleSet` in
+`rules/types.rs` holds the active set, and `RuleRegistry::analyze` skips an
+inactive rule before the steps above, so it never blocks an overlapping plan or
+counts toward the cap.
+
+`# complexipy: ignore[C007]` or `# noqa: complexipy[C007]`, in any placement a
+bare marker accepts, removes the listed rules for that function only; the
+function is still scored and reported. Separate several ids with commas. A
+bracketed text that is not a list of rule ids (a letter followed by digits),
+such as `# complexipy: ignore [legacy]`, is a reason, and the marker suppresses
+the whole function as a bare one does. `--no-ignore` disregards rule lists too.
+
+Selection and rule lists change only which plans appear, in every output
+format; they never change scores, which functions are reported, or the exit
+code. The Python API has no selection argument: every rule is active there, and
+inline rule lists still apply. `rules/types/tests.rs`, `rules/registry/tests.rs`,
+`utils/tests.rs`, the CLI `args` and `config` tests, and
+`test_inline_rule_list_suppresses_only_named_rules` and
+`test_bare_ignore_comment_drops_the_function` in `tests/test_refactor_plans.py`
+pin this behavior. Adopted from upstream `134c71c`.
 
 ## Measured versus estimated reduction
 

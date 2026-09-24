@@ -21,13 +21,14 @@ Update it as work lands and remove completed tasks rather than building a log.
   comparison state on incomplete collections and invalidates failed marker JSON.
   Its behavior is covered by real permission-error, state-reuse and collector
   contract tests; see the maintenance catalog's Fixed section.
-- Upstream `main` through `5c52836` is adopted selectively. Adopted: the
-  applicability-tier pin, real `enum.Enum` classes for the three enums, and the
-  `complexipy lsp` language server on this fork's fail-closed config loader.
-  Excluded: CI/release and riscv64 builds, the docs site, upstream changelog and
-  agent-file edits, and upstream's stub rewrite. The parent's wheel predates
-  these; adopting them there changes enum `repr` output and config error text,
-  and leaves its `variants()` enum helper working but stale.
+- Upstream `main` through `fb8af35` is adopted selectively. Release 9.0.0
+  carries the applicability-tier pin, real `enum.Enum` classes for the three
+  enums, and the `complexipy lsp` language server on this fork's fail-closed
+  config loader. After 9.0.0, upstream PR #262 (`134c71c`, per-rule suppression
+  and `--select`/`--ignore`) was ported onto `rcq`; it is unreleased, so the
+  parent gets it only with a later release. Excluded throughout: CI/release and
+  riscv64 builds, the docs site and `docs/es`, the wasm crate, upstream changelog
+  and agent-file edits, and upstream's stub rewrite.
 - Remaining batches below are not implemented. Parent reassessment is complete;
   parent edits still await confirmation in that session. Coordination messages
   do not answer another session's approval prompt.
@@ -69,7 +70,11 @@ successfully read files, distinct from the now-reported file-discovery failures.
 
 Anchor: `crates/complexipy-core/src/utils.rs` `find_noqa_comment`,
 `collect_ignored_locations`, `filter_removable_ignores`, and the scorer's
-`is_ignored` in `cognitive_complexity.rs`.
+`is_ignored` in `cognitive_complexity.rs`. Since the upstream `134c71c` port,
+`find_noqa_comment` returns an `IgnoreDirective`: a rule-list marker keeps its
+function and is skipped by both collectors. Build the parity fixes on that
+type rather than on the earlier string markers, and keep rule-list markers in
+the placement cases.
 
 Acceptance includes ordinary and async definitions, decorator chains, markers
 above the first decorator, between the last decorator and the definition, and

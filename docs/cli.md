@@ -59,6 +59,9 @@ branch = "main"
 staged = false
 ```
 
+`select` and `ignore` choose refactor rules; see
+[Refactor rules](rules.md#selecting-and-suppressing-rules).
+
 CLI arguments override the file (`utils/config/tests.rs`). Four options are
 CLI-only with no config key: `--plain`, `--suggest-refactors`, `--top` and
 `--diff-only`; `--staged` is the `staged` key of the `[diff]` table. (Source read
@@ -151,6 +154,12 @@ Two markers are recognized, case-insensitively:
 # noqa: complexipy
 ```
 
+Either marker can carry a bracketed rule list, `# complexipy: ignore[C007]`,
+which keeps the function and only removes those rules' plans; see
+[Refactor rules](rules.md#selecting-and-suppressing-rules). Bracketed text that
+is not a rule list is a reason and leaves the marker a whole-function
+suppression. The rest of this section is about whole-function markers.
+
 A marker suppresses a function when it sits on the `def` line, on the line
 immediately above the definition's first line (the `def`, or the first decorator
 when there is one), on a decorator line, or inside a multi-line signature before
@@ -163,7 +172,7 @@ function is excluded from results entirely rather than reported with a zero
 score (`test_noqa_complexipy_ignore`).
 
 `--no-ignore` disregards every marker. Two reports exist and they are not the
-same thing:
+same thing; both list only whole-function markers, never a rule-list marker:
 
 - **`--report-ignored`** lists recognized markers. With `--output-format json` it
   also writes them to `complexipy-ignored.json` beside the resolved JSON output

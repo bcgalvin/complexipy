@@ -366,8 +366,8 @@ function_complexity) -> Option<RefactorPlan>` plus a `&'static RuleMetadata`.
 `id` / `category` / `applicability` / `description` can only ever come from
 metadata; rules fill in the dynamic fields via `..metadata().new_plan()`.
 
-`RuleRegistry::analyze()` then, in order: collects plans over the region tree
-recursively, drops any plan with `estimated_reduction < 1` as noise, sorts by
+`RuleRegistry::analyze()` then, in order: collects plans from active rules over
+the region tree recursively, drops any plan with `estimated_reduction < 1` as noise, sorts by
 spliceable desc -> `effectiveness` desc -> reduction desc -> line asc (a
 machine-applicable replacement beats a help-only plan of higher
 effectiveness), resolves overlapping line ranges by keeping the
@@ -387,6 +387,15 @@ in `every_registered_rule_produces_a_plan_consistent_with_its_own_metadata`,
 rejects it until such a rule exists. Add behavioral fixtures and assertions
 under `tests/fixtures/refactor_plans/` and `tests/test_refactor_plans.py`.
 The `add-refactor-rule` skill is the task procedure for this lockstep.
+
+Rule selection lives in one `RuleSet` (`rules/types.rs`), carried with
+`check_script`, `no_ignore` and `with_plans` in `AnalysisOptions` through the
+scorer, runner, CLI, language server and Python bindings; `rules::default_registry()`
+is the shared registry. `--ignore` wins over `--select`, a bare marker drops the
+function, and a rule-list marker (`# complexipy: ignore[C007]`) subtracts rules
+for one function only and is never reported by the marker collectors. Rule ids
+must stay a letter followed by digits: `utils.rs` `is_rule_id` treats any other
+bracketed text as a reason for a whole-function suppression.
 
 Guiding principle for rule output: never emit a suggestion the tool cannot stand
 behind. If a heuristic isn't confident, emit `help` text rather than a wrong

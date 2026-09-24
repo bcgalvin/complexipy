@@ -48,8 +48,12 @@ collect_removable_ignored_locations(
 ) -> tuple[list[RemovableIgnore], list[str]]
 ```
 
-Find `# complexipy: ignore` and `# noqa: complexipy` markers, and the subset whose
-function no longer exceeds the threshold. A bare `# noqa` is **not** recognized.
+Find whole-function `# complexipy: ignore` and `# noqa: complexipy` markers, and
+the subset whose function no longer exceeds the threshold. A marker with a rule
+list, such as `# complexipy: ignore[C007]`, keeps its function in analysis
+results and is not reported here. A bare `# noqa` is **not** recognized. The
+Python API has no refactor-rule selection: every rule is active, and inline rule
+lists still remove plans (see [Refactor rules](rules.md#selecting-and-suppressing-rules)).
 
 Both return a **two-tuple**: the results, and a list of paths that could not be
 processed. Per-file failures are reported rather than aborting the walk, so
