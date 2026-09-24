@@ -176,15 +176,16 @@ signature must not expose a type that users outside the crate cannot name) and
 `elided_lifetimes_in_paths` (write a borrowing type as `Options<'_>`).
 `unreachable_pub` stays off: `dead_code` already reports unused `pub` items in
 private modules, and the lint cannot see into the cli and lsp crates, whose
-roots export every module. The Clippy table enables the `pedantic`
-group, which also covers lints that Clippy later moves into it, at
-`priority = -1` so that individual entries override it. It allows twelve
-pedantic lints that do not pay off in these unpublished crates:
-`cast_possible_truncation`, `cast_possible_wrap`, `cast_precision_loss`,
-`cast_sign_loss`, `format_collect`, `format_push_string`, `implicit_hasher`,
-`missing_errors_doc`, `missing_panics_doc`, `must_use_candidate`,
-`struct_excessive_bools` and `too_many_lines`. It warns on these restriction
-lints: `exit`, `dbg_macro`, `todo`, `unimplemented`, `panic` and `unreachable`;
+roots export every module. The Clippy table enables the `pedantic` group, which
+also covers lints that Clippy later moves into it, at `priority = -1` so that
+individual entries override it. It allows twelve pedantic lints that do not pay
+off in these unpublished crates: `cast_possible_truncation`,
+`cast_possible_wrap`, `cast_precision_loss`, `cast_sign_loss`, `format_collect`,
+`format_push_string`, `implicit_hasher`, `missing_errors_doc`,
+`missing_panics_doc`, `must_use_candidate`, `struct_excessive_bools` and
+`too_many_lines`. It warns on these restriction lints: `exit`, `dbg_macro`,
+`todo`, `unimplemented`, `panic`, `unreachable` and `unwrap_used` (Clippy does
+not treat integration-test helpers as test code, so they use `expect`);
 `mod_module_files` (modules use `foo.rs` plus a `foo/` directory, never
 `mod.rs`); `iter_over_hash_type` (output order must not depend on hashing);
 `allow_attributes` and `allow_attributes_without_reason` (the suppression rule
@@ -192,19 +193,19 @@ under Code Style); `print_stdout` and `print_stderr` (the output rule there);
 and `string_slice` (slicing text by byte offset needs a proven char boundary, so
 prefer `str::get` or char-based methods). Root `clippy.toml` sets
 `avoid-breaking-exported-api = false` because no crate is published,
-`allow-panic-in-tests = true`, and `excessive-nesting-threshold = 6`, the
-deepest block nesting in the code today (extract a function rather than nest
-deeper). It bans `std::env::set_current_dir`, because test binaries share one
-process working directory, and `std::env::current_dir`, because library code
-takes an explicit root (`invocation_path`); only the cli and lsp entry points
-and one test read it, under reasoned expectations. Lints are declared as
-warnings, so promotion to errors comes from the `-D warnings` flag on the
-Clippy commands and nothing else enforces it automatically. The restriction,
-nursery and cargo groups are not enabled.
-`cargo clippy --fix --workspace --all-targets --locked` applies the
-machine-applicable fixes. To count findings, for example after
-`rustup update`, run Clippy without `-D warnings`; with it, Cargo stops after
-the first failing crate.
+`allow-panic-in-tests` and `allow-unwrap-in-tests`, and
+`excessive-nesting-threshold = 6`, the deepest block nesting in the code today
+(extract a function rather than nest deeper). It bans
+`std::env::set_current_dir`, because test binaries share one process working
+directory, and `std::env::current_dir`, because library code takes an explicit
+root (`invocation_path`); only the cli and lsp entry points and one test read
+it, under reasoned expectations. Lints are declared as warnings, so promotion to
+errors comes from the `-D warnings` flag on the Clippy commands and nothing else
+enforces it automatically. The restriction, nursery and cargo groups are not
+enabled. `cargo clippy --fix --workspace --all-targets --locked` applies the
+machine-applicable fixes. To count findings, for example after `rustup update`,
+run Clippy without `-D warnings`; with it, Cargo stops after the first failing
+crate.
 
 ty treats `possibly-unresolved-reference`, `possibly-missing-attribute`,
 `unused-ignore-comment`, and `redundant-cast` as errors. Every remaining warning

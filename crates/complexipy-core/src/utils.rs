@@ -425,10 +425,14 @@ pub fn extract_comment_marker(line: &str) -> Option<IgnoreDirective> {
     static IGNORE_RE: OnceLock<Regex> = OnceLock::new();
     static NOQA_RE: OnceLock<Regex> = OnceLock::new();
 
-    let ignore_re = IGNORE_RE
-        .get_or_init(|| Regex::new(r"(?i)#\s*complexipy\s*:\s*ignore(\s*\[([^\]]*)\])?").unwrap());
-    let noqa_re = NOQA_RE
-        .get_or_init(|| Regex::new(r"(?i)#\s*noqa\s*:\s*complexipy(\s*\[([^\]]*)\])?").unwrap());
+    let ignore_re = IGNORE_RE.get_or_init(|| {
+        Regex::new(r"(?i)#\s*complexipy\s*:\s*ignore(\s*\[([^\]]*)\])?")
+            .expect("the ignore-marker pattern is a valid regex")
+    });
+    let noqa_re = NOQA_RE.get_or_init(|| {
+        Regex::new(r"(?i)#\s*noqa\s*:\s*complexipy(\s*\[([^\]]*)\])?")
+            .expect("the noqa-marker pattern is a valid regex")
+    });
 
     if let Some(captures) = ignore_re.captures(line) {
         return Some(build_directive("# complexipy: ignore", captures.get(2)));

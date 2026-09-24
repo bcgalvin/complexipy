@@ -48,7 +48,7 @@ fn config_with(
 }
 
 fn analyzed(source: &str, config: &LspConfig) -> complexipy_lsp::analysis::DocumentAnalysis {
-    analyze(source, 1, config).unwrap()
+    analyze(source, 1, config).expect("source should parse")
 }
 
 const COLLAPSIBLE_IF: &str = "def heavy(a, b, c, d):\n    if a:\n        if b:\n            if c and d:\n                return 1\n    return 0\n";

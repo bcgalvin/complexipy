@@ -1,5 +1,6 @@
 avoid-breaking-exported-api = false
 allow-panic-in-tests = true
+allow-unwrap-in-tests = true
 excessive-nesting-threshold = 6
 disallowed-methods = [
     { path = "std::env::set_current_dir", reason = "test binaries share one process cwd; pass explicit roots" },

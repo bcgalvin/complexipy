@@ -2,7 +2,7 @@ use complexipy_lsp::documents::{Documents, is_python_path, uri_to_path};
 use lsp_types::Uri;
 
 fn uri(value: &str) -> Uri {
-    value.parse().unwrap()
+    value.parse().expect("test URI should parse")
 }
 
 #[test]

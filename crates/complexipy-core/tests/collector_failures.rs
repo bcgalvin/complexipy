@@ -17,7 +17,7 @@ fn write(dir: &TempDir, name: &str, content: &[u8]) -> String {
     let path = dir.path().join(name);
     fs::write(&path, content).expect("should write fixture");
     path.canonicalize()
-        .unwrap()
+        .expect("fixture should canonicalize")
         .to_str()
         .expect("utf-8 path")
         .to_string()

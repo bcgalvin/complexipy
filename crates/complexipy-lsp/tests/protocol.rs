@@ -35,24 +35,28 @@ fn start() -> Session {
     Session {
         client,
         server,
-        root: TempDir::new().unwrap(),
+        root: TempDir::new().expect("should create temp dir"),
         next_id: 1,
     }
 }
 
 impl Session {
     fn write_config(&self, content: &str) {
-        std::fs::write(self.root.path().join("complexipy.toml"), content).unwrap();
+        std::fs::write(self.root.path().join("complexipy.toml"), content)
+            .expect("should write config");
     }
 
     fn document_uri(&self, name: &str) -> Uri {
         format!("file://{}/{}", self.root.path().display(), name)
             .parse()
-            .unwrap()
+            .expect("document URI should parse")
     }
 
     fn send(&self, message: impl Into<Message>) {
-        self.client.sender.send(message.into()).unwrap();
+        self.client
+            .sender
+            .send(message.into())
+            .expect("server should be connected");
     }
 
     fn next_id(&mut self) -> RequestId {
@@ -72,7 +76,7 @@ impl Session {
         let id = self.next_id();
         let root: Uri = format!("file://{}", self.root.path().display())
             .parse()
-            .unwrap();
+            .expect("root URI should parse");
         let params = InitializeParams {
             workspace_folders: Some(vec![WorkspaceFolder {
                 uri: root,
@@ -194,8 +198,8 @@ impl Session {
             if let Message::Notification(notification) = self.receive()
                 && notification.method == "textDocument/publishDiagnostics"
             {
-                let params: PublishDiagnosticsParams =
-                    serde_json::from_value(notification.params).unwrap();
+                let params: PublishDiagnosticsParams = serde_json::from_value(notification.params)
+                    .expect("diagnostics params should deserialize");
 
                 if &params.uri == uri {
                     return params.diagnostics;
@@ -214,8 +218,8 @@ impl Session {
                     continue;
                 }
 
-                let params: PublishDiagnosticsParams =
-                    serde_json::from_value(notification.params).unwrap();
+                let params: PublishDiagnosticsParams = serde_json::from_value(notification.params)
+                    .expect("diagnostics params should deserialize");
 
                 if &params.uri == uri {
                     return methods;
@@ -229,7 +233,8 @@ impl Session {
             if let Message::Notification(notification) = self.receive()
                 && notification.method == SHOW_MESSAGE
             {
-                return serde_json::from_value(notification.params).unwrap();
+                return serde_json::from_value(notification.params)
+                    .expect("show-message params should deserialize");
             }
         }
     }
@@ -244,7 +249,7 @@ impl Session {
             },
         );
 
-        serde_json::from_value(result).unwrap()
+        serde_json::from_value(result).expect("result should deserialize")
     }
 
     fn hover(&mut self, uri: &Uri, line: u32) -> Option<Hover> {
@@ -259,7 +264,7 @@ impl Session {
             },
         );
 
-        serde_json::from_value(result).unwrap()
+        serde_json::from_value(result).expect("result should deserialize")
     }
 
     fn shutdown(mut self) -> i32 {
@@ -268,11 +273,11 @@ impl Session {
         self.result(&id);
         self.send(Notification::new(EXIT.to_string(), ()));
 
-        self.server.join().unwrap()
+        self.server.join().expect("server thread should not panic")
     }
 
     fn join(self) -> i32 {
-        self.server.join().unwrap()
+        self.server.join().expect("server thread should not panic")
     }
 }
 

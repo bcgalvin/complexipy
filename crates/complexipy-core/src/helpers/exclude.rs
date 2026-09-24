@@ -100,7 +100,7 @@ pub fn get_paths_to_process(
 ) -> Result<DiscoveredPaths, String> {
     let mut files = Vec::new();
     let mut failed_paths = Vec::new();
-    let glob = Glob::new("**/*.py").unwrap();
+    let glob = Glob::new("**/*.py").expect("the Python-file glob is valid");
 
     let normalized_root = root_path.replace('\\', "/");
     let root = Path::new(&normalized_root);

@@ -23,8 +23,9 @@ fn options(check_script: bool, no_ignore: bool) -> AnalysisOptions {
 
 fn write(root: &Path, name: &str, content: &[u8]) {
     let path = root.join(name);
-    fs::create_dir_all(path.parent().unwrap()).unwrap();
-    fs::write(path, content).unwrap();
+    fs::create_dir_all(path.parent().expect("fixture path should have a parent"))
+        .expect("should create fixture directories");
+    fs::write(path, content).expect("should write fixture");
 }
 
 fn paths(files: &[FileComplexity]) -> Vec<String> {

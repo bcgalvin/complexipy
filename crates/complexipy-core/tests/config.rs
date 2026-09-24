@@ -4,15 +4,19 @@ use std::fs as fs_sync;
 use tempfile::TempDir;
 
 fn write(dir: &TempDir, name: &str, content: &str) {
-    fs_sync::write(dir.path().join(name), content).unwrap();
+    fs_sync::write(dir.path().join(name), content).expect("should write config");
 }
 
 fn source(dir: &TempDir) -> Option<ConfigSource> {
-    read_complexipy_config(&dir.path().to_string_lossy()).unwrap()
+    read_complexipy_config(&dir.path().to_string_lossy()).expect("config should load")
 }
 
 fn lsp_config(dir: &TempDir) -> LspConfig {
-    source(dir).unwrap().value.try_into().unwrap()
+    source(dir)
+        .expect("a config file should be found")
+        .value
+        .try_into()
+        .expect("config should convert to LspConfig")
 }
 
 #[test]

@@ -97,7 +97,7 @@ impl RefactorRule for LoopGuardsRule {
             .iter()
             .map(|r| r.nesting.saturating_sub(base_nesting))
             .sum();
-        let remaining_bonus = chain.len() as u64 * chain.last().unwrap().children.len() as u64;
+        let remaining_bonus = chain.len() as u64 * chain.last()?.children.len() as u64;
         let reduction = guard_savings + remaining_bonus;
 
         if reduction == 0 {
@@ -493,7 +493,7 @@ impl RefactorRule for CollapsibleIfRule {
             return None;
         }
 
-        let innermost = chain.last().unwrap();
+        let innermost = chain.last()?;
 
         let mut conditions = Vec::new();
         let mut conditions_extracted = true;
@@ -689,7 +689,7 @@ fn generate_loop_guard_suggestion(
         return None;
     }
 
-    let innermost = guards.last().unwrap().0;
+    let innermost = guards.last()?.0;
     let innermost_start = span_idx(innermost.line_start)?;
     let innermost_end = span_idx(innermost.line_end + 1).unwrap_or(lines.len());
     let chain_start = span_idx(guards[0].0.line_start)?;
