@@ -187,17 +187,18 @@ its running interpreter to build and install the wheel, so run it on CPython 3.1
 
 Re-run rule, warning, and Python-target controls when upgrading ty.
 
-### Feature-isolation compile check
+### Feature-isolation lint check
 
 One configuration is checked separately so workspace feature unification cannot
-hide a missing feature gate. The CLI check exercises core without `python`, which
-matters because the `serde(skip)` attributes on `FunctionComplexity` and
-`FileComplexity` are gated on that feature: a standalone CLI build serializes a
-different snapshot shape than the shipped extension does. This is a compilation
-check, not runtime coverage.
+hide a missing feature gate or a warning that exists only without `python`. The
+CLI check compiles and lints core without `python`, which matters because the
+`serde(skip)` attributes on `FunctionComplexity` and `FileComplexity` are gated
+on that feature: a standalone CLI build serializes a different snapshot shape
+than the shipped extension does. It is a compile and lint check, not runtime
+coverage, and it cannot see that shape difference.
 
 ```bash
-cargo check -p complexipy-cli --locked
+cargo clippy -p complexipy-cli --locked -- -D warnings
 ```
 
 ### Changelog

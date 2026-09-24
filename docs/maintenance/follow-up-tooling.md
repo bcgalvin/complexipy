@@ -338,7 +338,7 @@ file records removed capabilities only.
 
 1. **Local procedures, completed in H.** `verify` and `vendor-build` preserve
    the useful checks without scheduling them. `verify` includes the standalone
-   CLI compile check and built-CLI smoke; the existing wheel harness covers
+   CLI lint check and built-CLI smoke; the existing wheel harness covers
    selected stub/runtime promises.
 1. **Hooks/CI, not planned.** The earlier rebuild proposals are not commitments.
    Reconsider only for a demonstrated need. git-cliff does not require a

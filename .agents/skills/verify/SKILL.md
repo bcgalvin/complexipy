@@ -30,7 +30,7 @@ uv run ruff check .
 uv run ruff format --check .
 uv run ty check .
 uv run python tests/contract/check_stub_contract.py --self-test
-cargo check -p complexipy-cli --locked
+cargo clippy -p complexipy-cli --locked -- -D warnings
 uv run complexipy complexipy --failed
 ```
 
@@ -42,8 +42,8 @@ Run focused regression tests as well when the change needs them.
 The root ty check sees the editable native installation; it is not proof that
 stubs match runtime. The separate installed-wheel harness tests selected typing
 and runtime promises from a neutral directory, not the whole API. The standalone
-CLI check verifies compilation without core's `python` feature, not parity of
-its serialized output with the extension.
+CLI check compiles and lints without core's `python` feature; it does not prove
+parity of its serialized output with the extension.
 
 For documentation/skill-only changes, the build and test gate does not apply.
 Check instructions against their sources, paths and Markdown structure manually;

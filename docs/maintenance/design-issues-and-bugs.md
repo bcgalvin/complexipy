@@ -591,8 +591,8 @@ The shipped extension always enables `python`, so its snapshot format is
 for the same input. Feature unification decides which shape a given build
 gets, and the divergence compiles cleanly in both directions, so the compile
 checks that exist to catch feature-gate mistakes cannot see it. The surviving
-`cargo check -p complexipy-cli --locked` is kept for this reason but only
-proves the shape compiles.
+`cargo clippy -p complexipy-cli --locked -- -D warnings` step is kept for this
+reason but only proves the shape compiles and lints cleanly.
 
 A serialization contract should not be a side effect of a bindings feature.
 The honest fix is to make the skip unconditional or to make it a runtime
