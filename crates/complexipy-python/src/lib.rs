@@ -123,6 +123,10 @@ mod _complexipy {
 
     #[pyfunction]
     #[pyo3(signature = (paths, exclude, invocation_path="."))]
+    #[expect(
+        clippy::needless_pass_by_value,
+        reason = "pyo3 extracts Python sequences as owned values"
+    )]
     fn collect_all_ignored_locations(
         paths: Vec<String>,
         exclude: Vec<String>,
@@ -138,6 +142,10 @@ mod _complexipy {
 
     #[pyfunction]
     #[pyo3(signature = (paths, exclude, max_complexity_allowed, invocation_path="."))]
+    #[expect(
+        clippy::needless_pass_by_value,
+        reason = "pyo3 extracts Python sequences as owned values"
+    )]
     fn collect_removable_ignored_locations(
         paths: Vec<String>,
         exclude: Vec<String>,
@@ -177,6 +185,10 @@ mod _complexipy {
 
     #[pyfunction]
     #[pyo3(signature = (current_files, git_ref, invocation_path = None))]
+    #[expect(
+        clippy::needless_pass_by_value,
+        reason = "pyo3 extracts Python sequences as owned values"
+    )]
     fn compute_diff(
         current_files: Vec<FileComplexity>,
         git_ref: &str,

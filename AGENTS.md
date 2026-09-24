@@ -171,22 +171,30 @@ Excluded explicit paths are skipped, so a successful command does not mean those
 files were checked.
 
 All five crates inherit `[workspace.lints]` from the root `Cargo.toml`. The
-rustc table forbids `unsafe_code`. The Clippy table warns on these restriction
+rustc table forbids `unsafe_code`. The Clippy table enables the `pedantic`
+group, which also covers lints that Clippy later moves into it, at
+`priority = -1` so that individual entries override it. It allows twelve
+pedantic lints that do not pay off in these unpublished crates:
+`cast_possible_truncation`, `cast_possible_wrap`, `cast_precision_loss`,
+`cast_sign_loss`, `format_collect`, `format_push_string`, `implicit_hasher`,
+`missing_errors_doc`, `missing_panics_doc`, `must_use_candidate`,
+`struct_excessive_bools` and `too_many_lines`. It warns on these restriction
 lints: `exit`, `dbg_macro`, `todo`, `unimplemented`, `panic` and `unreachable`;
 `mod_module_files` (modules use `foo.rs` plus a `foo/` directory, never
 `mod.rs`); `iter_over_hash_type` (output order must not depend on hashing);
 `allow_attributes` and `allow_attributes_without_reason` (the suppression rule
 under Code Style); `print_stdout` and `print_stderr` (the output rule there);
 and `string_slice` (slicing text by byte offset needs a proven char boundary, so
-prefer `str::get` or char-based methods). It also warns on
-`collapsible_else_if`, `nonminimal_bool` and `overly_complex_bool_expr`, which
-Clippy moved from its default groups into pedantic. Root `clippy.toml` sets
+prefer `str::get` or char-based methods). Root `clippy.toml` sets
 `avoid-breaking-exported-api = false` because no crate is published,
 `allow-panic-in-tests = true`, and bans `std::env::set_current_dir` because test
 binaries share one process working directory. Lints are declared as warnings, so
 promotion to errors comes from the `-D warnings` flag on the Clippy commands and
 nothing else enforces it automatically. The restriction, nursery and cargo
-groups are not enabled.
+groups are not enabled. `cargo clippy --fix --workspace --all-targets --locked`
+applies the machine-applicable fixes. To count findings, for example after
+`rustup update`, run Clippy without `-D warnings`; with it, Cargo stops after
+the first failing crate.
 
 ty treats `possibly-unresolved-reference`, `possibly-missing-attribute`,
 `unused-ignore-comment`, and `redundant-cast` as errors. Every remaining warning

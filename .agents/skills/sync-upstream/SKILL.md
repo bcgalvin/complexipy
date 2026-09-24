@@ -49,6 +49,10 @@ Land adopted changes as ordinary commits on `rcq` (cherry-pick with `-x` where
 clean, port where fork contracts differ; keep ported upstream code close to
 verbatim), then record the evaluated SHA with
 `git merge -s ours <sha>`, listing adopted and excluded work in the message.
+Ported Rust must pass the workspace's pedantic Clippy lints: run
+`cargo clippy --fix --workspace --all-targets --locked` and `cargo fmt --all`,
+then fix the remaining findings by hand. That normalization is the expected
+departure from verbatim.
 When a sync is recorded with a merge, move the changelog baseline in
 `cliff.toml` and `docs/changelog.md` to the recorded upstream commit in the
 commit right after the merge (an `ours` merge carries no file changes), or
