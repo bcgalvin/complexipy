@@ -1,6 +1,6 @@
 use pyo3::prelude::*;
 
-mod py_diff {
+pub mod py_diff {
     use pyo3::prelude::*;
 
     pub use complexipy_types::DiffStatus;

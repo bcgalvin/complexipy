@@ -171,7 +171,12 @@ Excluded explicit paths are skipped, so a successful command does not mean those
 files were checked.
 
 All five crates inherit `[workspace.lints]` from the root `Cargo.toml`. The
-rustc table forbids `unsafe_code`. The Clippy table enables the `pedantic`
+rustc table forbids `unsafe_code` and warns on `unnameable_types` (a public
+signature must not expose a type that users outside the crate cannot name) and
+`elided_lifetimes_in_paths` (write a borrowing type as `Options<'_>`).
+`unreachable_pub` stays off: `dead_code` already reports unused `pub` items in
+private modules, and the lint cannot see into the cli and lsp crates, whose
+roots export every module. The Clippy table enables the `pedantic`
 group, which also covers lints that Clippy later moves into it, at
 `priority = -1` so that individual entries override it. It allows twelve
 pedantic lints that do not pay off in these unpublished crates:

@@ -113,7 +113,7 @@ pub struct SummaryOptions<'a> {
     pub invocation_path: &'a str,
 }
 
-pub fn output_summary(options: SummaryOptions) -> (bool, String) {
+pub fn output_summary(options: SummaryOptions<'_>) -> (bool, String) {
     let SummaryOptions {
         files,
         failed_only,

@@ -33,7 +33,7 @@ pub struct DisplayOptions<'a> {
     pub suggest_refactors: bool,
 }
 
-pub fn handle_display(options: DisplayOptions) -> (bool, String) {
+pub fn handle_display(options: DisplayOptions<'_>) -> (bool, String) {
     let DisplayOptions {
         files_complexities,
         population_complete,
@@ -94,7 +94,7 @@ pub struct StorageOptions<'a> {
     pub suggest_refactors: bool,
 }
 
-pub fn handle_results_storage(options: StorageOptions) -> Result<Vec<String>, ExportError> {
+pub fn handle_results_storage(options: StorageOptions<'_>) -> Result<Vec<String>, ExportError> {
     let StorageOptions {
         output_formats,
         output,
