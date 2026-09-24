@@ -15,7 +15,7 @@ frameworks; [AGENTS.md](AGENTS.md#scope-and-engineering-defaults) records that s
 
 ## Local development
 
-Use CPython 3.14 or later, uv, and a Rust toolchain that supports edition 2024.
+Use CPython 3.14 or later, uv, and current stable Rust through rustup.
 The current consumer uses CPython 3.14 on macOS arm64; other platforms are not
 part of the local verification target.
 

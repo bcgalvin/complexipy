@@ -36,6 +36,7 @@ machine. There is no external distribution, sharing or portability requirement.
 ## Tech Stack
 
 - **Language:** CPython 3.14+ (package shell) + Rust (engine, CLI, diff)
+- **Rust toolchain:** rustup's latest stable, edition 2024; no pinned release
 - **Framework:** clap (CLI args), owo-colors/syntect/comfy-table (terminal output)
 - **Package Manager:** uv (Python), Cargo (Rust)
 - **Build:** maturin (Rust -> Python extension)
@@ -105,6 +106,9 @@ check the instructions, references, Markdown structure, ASCII punctuation and
 ```bash
 uv sync
 ```
+
+Rust comes from rustup's stable channel with the `clippy` and `rustfmt`
+components (`rustup component add clippy rustfmt` if either is missing).
 
 `uv sync` creates `.venv`. Workspace builds unify core's `python` feature, so
 Cargo links pyo3 into test binaries; `.cargo/config.toml` sets `PYO3_PYTHON` to
@@ -509,6 +513,12 @@ the reverse. Adding a dependency means adding it to the crate that uses it.
 - **Parser dependencies:** Keep both Ruff crates on the same explicit Git
   revision. A parser upgrade is a deliberate scoring-contract change, not a
   side effect of refreshing a mutable tag.
+- **Rust toolchain:** Track rustup's latest stable; there is no
+  `rust-toolchain.toml`, no `rust-version` and no clippy `msrv`. Each stable
+  release changes the lint set, so after `rustup update` run the full `verify`
+  gate before other work and fix new lint findings or renamed lint names in
+  one dedicated commit, for example `chore(rust): adopt Rust 1.99 lints`. Keep
+  that commit separate from feature work and from a parser revision bump.
 - **Cargo lockfile:** Regenerate and review `Cargo.lock` after dependency or workspace-version changes, and include required lockfile updates with the change. Every Cargo command here that resolves dependencies passes `--locked`, so drift fails rather than silently resolving. `maturin develop` does not, so a manifest edit followed by a rebuild can regenerate the lockfile without warning.
 - **Commits:** Only commit when explicitly asked. Never auto-commit. Stage explicit paths - never `git add -A` or `git add .`
 - **Commit subjects:** Must follow Conventional Commits. There is no automatic

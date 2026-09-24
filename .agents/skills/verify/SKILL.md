@@ -11,7 +11,9 @@ not a request to create a runner, hook or CI job.
 
 Cargo takes `PYO3_PYTHON` from `.cargo/config.toml`, which names the project
 `.venv`; run `uv sync` first if `.venv` is missing, and do not export an ad hoc
-value.
+value. The gate runs on whatever stable toolchain rustup has installed; a
+failure that appears right after `rustup update` is lint drift to fix in its
+own commit, as the "Rust toolchain" convention in `AGENTS.md` describes.
 
 For Python dependency changes, regenerate/review `uv.lock` deliberately and
 run `uv lock --check` before the gate, so `uv run` does not silently repair drift.
