@@ -10,11 +10,21 @@ license = "MIT"
 homepage = "https://github.com/bcgalvin/complexipy"
 repository = "https://github.com/bcgalvin/complexipy"
 
+[workspace.lints.rust]
+unsafe_code = "forbid"
+
 [workspace.lints.clippy]
 exit = "warn"
 dbg_macro = "warn"
 todo = "warn"
 unimplemented = "warn"
+panic = "warn"
+unreachable = "warn"
+mod_module_files = "warn"
+iter_over_hash_type = "warn"
+collapsible_else_if = "warn"
+nonminimal_bool = "warn"
+overly_complex_bool_expr = "warn"
 
 [workspace.dependencies]
 ruff_python_parser = { git = "https://github.com/astral-sh/ruff.git", rev = "ef422460de726c5b896c09c364d02a4db24bcaf0", package = "ruff_python_parser" }

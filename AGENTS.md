@@ -170,10 +170,19 @@ and formatting; `force-exclude` also protects explicitly supplied fixture paths.
 Excluded explicit paths are skipped, so a successful command does not mean those
 files were checked.
 
-All five crates inherit workspace Clippy warnings for `exit`, `dbg_macro`,
-`todo`, and `unimplemented`. They are declared as warnings, so promotion to
-errors comes from the `-D warnings` flag in the Clippy command above and nothing
-else enforces it automatically. The full Clippy restriction group is not enabled.
+All five crates inherit `[workspace.lints]` from the root `Cargo.toml`. The rustc
+table forbids `unsafe_code`. The Clippy table warns on the restriction lints
+`exit`, `dbg_macro`, `todo`, `unimplemented`, `panic`, `unreachable`,
+`mod_module_files` (modules use `foo.rs` plus a `foo/` directory, never
+`mod.rs`) and `iter_over_hash_type` (output order must not depend on hashing),
+and on `collapsible_else_if`, `nonminimal_bool` and `overly_complex_bool_expr`,
+which Clippy moved from its default groups into pedantic. Root `clippy.toml`
+sets `avoid-breaking-exported-api = false` because no crate is published,
+`allow-panic-in-tests = true`, and bans `std::env::set_current_dir` because test
+binaries share one process working directory. Lints are declared as warnings, so
+promotion to errors comes from the `-D warnings` flag on the Clippy commands and
+nothing else enforces it automatically. The restriction, nursery and cargo groups
+are not enabled.
 
 ty treats `possibly-unresolved-reference`, `possibly-missing-attribute`,
 `unused-ignore-comment`, and `redundant-cast` as errors. Every remaining warning
