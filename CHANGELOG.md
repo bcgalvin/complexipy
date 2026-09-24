@@ -1,8 +1,77 @@
 # Changelog
 
-Generated from this fork's commits after upstream `5c52836`.
+Generated from this fork's commits after upstream `fb8af35`.
 Do not edit by hand. See [changelog maintenance](docs/changelog.md).
 
+## 10.0.0
+
+### Breaking changes
+
+- (rules) add per-rule suppression and selection (`fa85ada`)
+  Breaking change: A marker whose brackets list rule ids no longer
+  suppresses its function: the function is scored and reported, and only
+  the named rules' plans are removed. Core's run_analysis_shared,
+  file_complexity_shared, code_complexity_shared and
+  function_level_cognitive_complexity_shared take &AnalysisOptions instead
+  of separate check_script and no_ignore flags.
+
+### Fixes
+
+- (cli) slice caret spans on character boundaries (`f801094`)
+
+### Refactoring
+
+- (rust) apply machine-applicable pedantic fixes (`dfb0002`)
+
+- (rust) clear remaining pedantic findings (`ebb0ec7`)
+
+- (core) import directly instead of through re-export shims (`5c4628f`)
+
+### Documentation
+
+- (agents) move fork work to rcq and keep main as the upstream mirror (`953455b`)
+
+- (maintenance) refresh claims overtaken by the 9.0.0 release (`0c3123c`)
+
+- (maintenance) record the parent's 9.0.0 adoption (`cd3ac55`)
+
+- (agents) keep main as the GitHub default branch (`2b7e0fe`)
+
+- (agents) track the latest stable Rust (`1821444`)
+
+### Maintenance
+
+- (maintenance) record upstream main fb8af35 as merged (`e3d31a8`)
+
+- (changelog) move the fork baseline to upstream fb8af35 (`8d2f474`)
+
+- (rust) take PYO3_PYTHON from the project venv (`c4333f8`)
+
+- (rust) adopt resolver 3 (`ac7c92a`)
+
+- (rust) lint the feature-isolated CLI build (`18985d2`)
+
+- resolve maturin builds with --locked (`a800abe`)
+
+- (deps) drop the unused globset dependency (`4c6819c`)
+
+- (rust) lock in zero-hit invariants (`02b5161`)
+
+- (rust) require reasoned lint expectations (`0d68f2a`)
+
+- (rust) confine terminal output to its owners (`1497060`)
+
+- (rust) lint string slicing (`e341a88`)
+
+- (clippy) enable the pedantic group (`ffd0387`)
+
+- (rust) lint unnameable types and elided lifetimes (`0fa5f58`)
+
+- (clippy) cap block nesting at today's depth (`a941654`)
+
+- (clippy) ban reading the working directory outside entry points (`1b5c251`)
+
+- (clippy) lint unwrap outside tests (`ed6899b`)
 ## 9.0.0
 
 ### Breaking changes

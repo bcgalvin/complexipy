@@ -263,7 +263,7 @@ dependencies = [
 
 [[package]]
 name = "complexipy-cli"
-version = "9.0.0"
+version = "10.0.0"
 dependencies = [
  "blake2",
  "clap",
@@ -282,7 +282,7 @@ dependencies = [
 
 [[package]]
 name = "complexipy-core"
-version = "9.0.0"
+version = "10.0.0"
 dependencies = [
  "complexipy-types",
  "csv",
@@ -301,7 +301,7 @@ dependencies = [
 
 [[package]]
 name = "complexipy-lsp"
-version = "9.0.0"
+version = "10.0.0"
 dependencies = [
  "complexipy-core",
  "crossbeam-channel",
@@ -314,7 +314,7 @@ dependencies = [
 
 [[package]]
 name = "complexipy-python"
-version = "9.0.0"
+version = "10.0.0"
 dependencies = [
  "clap",
  "complexipy-cli",
@@ -326,7 +326,7 @@ dependencies = [
 
 [[package]]
 name = "complexipy-types"
-version = "9.0.0"
+version = "10.0.0"
 dependencies = [
  "pyo3",
  "serde",
